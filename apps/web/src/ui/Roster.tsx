@@ -4,6 +4,7 @@ import { zoneAt, zoneName } from "@workbits/shared";
 import { localCharacterId, roomLabel, teamCharacters } from "../data/team";
 import { useRealtimeStore } from "../realtime/store";
 import { copyInviteLink } from "../lib/invite";
+import { AvatarPortrait } from "./AvatarPortrait";
 import { useAppStore } from "../state/app";
 import { palette, statusColor } from "../theme";
 
@@ -103,7 +104,11 @@ export function Roster() {
               aria-pressed={isSelected}
             >
               <span className="person__avatar" style={{ background: character.avatar.palette.primary }}>
-                {character.species === "frog" ? "🐸" : character.species === "crab" ? "🦀" : character.shortName.slice(0, 1)}
+                <AvatarPortrait
+                  config={live?.avatar ?? character.avatar}
+                  species={character.species}
+                  size={36}
+                />
                 <span
                   className="person__status"
                   style={{ background: statusColor[character.status] ?? palette.green }}

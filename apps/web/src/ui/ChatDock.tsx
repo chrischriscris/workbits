@@ -5,6 +5,7 @@ import { localCharacterId, teamById } from "../data/team";
 import { useRealtimeStore } from "../realtime/store";
 import { useAppStore, type ChatTab } from "../state/app";
 import { palette } from "../theme";
+import { AvatarPortrait } from "./AvatarPortrait";
 
 type ChatMessage = {
   id: string;
@@ -95,6 +96,7 @@ export function ChatDock() {
   const realtimeMessages = useRealtimeStore((state) => state.messages);
   const sendChat = useRealtimeStore((state) => state.sendChat);
   const connection = useRealtimeStore((state) => state.status);
+  const livePlayers = useRealtimeStore((state) => state.players);
   const localPosition = useRealtimeStore((state) => state.localPosition);
   const dmTargetId = useAppStore((state) => state.dmTargetId);
   const dmTarget = teamById[dmTargetId];
@@ -217,6 +219,10 @@ export function ChatDock() {
       <div className="chat__messages" ref={listRef}>
         {visibleMessages.map((message) => {
           const author = teamById[message.authorId];
+          const liveAuthor = Object.values(livePlayers).find(
+            (player) => player.characterId === message.authorId,
+          );
+          const authorConfig = liveAuthor?.avatar ?? author?.avatar;
           const isYou = message.authorId === localCharacterId;
           const isSystem = message.authorId === "system";
           return (
@@ -224,9 +230,17 @@ export function ChatDock() {
               {!isSystem && (
                 <span
                   className="avatar avatar--chat"
-                  style={{ background: author?.avatar.palette.primary ?? palette.slate }}
+                  style={{ background: authorConfig?.palette.primary ?? palette.slate }}
                 >
-                  {author?.shortName.slice(0, 1) ?? "?"}
+                  {authorConfig ? (
+                    <AvatarPortrait
+                      config={authorConfig}
+                      species={author?.species ?? "human"}
+                      size={32}
+                    />
+                  ) : (
+                    author?.shortName.slice(0, 1) ?? "?"
+                  )}
                 </span>
               )}
               <div className="chat-message__body">

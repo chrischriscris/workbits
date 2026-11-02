@@ -61,6 +61,7 @@ run_ui "Emote broadcast" bun scripts/emote-check.mjs
 run_ui "Local assistant" bun scripts/assistant-check.mjs
 run_ui "Customization sync" bun scripts/sync-check.mjs
 run_ui "Navigation and composer" bun scripts/ui-check.mjs
+run_ui "Welcome page" bun scripts/welcome-check.mjs
 run_ui "Unread chat" bun scripts/unread-check.mjs
 run_ui "Mobile layout" bun scripts/mobile-shot.mjs
 

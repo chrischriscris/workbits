@@ -5,6 +5,7 @@
 The local stack should already be running:
 
 - Web: **http://localhost:3100**
+- Welcome page: **http://localhost:3100/welcome.html**
 - Realtime API: `http://localhost:3101`
 - LiveKit: `ws://localhost:7880`
 
@@ -51,6 +52,8 @@ Or the container stack: `docker compose -f infra/docker-compose.prod.yml up --bu
 - Deterministic local Avatar Studio + Workspace Studio (no API key); customized avatars and desk layouts sync to everyone in the office.
 - Automatic reconnect with backoff: if the realtime server restarts, the tab rejoins, restores position and status, and rebinds voice.
 - Local office assistant with live presence answers and walk-to actions.
+- Generated 2D portraits in the roster, chat, profile, invite picker, and account chip.
+- A responsive marketing page at `/welcome.html` with the real demo screenshot and a CTA into the invite picker.
 - Rooms menu, invite picker, status menu, character switcher, and room-wide emotes.
 - `bun run build` passes; `bun run verify` produces a report.
 - Single-process production mode and the Docker image both serve the app and realtime correctly (`bun run prod-check`).

@@ -270,10 +270,10 @@ button:focus-visible {
 }
 
 .avatar--chat {
-  width: 27px;
-  height: 27px;
-  border-radius: 9px;
-  font-size: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  font-size: 11px;
 }
 
 .avatar--lg {
@@ -3029,4 +3029,154 @@ button:focus-visible {
   font-size: 7.5px;
   font-weight: 750;
   vertical-align: 1px;
+}
+
+/* Generated portraits */
+
+.portrait {
+  position: relative;
+  display: inline-block;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -8px 18px rgba(46, 52, 64, 0.06);
+}
+
+.portrait::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 16%, rgba(255, 255, 255, 0.38), transparent 48%);
+  pointer-events: none;
+}
+
+.portrait__body {
+  position: absolute;
+  right: 13%;
+  bottom: -6%;
+  left: 13%;
+  height: 31%;
+  border-radius: 44% 44% 0 0;
+  box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.2);
+}
+
+.portrait__head {
+  position: absolute;
+  top: 10%;
+  left: 20%;
+  width: 60%;
+  height: 64%;
+  border-radius: 49% 49% 45% 45%;
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.045);
+}
+
+.portrait__head::before,
+.portrait__head::after {
+  content: "";
+  position: absolute;
+  top: 58%;
+  width: 11%;
+  height: 9%;
+  border-radius: 50%;
+  background: rgba(217, 142, 115, 0.34);
+}
+
+.portrait__head::before {
+  left: 7%;
+}
+
+.portrait__head::after {
+  right: 7%;
+}
+
+.portrait__hair {
+  position: absolute;
+  top: -1%;
+  left: 1%;
+  width: 98%;
+  height: 25%;
+  border-radius: 50% 50% 32% 32%;
+}
+
+.portrait__eyes {
+  position: absolute;
+  top: 43%;
+  left: 50%;
+  display: flex;
+  gap: 26%;
+  transform: translateX(-50%);
+}
+
+.portrait__eyes span {
+  width: 3px;
+  height: 4px;
+  border-radius: 50%;
+  background: #241a16;
+}
+
+.portrait__glasses {
+  position: absolute;
+  top: 43%;
+  left: 50%;
+  display: flex;
+  justify-content: space-between;
+  width: 56%;
+  height: 15%;
+  transform: translateX(-50%);
+  z-index: 3;
+}
+
+.portrait__glasses span {
+  width: 44%;
+  height: 100%;
+  border: 1.2px solid rgba(55, 48, 44, 0.62);
+  border-radius: 28%;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.portrait__smile {
+  position: absolute;
+  bottom: 20%;
+  left: 50%;
+  width: 25%;
+  height: 13%;
+  transform: translateX(-50%);
+  border-radius: 0 0 999px 999px;
+  background: #8a4a42;
+  z-index: 2;
+}
+
+.portrait__cap {
+  position: absolute;
+  top: -6%;
+  left: 50%;
+  z-index: 4;
+  width: 80%;
+  height: 24%;
+  transform: translateX(-50%);
+  border-radius: 50% 50% 8% 8%;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.1);
+}
+
+.portrait--emoji {
+  display: grid;
+  place-items: center;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgba(46, 52, 64, 0.2);
+}
+
+.user-menu__about {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 7px;
+  color: var(--accent-deep);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.user-menu__about:hover {
+  text-decoration: underline;
 }

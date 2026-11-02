@@ -13,7 +13,7 @@ Source of truth for what is actually done. Update at the end of every work sessi
 | 4 — Chat | 🟢 Channels + private DMs + room scoping | `scripts/dm-check.mjs`, `scripts/sync-check.mjs` | Group membership not built |
 | 5 — Customization | 🟢 Generated + tuned avatars, synced layouts | `scripts/forge-shot.mjs`, `scripts/sync-check.mjs` | Full drag-and-drop office editor not built |
 | 6 — AI | 🟢 Local avatar, workspace, assistant | `scripts/assistant-check.mjs`, `apps/web/src/ai/` | No runtime LLM keys; provider adapter pending |
-| 7 — Product | 🔴 Not started | — | Auth, billing, landing |
+| 7 — Product | 🟡 Welcome page + demo product shell | `scripts/welcome-check.mjs`, `art/welcome.png` | Auth, billing, office editor |
 | 8 — Ship | 🟡 Single-process prod + Docker | `bun run prod-check`, container run | TLS/Caddy, Postgres, multi-instance pending |
 
 ### Verification
@@ -53,6 +53,8 @@ Source of truth for what is actually done. Update at the end of every work sessi
 - 2026-11-02 — Added single-process production serving (web build + Colyseus + token API), SPA fallback, cache headers, a multi-stage Dockerfile, and an app+LiveKit Compose stack. Verified locally and in the built container with `prod-check` (static, SPA, health, 403 token, hashed asset, same-origin realtime, clean console).
 - 2026-11-02 — Added unit tests for proximity gain, zones, avatar/workspace generators, and assistant answers (22 passing), wired into `bun run verify`. Added occupancy-aware invites: the join screen waits offline, marks live seats, avoids the host, and only connects after a seat is chosen.
 - 2026-11-02 — Removed dead camera/share/search controls, wired the roster invite button, added a chat emoji picker and unread badges. Added a navigation/composer UI check and an unread check to `bun run verify`.
+- 2026-11-02 — Added generated 2D portraits derived from the avatar config across the roster, chat, profile, invite picker, and account chip. Removed the last dead UI controls so every visible button does something.
+- 2026-11-02 — Added a responsive welcome/marketing page at `/welcome.html` using the real demo screenshot, honest demo caveats, and a CTA into the invite picker. Added desktop/mobile welcome checks to `bun run verify`.
 
 ## Next
 

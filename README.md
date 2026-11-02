@@ -20,6 +20,7 @@ Workbits is built to be a product, not an internal tool: multi-tenant architectu
 - Colyseus realtime presence: two tabs see each other; movement is server-validated.
 - Shared text chat: Global, Office, Room, and DM with unread indicators; room chat is scoped to the room you are standing in, DMs are routed server-side to the two participants only, and history persists. Emoji picker and copyable invite links are wired.
 - Local AI assistant: ask where people are, which room is free, who is in the meeting room, or for a summary. Answers come from live presence; no API key, with walk-to actions.
+- Generated portraits in the roster, chat, profile, invite picker, and account chip, drawn from each avatar config.
 - Proximity voice via LiveKit: server-minted room-scoped tokens, mic publish, distance-based volume, deafen, and a truly separate LiveKit room for the meeting room. Verified with two browser clients and cross-room isolation.
 - Avatar Studio: prompt → three modular bases → tune skin, hair, outfit, glasses, beard, cap, and chain → apply and persist; your avatar syncs to everyone in the office.
 - Workspace Studio: prompt → three desk layouts → apply to the engineering pod for everyone, and persist.
@@ -27,7 +28,7 @@ Workbits is built to be a product, not an internal tool: multi-tenant architectu
 - Rooms popover with click-to-walk navigation, invite links with a pick-your-seat onboarding, status menu, animated room-wide emotes, and automatic reconnect.
 - Verification scripts: screenshots, headless bot, voice check, avatar studio, proximity math.
 
-**Not done yet:** auth/orgs/invites, a full office editor, a real LLM room generator, billing, landing page, and multi-instance scale. Chat persistence, mobile layout, and a local workspace generator are in.
+**Not done yet:** auth/orgs/invites, a full office editor, a real LLM room generator, billing, and multi-instance scale. Chat persistence, mobile layout, a local workspace generator, a welcome page, and single-process deployment are in.
 
 ## Quick start
 
@@ -61,7 +62,7 @@ docker compose -f infra/docker-compose.prod.yml up --build
 
 This starts the app container plus LiveKit. Set `LIVEKIT_URL`, `LIVEKIT_API_KEY`, and `LIVEKIT_API_SECRET` for anything beyond the local dev keys.
 
-Open **http://localhost:3100**. Click the user chip in the top-right to switch demo characters, or open a second tab with:
+Open **http://localhost:3100**. The marketing page is at **http://localhost:3100/welcome.html**. In the app, click the user chip in the top-right to switch demo characters, or open a second tab with:
 
 ```
 http://localhost:3100/?character=jules

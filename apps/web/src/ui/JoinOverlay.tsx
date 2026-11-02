@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { apiBase } from "../config";
 import { teamCharacters } from "../data/team";
 import { palette, statusColor } from "../theme";
+import { AvatarPortrait } from "./AvatarPortrait";
 
 export function JoinOverlay() {
   const params = new URLSearchParams(window.location.search);
@@ -94,11 +95,7 @@ export function JoinOverlay() {
               onClick={() => setSelected(item.id)}
             >
               <span className="join-person__avatar" style={{ background: item.avatar.palette.primary }}>
-                {item.species === "frog"
-                  ? "🐸"
-                  : item.species === "crab"
-                    ? "🦀"
-                    : item.shortName.slice(0, 1)}
+                <AvatarPortrait config={item.avatar} species={item.species} size={32} />
                 <i style={{ background: statusColor[item.status] ?? palette.green }} />
               </span>
               <span>

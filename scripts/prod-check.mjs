@@ -14,6 +14,13 @@ check("root serves the built app", root.status === 200 && html.includes('<div id
 const spa = await fetch(`${base}/some/deep/route`, { headers: { accept: "text/html" } });
 check("SPA fallback serves index", spa.status === 200 && (await spa.text()).includes('<div id="root">'));
 
+const welcome = await fetch(`${base}/welcome.html`);
+const welcomeHtml = await welcome.text();
+check(
+  "welcome page is served",
+  welcome.status === 200 && welcomeHtml.includes("Your team's place"),
+);
+
 const health = await fetch(`${base}/health`).then((response) => response.json());
 check("health reports the web build", health.ok === true && health.web === true, JSON.stringify(health));
 

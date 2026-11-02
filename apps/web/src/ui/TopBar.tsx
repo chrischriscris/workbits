@@ -12,6 +12,7 @@ import { useRealtimeStore } from "../realtime/store";
 import { useAppStore } from "../state/app";
 import { useAvatarStore } from "../state/avatar";
 import { copyInviteLink } from "../lib/invite";
+import { AvatarPortrait } from "./AvatarPortrait";
 import { palette, statusColor } from "../theme";
 
 type OpenMenu = "user" | "office" | null;
@@ -26,7 +27,8 @@ export function TopBar() {
   const [openMenu, setOpenMenu] = useState<OpenMenu>(null);
   const [copied, setCopied] = useState(false);
   const customAvatar = useAvatarStore((state) => state.config);
-  const avatarColor = customAvatar?.palette.primary ?? localCharacter.avatar.palette.primary;
+  const avatarConfig = customAvatar ?? localCharacter.avatar;
+  const avatarSpecies = customAvatar?.species ?? localCharacter.species;
 
   const copyInvite = async () => {
     try {
@@ -141,7 +143,7 @@ export function TopBar() {
           {copied ? <Check size={17} /> : <Share2 size={17} />}
         </button>
         <button
-          className="icon-button topbar-hide-mobile"
+          className="icon-button"
           type="button"
           aria-label="Ask Workbits assistant"
           title="Ask Workbits assistant"
@@ -158,8 +160,8 @@ export function TopBar() {
             aria-expanded={openMenu === "user"}
             onClick={() => setOpenMenu(openMenu === "user" ? null : "user")}
           >
-            <span className="avatar avatar--sm" style={{ background: avatarColor }}>
-              {localCharacter.shortName.slice(0, 1)}
+            <span className="avatar avatar--sm" style={{ background: avatarConfig.palette.primary }}>
+              <AvatarPortrait config={avatarConfig} species={avatarSpecies} size={32} />
               <span className="avatar__status" style={{ background: statusColor[localStatus] ?? statusColor.available }} />
             </span>
             <span className="user-chip__text">
@@ -208,11 +210,11 @@ export function TopBar() {
                       className="person__avatar person__avatar--menu"
                       style={{ background: character.avatar.palette.primary }}
                     >
-                      {character.species === "frog"
-                        ? "🐸"
-                        : character.species === "crab"
-                          ? "🦀"
-                          : character.shortName.slice(0, 1)}
+                      <AvatarPortrait
+                        config={character.avatar}
+                        species={character.species}
+                        size={30}
+                      />
                     </span>
                     <span>
                       <strong>{character.shortName}</strong>
@@ -223,6 +225,9 @@ export function TopBar() {
                 ))}
                 <div className="user-menu__hint">
                   Open a second tab with another character to test presence.
+                  <a className="user-menu__about" href="/welcome.html">
+                    About Workbits <span aria-hidden="true">↗</span>
+                  </a>
                 </div>
               </div>
             </>

@@ -3,6 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { Status } from "@workbits/shared";
+import { spawnFor, type Spawn } from "../data/spawns";
 import { localCharacter, localCharacterId, teamCharacters } from "../data/team";
 import { useRealtimeStore } from "../realtime/store";
 import { useAvatarStore } from "../state/avatar";
@@ -402,17 +403,7 @@ function Team() {
 /* Local player                                                        */
 /* ------------------------------------------------------------------ */
 
-const SPAWNS: Record<string, [number, number, number]> = {
-  chus: [-3.5, 0, 6.5],
-  jules: [-5.9, 0, 3.8],
-  mira: [-4.5, 0, 1.2],
-  felix: [2.5, 0, 3.3],
-  fern: [-2.4, 0, 3.0],
-  arlo: [-2.6, 0, 5.2],
-  theo: [9.2, 0, 3.95],
-  clawd: [-5.7, 0, 2.6],
-};
-const START = SPAWNS[localCharacterId] ?? SPAWNS.chus!;
+const START: Spawn = spawnFor(localCharacterId);
 
 function LocalPlayer() {
   const customAvatar = useAvatarStore((state) => state.config);

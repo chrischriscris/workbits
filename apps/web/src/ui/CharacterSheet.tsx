@@ -4,6 +4,7 @@ import { localCharacterId, roomAnchors, roomLabel, teamById } from "../data/team
 import { useRealtimeStore } from "../realtime/store";
 import { useAppStore } from "../state/app";
 import { statusColor } from "../theme";
+import { AvatarPortrait } from "./AvatarPortrait";
 
 const statusLabel: Record<string, string> = {
   available: "Available",
@@ -36,7 +37,11 @@ export function CharacterSheet() {
     <aside className="character-card" aria-label={`${character.displayName} profile`}>
       <div className="character-card__top">
         <span className="avatar avatar--lg" style={{ background: character.avatar.palette.primary }}>
-          {character.species === "frog" ? "🐸" : character.species === "crab" ? "🦀" : character.shortName.slice(0, 1)}
+          <AvatarPortrait
+            config={live?.avatar ?? character.avatar}
+            species={character.species}
+            size={46}
+          />
           <span
             className="avatar__status"
             style={{ background: statusColor[status] }}

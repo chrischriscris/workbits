@@ -3,6 +3,8 @@ import { Canvas, useThree } from "@react-three/fiber";
 import { Bloom, EffectComposer, SSAO, Vignette } from "@react-three/postprocessing";
 import { Suspense, useEffect } from "react";
 import * as THREE from "three";
+import { localCharacterId } from "../data/team";
+import { spawnFor } from "../data/spawns";
 import { Office } from "./Office";
 
 function CameraRig() {
@@ -11,20 +13,24 @@ function CameraRig() {
   const controls = useThree((state) => state.controls) as
     | { target: THREE.Vector3; update: () => void }
     | null;
+  const mobile = size.width < 900;
+  const spawn = spawnFor(localCharacterId);
+  const targetX = mobile ? spawn[0] : -1.4;
+  const targetZ = mobile ? Math.max(3, spawn[2] - 2) : 0.6;
 
   useEffect(() => {
     const orthographic = camera as THREE.OrthographicCamera;
     if (!orthographic.isOrthographicCamera) return;
-    const targetWidth = size.width < 900 ? 12 : 21;
+    const targetWidth = mobile ? 14 : 21;
     orthographic.zoom = size.width / targetWidth;
     orthographic.updateProjectionMatrix();
-  }, [camera, size.width]);
+  }, [camera, mobile, size.width]);
 
   useEffect(() => {
     if (!controls) return;
-    controls.target.set(-1.4, 0, 0.6);
+    controls.target.set(targetX, 0, targetZ);
     controls.update();
-  }, [controls]);
+  }, [controls, targetX, targetZ]);
   return (
     <MapControls
       makeDefault
@@ -33,7 +39,7 @@ function CameraRig() {
       enableZoom
       minZoom={18}
       maxZoom={90}
-      target={[-1.4, 0, 0.6]}
+      target={[targetX, 0, targetZ]}
       panSpeed={0.85}
       zoomSpeed={0.85}
     />
