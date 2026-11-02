@@ -30,14 +30,14 @@ const characterIds = new Set([
 ]);
 
 const spawns: Record<string, { x: number; z: number }> = {
-  chus: { x: -3.5, z: 6.5 },
-  jules: { x: -5.9, z: 3.8 },
-  mira: { x: -4.5, z: 1.2 },
-  felix: { x: 2.5, z: 3.3 },
-  fern: { x: -2.4, z: 3.0 },
-  arlo: { x: -2.6, z: 5.2 },
-  theo: { x: 9.2, z: 3.95 },
-  clawd: { x: -5.7, z: 2.6 },
+  chus: { x: -5.4, z: 5.9 },
+  jules: { x: 3.0, z: -4.4 },
+  mira: { x: 0.15, z: 4.75 },
+  felix: { x: 2.65, z: 1.65 },
+  fern: { x: 0.15, z: 1.65 },
+  arlo: { x: -5.5, z: 4.55 },
+  theo: { x: 8.75, z: 4.05 },
+  clawd: { x: 4.1, z: -4.15 },
 };
 
 type MoveMessage = {

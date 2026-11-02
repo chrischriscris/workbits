@@ -1,4 +1,3 @@
-import { RoundedBox } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
@@ -7,80 +6,144 @@ import { spawnFor, type Spawn } from "../data/spawns";
 import { localCharacter, localCharacterId, teamCharacters } from "../data/team";
 import { useRealtimeStore } from "../realtime/store";
 import { useAvatarStore } from "../state/avatar";
-import { chairFor, useOfficeLayout } from "../state/officeLayout";
+import { chairFor, useOfficeLayout, type DeskPlacement, type OfficeLayout } from "../state/officeLayout";
 import { useAppStore } from "../state/app";
 import { palette } from "../theme";
 import { EmoteBubble, TeamAvatar, type AvatarMotion, type AvatarPose } from "./avatars";
 import { RemotePlayers } from "./RemotePlayers";
 import {
   Armchair,
-  Beanbag,
-  Bed,
+  Bench,
+  Block,
   Books,
   Cat,
   CoffeeTable,
+  Credenza,
+  Daybed,
   Desk,
+  DeskPartition,
   FloorLamp,
+  FoldingScreen,
+  Fridge,
   GlassWall,
-  Kitchen,
-  Laptop,
+  KitchenRun,
   MeetingTable,
-  MoneyCase,
-  Monitor,
   Mug,
   OfficeChair,
+  Pendant,
   Plant,
+  Planter,
+  Pouf,
   Rug,
   Shelf,
+  SideTable,
+  SlatDivider,
   Sofa,
   Stool,
-  StringLights,
+  TableLamp,
+  TallCabinet,
   Tree,
+  Vase,
   Wall,
   WallArt,
   WallClock,
   Whiteboard,
+  type RugVariant,
 } from "./props";
-import { textures } from "./textures";
+import { textures, withRepeat } from "./textures";
+
+/*
+ * Compact cutaway diorama, 20 x 14 on a stone plinth.
+ *
+ *   x -10 ......................................... +10
+ *   z -7  [ meeting (glass) ] slats [ kitchen run ...... fridge pantry  door ]
+ *         [                 ]       [   aisle                           ]
+ *         [ lounge  ]   [ engineering 2x2 bench ]  planter  [ garden nook ]
+ *   z +7  [         ]   [                       ]           [ nap nook    ]
+ *
+ * Rear (z = -7) and left (x = -10) walls are cut away at 2.7; front and
+ * right are open so the camera sees in.
+ */
+
+const WALL_HEIGHT = 2.7;
+const REAR_Z = -7.05;
+const LEFT_X = -10.05;
+const REAR_FACE = REAR_Z + 0.09;
+const LEFT_FACE = LEFT_X + 0.09;
+const HALF_PI = Math.PI / 2;
+
+const BOUNDS = { minX: -9.6, maxX: 10.1, minZ: -6.55, maxZ: 7.1 };
+
+const tone = {
+  cream: "#f1ece3",
+  charcoal: "#3f444c",
+  plinth: "#ece3d3",
+  plinthCap: "#f6f0e6",
+  plinthFoot: "#d3c6b3",
+  rust: "#c4633f",
+};
+
+/**
+ * Bench centre for the default layout: four oversized desks joined 2 x 2.
+ * Desks are ~1.4x a standard desk so the bench reads as the hero vignette;
+ * chairFor's 0.95 offset still tucks the chairs right up to the front edge.
+ */
+const BENCH = { x: 1.4, z: 3.2 };
+const BENCH_DESK = { width: 2.5, depth: 1.2 };
+const BENCH_DESKS: DeskPlacement[] = [
+  { id: "d1", x: BENCH.x - BENCH_DESK.width / 2, z: BENCH.z - BENCH_DESK.depth / 2, rotation: Math.PI, variant: 0 },
+  { id: "d2", x: BENCH.x + BENCH_DESK.width / 2, z: BENCH.z - BENCH_DESK.depth / 2, rotation: Math.PI, variant: 1 },
+  { id: "d3", x: BENCH.x - BENCH_DESK.width / 2, z: BENCH.z + BENCH_DESK.depth / 2, rotation: 0, variant: 2 },
+  { id: "d4", x: BENCH.x + BENCH_DESK.width / 2, z: BENCH.z + BENCH_DESK.depth / 2, rotation: 0, variant: 3 },
+];
+
+/** The default layout renders as the joined bench; custom layouts keep their own desks. */
+function desksFor(layout: OfficeLayout) {
+  return layout.id === "default" ? BENCH_DESKS : layout.desks;
+}
+
+const benchRug: Record<OfficeLayout["rug"], RugVariant> = {
+  cream: "lines",
+  sage: "sage",
+  terracotta: "terracotta",
+};
 
 /* ------------------------------------------------------------------ */
-/* Floor + walls                                                       */
+/* Shell: plinth, floor, walls                                         */
 /* ------------------------------------------------------------------ */
 
 function Floor() {
   const setTarget = useAppStore((state) => state.setTarget);
+  const zones = useMemo(
+    () => ({
+      kitchen: withRepeat(textures.tile, 11.9 / 2.4, 4.1 / 2.4),
+      garden: withRepeat(textures.stone, 3.7 / 1.5, 3.3 / 1.5),
+    }),
+    [],
+  );
   return (
     <group>
-      <mesh position={[0, -0.82, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[80, 80]} />
-        <meshStandardMaterial color={palette.water} roughness={0.95} />
-      </mesh>
-      <RoundedBox args={[27.8, 0.4, 19.8]} radius={0.12} position={[0, -0.33, 0]} receiveShadow>
-        <meshStandardMaterial color={palette.grass} roughness={1} />
-      </RoundedBox>
-      <RoundedBox
-        args={[26.4, 0.34, 18.4]}
-        radius={0.1}
-        position={[0, -0.14, 0]}
+      {/* Thick pale limestone plinth: inset foot for a shadow line, slab, bright cap. */}
+      <Block size={[20.6, 0.18, 14.6]} position={[0, -0.99, 0]} color={tone.plinthFoot} radius={0.04} />
+      <Block size={[20.9, 0.86, 14.9]} position={[0, -0.47, 0]} color={tone.plinth} radius={0.05} />
+      <Block size={[20.96, 0.05, 14.96]} position={[0, -0.03, 0]} color={tone.plinthCap} radius={0.02} />
+      <mesh
         receiveShadow
         onPointerDown={(event) => {
           event.stopPropagation();
           setTarget({ x: event.point.x, z: event.point.z });
         }}
       >
-        <meshStandardMaterial map={textures.wood} roughness={0.86} />
-      </RoundedBox>
-      <mesh position={[-7.8, 0.038, -6.8]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[9.1, 3.7]} />
-        <meshStandardMaterial map={textures.tile} roughness={0.82} />
+        <boxGeometry args={[20.6, 0.04, 14.6]} />
+        <meshStandardMaterial map={textures.wood} roughness={0.82} />
       </mesh>
-      <mesh position={[7, 0.038, -4.5]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[8.4, 7.4]} />
-        <meshStandardMaterial map={textures.tile} roughness={0.82} />
+      <mesh position={[4.35, 0.024, -4.95]} rotation={[-HALF_PI, 0, 0]} receiveShadow>
+        <planeGeometry args={[11.9, 4.1]} />
+        <meshStandardMaterial map={zones.kitchen} roughness={0.7} />
       </mesh>
-      <mesh position={[9.2, 0.039, 4.8]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[4.4, 3.4]} />
-        <meshStandardMaterial color="#e9dfcf" roughness={0.95} />
+      <mesh position={[8.45, 0.024, 1.45]} rotation={[-HALF_PI, 0, 0]} receiveShadow>
+        <planeGeometry args={[3.7, 3.3]} />
+        <meshStandardMaterial map={zones.garden} roughness={0.95} />
       </mesh>
     </group>
   );
@@ -89,24 +152,22 @@ function Floor() {
 function Walls() {
   return (
     <group>
-      <Wall position={[0, 0, -9.06]} length={26} height={2.8} windows={5} />
       <Wall
-        position={[-13.06, 0, 0]}
-        rotation={[0, Math.PI / 2, 0]}
-        length={18}
-        height={2.8}
-        windows={3}
+        position={[-0.07, 0, REAR_Z]}
+        length={20.14}
+        height={WALL_HEIGHT}
+        openings={[
+          { at: -6.6 + 0.07, width: 2.3, bottom: 0.8, top: 2.25, kind: "window", curtain: true },
+          { at: 9.2 + 0.07, width: 1.0, bottom: 0, top: 2.2, kind: "door" },
+        ]}
       />
-      <WallArt position={[-4.9, 1.72, -8.92]} variant={0} />
-      <WallArt position={[0.9, 1.72, -8.92]} variant={1} width={1.45} height={1.1} />
-      <WallClock position={[-7.6, 2.2, -8.92]} />
-      <WallArt
-        position={[-12.92, 1.72, 2.2]}
-        rotation={[0, Math.PI / 2, 0]}
-        variant={1}
-        width={1.35}
-        height={1.5}
-      />
+      <Wall position={[LEFT_X, 0, 0.02]} rotation={[0, HALF_PI, 0]} length={13.96} height={WALL_HEIGHT} />
+      {/* Charcoal pilasters where the cut walls end. */}
+      <Block size={[0.26, WALL_HEIGHT + 0.06, 0.3]} position={[9.92, (WALL_HEIGHT + 0.06) / 2, REAR_Z]} color={tone.charcoal} />
+      <Block size={[0.3, WALL_HEIGHT + 0.06, 0.26]} position={[LEFT_X, (WALL_HEIGHT + 0.06) / 2, 6.9]} color={tone.charcoal} />
+      <Block size={[0.3, WALL_HEIGHT + 0.06, 0.3]} position={[LEFT_X, (WALL_HEIGHT + 0.06) / 2, REAR_Z]} color={tone.charcoal} />
+      <SlatDivider position={[-1.95, 0, -6.13]} rotation={[0, HALF_PI, 0]} length={1.66} height={2.62} />
+      <WallClock position={[-1.62, 1.75, REAR_FACE + 0.03]} />
     </group>
   );
 }
@@ -115,44 +176,116 @@ function Walls() {
 /* Rooms                                                               */
 /* ------------------------------------------------------------------ */
 
+/** Glass box, back-left: x -10..-2.4, z -7..-1.2, door gap at x -4.4..-3.4. */
+function MeetingRoom() {
+  return (
+    <group>
+      <GlassWall position={[-7.18, 0, -1.2]} length={5.56} height={2.6} />
+      <GlassWall position={[-2.9, 0, -1.2]} length={1.0} height={2.6} />
+      <GlassWall position={[-3.9, 2.2, -1.2]} length={1.0} height={0.4} />
+      <GlassWall position={[-2.4, 0, -4.08]} rotation={[0, HALF_PI, 0]} length={5.76} height={2.6} />
+
+      <Rug position={[-6.15, 0.035, -4.0]} width={6.2} depth={4.6} variant="cream" />
+      <MeetingTable position={[-6.15, 0, -4.0]} length={4.3} width={1.5} chairScale={1.25} />
+      <Pendant position={[-6.15, 1.72, -4.0]} kind="dome" drop={0.7} size={1.6} light />
+
+      {/* One large calm print on each wall instead of screen + credenza clutter. */}
+      <WallArt position={[LEFT_FACE + 0.03, 1.6, -4.0]} rotation={[0, HALF_PI, 0]} variant={0} width={2.0} height={1.45} />
+      <WallArt position={[-3.95, 1.55, REAR_FACE + 0.03]} variant={1} width={1.1} height={1.4} />
+
+      <Plant position={[-9.35, 0, -6.4]} scale={1.5} pot={tone.cream} kind="tall" />
+      <Plant position={[-2.95, 0, -6.4]} scale={1.35} pot={tone.cream} kind="leafy" />
+      <Plant position={[-9.4, 0, -1.75]} scale={1.2} pot={palette.terracotta} kind="leafy" />
+    </group>
+  );
+}
+
+/** Back-right: long rear run, fridge, pantry, a bistro perch and a bookcase. */
+function KitchenArea() {
+  return (
+    <group>
+      <KitchenRun position={[2.1, 0, REAR_FACE + 0.33]} length={6.8} />
+      <Fridge position={[6.05, 0, REAR_FACE + 0.35]} />
+      <TallCabinet position={[7.0, 0, REAR_FACE + 0.32]} height={2.25} />
+      <Plant position={[7.0, 2.25, REAR_FACE + 0.3]} scale={0.62} pot={tone.cream} kind="trailing" />
+      <Plant position={[8.1, 0, -6.4]} scale={1.3} pot={tone.cream} kind="tall" />
+      {/* Big floor plant beside the slats, framing the coffee station. */}
+      <Plant position={[-1.45, 0, -4.95]} scale={1.45} pot={tone.cream} kind="tall" />
+      <Rug position={[2.6, 0.035, -5.85]} width={2.6} depth={0.75} variant="lines" />
+
+      <SideTable position={[7.7, 0, -4.3]} height={1.02} />
+      <Mug position={[7.62, 1.02, -4.25]} color={palette.sage} />
+      <Plant position={[7.78, 1.02, -4.36]} scale={0.26} pot={palette.paper} kind="succulent" />
+      <Stool position={[7.15, 0, -4.0]} color={palette.sage} />
+      <Stool position={[8.25, 0, -4.6]} color={palette.terracotta} />
+
+      <Shelf position={[9.68, 0, -1.6]} rotation={[0, -HALF_PI, 0]} width={1.2} height={1.25} seed={4} />
+      <Plant position={[9.45, 0, -2.75]} scale={1.25} pot={palette.terracotta} kind="leafy" />
+    </group>
+  );
+}
+
+/** Right-center: a small soft meeting/reading corner, filling the open middle. */
+function ReadingNook() {
+  return (
+    <group>
+      <Rug position={[6.35, 0.035, -1.35]} width={4.0} depth={3.1} variant="cream" />
+      <CoffeeTable position={[6.35, 0, -1.35]} />
+      <Armchair position={[5.25, 0, -1.35]} rotation={[0, -HALF_PI, 0]} color={palette.sage} />
+      <Armchair position={[7.45, 0, -1.35]} rotation={[0, HALF_PI, 0]} color={palette.terracotta} />
+      <SideTable position={[6.35, 0, -0.35]} height={0.5} />
+      <Mug position={[6.35, 0.5, -0.35]} color={palette.paper} />
+      <Books position={[6.65, 0.5, -0.35]} count={2} rotation={[0, 0.25, 0]} />
+      <Plant position={[8.05, 0, -0.55]} scale={1.0} pot={tone.cream} kind="leafy" />
+      <Pendant position={[6.35, 2.0, -1.35]} kind="cone" drop={0.55} />
+    </group>
+  );
+}
+
+/** Left/front: big sage sofa on the left wall, one ivory rug, coffee table, pouf. */
 function Lounge() {
   return (
     <group>
-      <Rug position={[-6.6, 0.095, 2.8]} width={7.4} depth={5.5} />
-      <Sofa position={[-8.85, 0, 2.55]} rotation={[0, Math.PI / 2, 0]} />
-      <CoffeeTable position={[-6.15, 0, 2.8]} />
-      <Armchair position={[-4.5, 0, 1.2]} rotation={[0, 0.4, 0]} color={palette.terracotta} />
-      <Armchair position={[-4.7, 0, 4.8]} rotation={[0, -Math.PI / 2, 0]} color={palette.terracotta} />
-      <MoneyCase position={[-6.9, 0.48, 2.45]} rotation={[0, 0.4, 0]} />
-      <FloorLamp position={[-9.6, 0, 6.3]} />
-      <Shelf
-        position={[-10.55, 0, 0.6]}
-        rotation={[0, Math.PI / 2, 0]}
-        width={1.7}
-        height={1.85}
-      />
-      <Plant position={[-9.7, 0, 7.5]} scale={1.35} />
-      <Plant position={[-3.9, 0, 7.35]} scale={0.85} />
-      <Plant position={[-10.0, 0, 4.9]} scale={0.6} pot={palette.paper} />
-      <Books position={[-6.4, 0.48, 3.1]} count={2} rotation={[0, 0.2, 0]} />
-      <Mug position={[-5.7, 0.48, 2.5]} />
+      <Rug position={[-7.2, 0.035, 2.6]} width={5.2} depth={4.8} variant="ivory" />
+      <Sofa position={[-9.3, 0, 2.6]} rotation={[0, HALF_PI, 0]} scale={1.2} pillows={[tone.rust, "#f4ecdc", "#ead9c0"]} />
+      <CoffeeTable position={[-7.35, 0, 2.6]} scale={1.2} />
+      <Pouf position={[-7.9, 0, 4.45]} scale={1.2} color={palette.terracotta} />
+      <Armchair position={[-5.85, 0, 1.35]} rotation={[0, -Math.PI / 4, 0]} color="#ece0cc" />
+      <Cat position={[-6.4, 0.06, 4.55]} rotation={[0, -0.7, 0]} />
+
+      <SideTable position={[-9.45, 0, 0.45]} />
+      <TableLamp position={[-9.5, 0.55, 0.4]} />
+      <Mug position={[-9.35, 0.55, 0.58]} color={palette.terracotta} />
+      <FloorLamp position={[-9.5, 0, 4.75]} />
+
+      <WallArt position={[LEFT_FACE + 0.03, 1.88, 2.6]} rotation={[0, HALF_PI, 0]} variant={1} width={1.6} height={1.05} />
+      <WallArt position={[LEFT_FACE + 0.03, 1.75, -0.2]} rotation={[0, HALF_PI, 0]} variant={2} width={0.5} height={0.65} />
+
+      <Shelf position={[-7.3, 0, 6.45]} width={2.6} height={0.85} depth={0.36} seed={2} />
+      <Plant position={[-9.35, 0, 5.65]} scale={1.4} pot={tone.cream} kind="tall" />
+      <Plant position={[-9.4, 0, -0.45]} scale={0.9} pot={palette.terracotta} kind="bush" />
+      <Plant position={[-4.75, 0, 0.35]} scale={1.1} pot={tone.cream} kind="leafy" />
+      <Plant position={[-5.15, 0, 6.4]} scale={1.0} pot={palette.terracotta} kind="leafy" />
     </group>
   );
 }
 
 const chairPalette = [
-  { color: palette.slate, accent: palette.sage },
-  { color: palette.terracotta, accent: palette.sand },
-  { color: palette.slate, accent: palette.terracotta },
-  { color: palette.slate, accent: palette.sage },
+  { color: "#7d8894", accent: "#f2efe9" },
+  { color: "#8b97a3", accent: "#f2efe9" },
+  { color: "#7d8894", accent: "#e7e2d9" },
+  { color: "#6f7b88", accent: "#f2efe9" },
 ];
 
+/** Centre/front: joined bench with a planted spine, planter divider on the right. */
 function Engineering() {
   const layout = useOfficeLayout((state) => state.layout);
+  const desks = desksFor(layout);
+  const bench = layout.id === "default";
   return (
     <group>
-      <Rug position={[-0.1, 0.095, 3.0]} width={8.2} depth={6.4} variant={layout.rug} />
-      {layout.desks.map((desk) => {
+      <Rug position={[BENCH.x, 0.035, BENCH.z]} width={bench ? 6.4 : 6.0} depth={bench ? 4.8 : 4.7} variant={benchRug[layout.rug]} />
+      {desks.map((desk) => {
         const chair = chairFor(desk);
         const colors = chairPalette[desk.variant % chairPalette.length] ?? chairPalette[0]!;
         return (
@@ -161,6 +294,9 @@ function Engineering() {
               position={[desk.x, 0, desk.z]}
               rotation={[0, desk.rotation, 0]}
               variant={desk.variant}
+              panel={!bench}
+              width={bench ? BENCH_DESK.width : undefined}
+              depth={bench ? BENCH_DESK.depth : undefined}
             />
             <OfficeChair
               position={[chair.x, 0, chair.z]}
@@ -171,177 +307,56 @@ function Engineering() {
           </group>
         );
       })}
-      {layout.id === "default" && (
-        <>
-          <RoundedBox args={[5.7, 0.5, 0.36]} radius={0.08} position={[0.2, 0.25, 3.1]} castShadow>
-            <meshStandardMaterial color={palette.oakLight} roughness={0.8} />
-          </RoundedBox>
-          {[-1.5, 0.2, 1.9].map((x) => (
-            <Plant key={x} position={[x, 0.5, 3.1]} scale={0.35} pot={palette.paper} />
-          ))}
-        </>
-      )}
-      <Whiteboard position={[4.75, 0, 2.4]} rotation={[0, -Math.PI / 2, 0]} />
-      <Shelf position={[4.75, 0, 6.1]} rotation={[0, -Math.PI / 2, 0]} width={1.5} height={1.6} />
-      <Plant position={[4.55, 0, 0.0]} scale={1.15} />
-      <Plant position={[4.3, 0, 7.2]} scale={0.8} />
-      <Mug position={[2.4, 0.81, 4.3]} />
+      {bench && <DeskPartition position={[BENCH.x, 0, BENCH.z]} length={BENCH_DESK.width * 2} depth={BENCH_DESK.depth} />}
+      <Pendant position={[BENCH.x, 2.05, BENCH.z]} kind="bar" length={bench ? 4.2 : 3.0} drop={0.6} light />
+
+      <Whiteboard position={[-2.55, 0, BENCH.z]} rotation={[0, HALF_PI, 0]} stand />
+      <Plant position={[-2.9, 0, 0.75]} scale={1.0} pot={tone.cream} kind="tall" />
+      <Plant position={[-2.85, 0, 5.6]} scale={0.95} pot={palette.terracotta} kind="leafy" />
+
+      <Credenza position={[3.9, 0, 0.45]} length={1.8} />
+      <Plant position={[3.3, 0.68, 0.45]} scale={0.5} pot={tone.cream} kind="bush" />
+      <Books position={[4.0, 0.68, 0.45]} count={3} rotation={[0, -0.2, 0]} />
+      <Vase position={[4.5, 0.68, 0.45]} color="#e8dccb" />
+
+      <Planter position={[5.85, 0, 3.0]} rotation={[0, HALF_PI, 0]} length={4.0} width={0.5} height={0.5} />
+      {/* Dense low planter along the front-right edge, foliage spilling over. */}
+      <Planter position={[4.75, 0, 6.6]} length={3.0} width={0.55} height={0.42} />
+      <Plant position={[5.6, 0, -0.4]} scale={1.2} pot={palette.terracotta} kind="leafy" />
     </group>
   );
 }
 
-function MeetingRoom() {
+/** Right strip, back half: a small indoor green corner. */
+function GardenNook() {
   return (
     <group>
-      <Rug position={[7, 0.095, -4.5]} width={6.4} depth={5.2} variant="cream" />
-      <GlassWall position={[4.9, 0, -1.06]} length={3.2} />
-      <GlassWall position={[9.3, 0, -1.06]} length={3.2} />
-      <GlassWall position={[3.3, 0, -4.5]} rotation={[0, Math.PI / 2, 0]} length={7.2} />
-      <GlassWall position={[10.9, 0, -4.5]} rotation={[0, Math.PI / 2, 0]} length={7.2} />
-      <MeetingTable position={[7, 0, -4.5]} />
-      <Monitor position={[7, 1.35, -8.75]} width={1.12} height={0.64} />
-      <Laptop position={[6.2, 0.84, -4.9]} rotation={[0, 0.4, 0]} />
-      <Laptop position={[7.9, 0.84, -3.95]} rotation={[0, -0.5, 0]} />
-      <Plant position={[10.15, 0, -7.75]} scale={0.95} />
-      <Plant position={[3.8, 0, -7.7]} scale={0.7} pot={palette.paper} />
-      <Mug position={[6.1, 0.84, -3.8]} />
-      <Mug position={[7.55, 0.84, -4.1]} />
-      <Shelf position={[9.7, 0, -7.2]} rotation={[0, -Math.PI / 2, 0]} width={1.6} height={1.15} />
-      <Whiteboard position={[3.55, 0, -4.8]} rotation={[0, Math.PI / 2, 0]} />
-      <Plant position={[9.9, 0, -1.85]} scale={0.8} />
-      <RoundedBox args={[3.2, 0.8, 0.45]} radius={0.08} position={[7, 0.4, -8.35]} castShadow>
-        <meshStandardMaterial color={palette.oak} roughness={0.75} />
-      </RoundedBox>
-      <Plant position={[8.2, 0.8, -8.35]} scale={0.42} />
-      <Books position={[6.3, 0.82, -8.35]} count={3} />
-      <Mug position={[7.6, 0.82, -8.35]} />
+      <Tree position={[9.2, 0, 0.6]} scale={1.15} />
+      <Bench position={[9.5, 0, 1.95]} rotation={[0, -HALF_PI, 0]} length={1.5} />
+      <SideTable position={[8.75, 0, 1.9]} height={0.45} />
+      <Mug position={[8.7, 0.45, 1.82]} color={palette.paper} />
+      <Books position={[8.8, 0.45, 2.0]} count={2} rotation={[0, 0.4, 0]} />
+      <Plant position={[7.2, 0, 0.35]} scale={1.05} pot={tone.cream} kind="bush" />
+      <Plant position={[8.2, 0, 0.0]} scale={0.95} pot={palette.terracotta} kind="leafy" />
+      <Plant position={[7.15, 0, 2.7]} scale={1.1} pot={palette.terracotta} kind="tall" />
+      <Plant position={[7.8, 0, 2.85]} scale={0.6} pot={tone.cream} kind="succulent" />
     </group>
   );
 }
 
-function KitchenArea() {
+/** Right strip, front half: a compact nook behind low half-height glass. */
+function NapNook() {
   return (
     <group>
-      <Kitchen position={[-7.8, 0, -7.05]} />
-      <Plant position={[-3.75, 0, -7.8]} scale={1.0} />
-      <Shelf
-        position={[-12.55, 0, -5.7]}
-        rotation={[0, Math.PI / 2, 0]}
-        width={1.2}
-        height={1.55}
-      />
-      <Mug position={[-5.2, 1.0, -6.9]} />
-      <Mug position={[-4.9, 1.0, -6.9]} />
-    </group>
-  );
-}
-
-function DiningNook() {
-  return (
-    <group>
-      <Rug position={[-4.9, 0.095, -4.25]} width={3.6} depth={3.0} color="#eadcc8" />
-      <CoffeeTable position={[-4.9, 0, -4.25]} />
-      <Stool position={[-6.0, 0, -4.25]} />
-      <Stool position={[-3.8, 0, -4.25]} />
-      <Stool position={[-4.9, 0, -3.25]} />
-      <Mug position={[-5.2, 0.48, -4.0]} />
-      <Mug position={[-4.6, 0.48, -4.4]} />
-      <Plant position={[-6.4, 0, -5.8]} scale={0.7} pot={palette.paper} />
-    </group>
-  );
-}
-
-function LibraryNook() {
-  return (
-    <group>
-      <Rug position={[1.3, 0.095, -6.6]} width={4.6} depth={4.1} color="#e7ddcf" />
-      <Shelf position={[1.3, 0, -8.55]} width={2.6} height={2.15} />
-      <Armchair position={[0.2, 0, -5.4]} rotation={[0, Math.PI, 0]} color={palette.sage} />
-      <Armchair position={[2.4, 0, -5.4]} rotation={[0, Math.PI, 0]} color={palette.terracotta} />
-      <Plant position={[-0.6, 0, -8.0]} scale={1.0} />
-      <FloorLamp position={[3.4, 0, -7.6]} />
-      <Books position={[0.2, 0.6, -5.9]} count={3} />
-      <Mug position={[2.2, 0.55, -5.9]} />
-    </group>
-  );
-}
-
-function NapRoom() {
-  return (
-    <group>
-      <Rug position={[9.2, 0.095, 5.15]} width={3.8} depth={2.9} color="#e7dcc8" />
-      <GlassWall
-        position={[6.65, 0, 4.55]}
-        rotation={[0, Math.PI / 2, 0]}
-        length={4.8}
-        height={1.85}
-      />
-      <Bed position={[9.2, 0, 4.8]} />
-      <Shelf
-        position={[11.7, 0, 2.3]}
-        rotation={[0, -Math.PI / 2, 0]}
-        width={1.2}
-        height={1.55}
-      />
-      <FloorLamp position={[7.65, 0, 6.5]} />
-      <Plant position={[11.35, 0, 6.8]} scale={0.95} pot={palette.paper} />
-      <Plant position={[7.35, 0, 3.2]} scale={0.55} />
-      <RoundedBox args={[0.04, 2.1, 1.35]} radius={0.015} position={[6.78, 1.12, 2.82]} castShadow>
-        <meshStandardMaterial color={palette.terracotta} roughness={1} />
-      </RoundedBox>
-      <RoundedBox args={[0.62, 0.52, 0.5]} radius={0.07} position={[10.75, 0.26, 4.75]} castShadow>
-        <meshStandardMaterial color={palette.oak} roughness={0.8} />
-      </RoundedBox>
-      <Books position={[10.65, 0.55, 4.7]} count={2} />
-      <Mug position={[10.9, 0.55, 4.9]} />
-    </group>
-  );
-}
-
-function Garden() {
-  return (
-    <group>
-      <Tree position={[7.4, 0, 10.1]} scale={1.15} />
-      <Tree position={[11.5, 0, 10.45]} scale={0.9} />
-      <Tree position={[-10.8, 0, 10.0]} scale={1.0} />
-      <StringLights position={[9.3, 0, 9.7]} length={7.5} />
-      <Rug position={[9.1, 0.01, 9.3]} width={3.4} depth={2.2} color={palette.terracotta} />
-      <CoffeeTable position={[9.1, 0, 9.3]} />
-      <Stool position={[11.0, 0, 9.6]} />
-      <Plant position={[5.9, 0, 9.3]} scale={0.75} />
-    </group>
-  );
-}
-
-function Pendant({ position }: { position: [number, number, number] }) {
-  return (
-    <group position={position}>
-      <mesh position={[0, 0.75, 0]}>
-        <cylinderGeometry args={[0.012, 0.012, 1.5, 6]} />
-        <meshStandardMaterial color="#404856" metalness={0.4} />
-      </mesh>
-      <mesh position={[0, 0.12, 0]}>
-        <coneGeometry args={[0.42, 0.34, 20, 1, true]} />
-        <meshStandardMaterial color={palette.oakLight} side={THREE.DoubleSide} roughness={0.8} />
-      </mesh>
-      <mesh position={[0, -0.02, 0]}>
-        <sphereGeometry args={[0.11, 14, 12]} />
-        <meshBasicMaterial color="#ffe9c4" />
-      </mesh>
-      <pointLight position={[0, -0.05, 0]} intensity={0.8} distance={4.5} color="#ffd9a0" />
-    </group>
-  );
-}
-
-function Pendants() {
-  return (
-    <group>
-      <Pendant position={[-7.8, 2.55, -6.7]} />
-      <Pendant position={[7, 2.55, -4.5]} />
-      <Pendant position={[-8.2, 2.55, 2.8]} />
-      <Pendant position={[-1.2, 2.55, 3.1]} />
-      <Pendant position={[-4.9, 2.55, -4.25]} />
-      <Pendant position={[1.3, 2.55, -6.6]} />
+      <GlassWall position={[8.675, 0, 3.4]} length={2.55} height={1.3} frosted />
+      <GlassWall position={[7.4, 0, 4.5]} rotation={[0, HALF_PI, 0]} length={2.2} height={1.3} />
+      <Rug position={[8.65, 0.035, 4.75]} width={2.3} depth={2.4} variant="blush" />
+      <Daybed position={[8.75, 0, 4.85]} />
+      <SideTable position={[7.78, 0, 3.85]} />
+      <TableLamp position={[7.76, 0.55, 3.8]} light />
+      <Books position={[7.86, 0.55, 3.97]} count={2} rotation={[0, -0.4, 0]} />
+      <Plant position={[9.55, 0, 6.35]} scale={1.0} pot={tone.cream} kind="leafy" />
+      <FoldingScreen position={[7.55, 0, 6.3]} rotation={[0, 0.5, 0]} />
     </group>
   );
 }
@@ -357,30 +372,49 @@ type Placement = {
   motion?: AvatarMotion;
 };
 
-const placements: Record<string, Placement> = {
-  jules: { position: [-5.9, 0, 3.8], rotation: [0, 0.55, 0], motion: "wave" },
-  mira: { position: [-4.5, 0.08, 1.2], rotation: [0, 0.4, 0], pose: "sitting" },
-  felix: { position: [1.65, 0.08, 3.75], rotation: [0, 0, 0], pose: "sitting", motion: "type" },
-  fern: { position: [-1.2, 0.08, 3.75], rotation: [0, 0, 0], pose: "sitting", motion: "type" },
-  arlo: { position: [-2.6, 0.28, 5.2], rotation: [0, 0.5, 0], pose: "sitting" },
-  theo: { position: [9.2, 0.68, 3.95], rotation: [0, 0, 0], pose: "sleeping" },
-  clawd: { position: [-5.7, 0, 2.6], rotation: [0, 0.2, 0] },
+/** Cast members who sit at a bench seat (index into the active desks). */
+const seated: Record<string, { seat: number; motion?: AvatarMotion }> = {
+  fern: { seat: 0, motion: "type" },
+  felix: { seat: 1, motion: "type" },
+  mira: { seat: 2 },
 };
+
+const placements: Record<string, Placement> = {
+  jules: { position: [3.0, 0, -4.4], rotation: [0, 1.25, 0], motion: "wave" },
+  clawd: { position: [4.1, 0, -4.15], rotation: [0, -1.6, 0] },
+  arlo: { position: [-5.5, 0, 4.55], rotation: [0, -1.2, 0] },
+  theo: { position: [8.75, 0.68, 4.05], rotation: [0, 0, 0], pose: "sleeping" },
+};
+
+function placementFor(id: string, desks: DeskPlacement[]): Placement | undefined {
+  const seat = seated[id];
+  if (seat && desks.length > 0) {
+    const desk = desks[seat.seat % desks.length]!;
+    const chair = chairFor(desk);
+    return {
+      position: [chair.x, 0.08, chair.z],
+      rotation: [0, chair.rotation, 0],
+      pose: "sitting",
+      motion: seat.motion,
+    };
+  }
+  return placements[id];
+}
 
 function Team() {
   const players = useRealtimeStore((state) => state.players);
+  const layout = useOfficeLayout((state) => state.layout);
+  const desks = desksFor(layout);
   const occupied = new Set([
     localCharacterId,
     ...Object.values(players).map((player) => player.characterId),
   ]);
   return (
     <group>
-      <Beanbag position={[-2.6, 0, 5.2]} color="#e0b84f" />
-      <Cat position={[-1.9, 0, 5.9]} rotation={[0, -0.7, 0]} />
       {teamCharacters
         .filter((character) => character.id !== localCharacterId)
         .map((character) => {
-          const placement = placements[character.id];
+          const placement = placementFor(character.id, desks);
           if (!placement) return null;
           return (
             <TeamAvatar
@@ -483,8 +517,8 @@ function LocalPlayer() {
       }
     }
 
-    position.current.x = THREE.MathUtils.clamp(position.current.x, -11.7, 11.7);
-    position.current.z = THREE.MathUtils.clamp(position.current.z, -8.3, 8.8);
+    position.current.x = THREE.MathUtils.clamp(position.current.x, BOUNDS.minX, BOUNDS.maxX);
+    position.current.z = THREE.MathUtils.clamp(position.current.z, BOUNDS.minZ, BOUNDS.maxZ);
     node.position.set(position.current.x, 0, position.current.z);
 
     if (dx !== 0 || dz !== 0) {
@@ -575,15 +609,13 @@ export function Office() {
     <group>
       <Floor />
       <Walls />
-      <Lounge />
-      <Engineering />
       <MeetingRoom />
       <KitchenArea />
-      <DiningNook />
-      <LibraryNook />
-      <NapRoom />
-      <Garden />
-      <Pendants />
+      <ReadingNook />
+      <Lounge />
+      <Engineering />
+      <GardenNook />
+      <NapNook />
       <Team />
       <RemotePlayers />
       <LocalPlayer />

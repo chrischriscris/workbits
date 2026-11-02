@@ -35,9 +35,9 @@ body {
   font-family: var(--font);
   color: var(--ink);
   background:
-    radial-gradient(ellipse at 18% 12%, rgba(255, 249, 238, 0.95), transparent 48%),
-    radial-gradient(ellipse at 86% 16%, rgba(215, 238, 242, 0.9), transparent 50%),
-    linear-gradient(180deg, #e8f3f4 0%, #f7f2ea 58%, #e6efe8 100%);
+    radial-gradient(ellipse at 20% 4%, rgba(255, 251, 244, 0.98), transparent 50%),
+    radial-gradient(ellipse at 84% 10%, rgba(247, 234, 219, 0.9), transparent 52%),
+    linear-gradient(180deg, #f5eee4 0%, #f1e8dc 58%, #e9decf 100%);
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -86,8 +86,27 @@ button:focus-visible {
   z-index: 2;
   pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(247, 242, 234, 0.34) 0%, transparent 14%, transparent 80%, rgba(247, 242, 234, 0.24) 100%),
-    radial-gradient(ellipse at 50% 42%, transparent 62%, rgba(46, 52, 64, 0.04) 100%);
+    linear-gradient(180deg, rgba(250, 245, 237, 0.22) 0%, transparent 14%, transparent 84%, rgba(250, 245, 237, 0.16) 100%),
+    radial-gradient(ellipse at 50% 42%, transparent 64%, rgba(46, 52, 64, 0.035) 100%);
+}
+
+.app-shell--art .scene-wash {
+  display: none;
+}
+
+.app-shell--art .topbar,
+.app-shell--art .roster,
+.app-shell--art .roster-collapsed,
+.app-shell--art .rooms,
+.app-shell--art .chat-bar,
+.app-shell--art .chat,
+.app-shell--art .controls,
+.app-shell--art .character-card,
+.app-shell--art .hint,
+.app-shell--art .name-tag,
+.app-shell--art .assistant-overlay,
+.app-shell--art .forge-overlay {
+  display: none !important;
 }
 
 /* ------------------------------------------------------------------ */

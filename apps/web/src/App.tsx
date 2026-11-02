@@ -51,14 +51,19 @@ export default function App() {
   const isJoinScreen =
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).get("join") === "1";
+  const artMode =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).has("art");
 
   useEffect(() => {
     document.title = "Workbits — Your team's place";
-    if (!isJoinScreen) void useRealtimeStore.getState().connect();
-  }, [isJoinScreen]);
+    if (!isJoinScreen && !artMode) void useRealtimeStore.getState().connect();
+  }, [artMode, isJoinScreen]);
 
   useEffect(() => {
-    if (isJoinScreen || realtimeStatus !== "connected" || !sessionId || !realtimeReady) return;
+    if (artMode || isJoinScreen || realtimeStatus !== "connected" || !sessionId || !realtimeReady) {
+      return;
+    }
     const voice = useVoiceStore.getState();
     if (voice.status === "connected" && voice.identity && voice.identity !== sessionId) {
       const wasUnmuted = !voice.muted;
@@ -69,7 +74,7 @@ export default function App() {
       return;
     }
     void connectVoice();
-  }, [isJoinScreen, realtimeStatus, realtimeReady, sessionId, connectVoice]);
+  }, [artMode, isJoinScreen, realtimeStatus, realtimeReady, sessionId, connectVoice]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -79,7 +84,7 @@ export default function App() {
   }, [localZone, syncVoiceZone]);
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell${artMode ? " app-shell--art" : ""}`}>
       <div className="scene-layer">
         <OfficeScene />
       </div>

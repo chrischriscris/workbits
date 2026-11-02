@@ -20,12 +20,12 @@ export const localCharacter: SeedCharacter = local;
 export type Vec2 = { x: number; z: number };
 
 export const roomAnchors: Record<string, Vec2> = {
-  lounge: { x: -6.4, z: 3.6 },
-  engineering: { x: 0.5, z: 2.2 },
-  meeting: { x: 7, z: -4 },
-  nap: { x: 9, z: 4.2 },
-  kitchen: { x: -7.8, z: -6.2 },
-  garden: { x: 8.5, z: 7.6 },
+  lounge: { x: -5.7, z: 2.6 },
+  engineering: { x: 1.4, z: 5.6 },
+  meeting: { x: -6.15, z: -2.2 },
+  nap: { x: 7.7, z: 5.1 },
+  kitchen: { x: 5.0, z: -4.8 },
+  garden: { x: 8.2, z: 1.6 },
 };
 
 export function roomLabel(id: string) {

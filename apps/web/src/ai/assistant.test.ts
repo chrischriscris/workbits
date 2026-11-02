@@ -2,9 +2,9 @@ import { describe, expect, test } from "bun:test";
 import { answerAssistant, type AssistantPlayer } from "./assistant";
 
 const players: AssistantPlayer[] = [
-  { id: "self", characterId: "chus", name: "Chus", x: -3.5, z: 6.5 },
-  { id: "felix", characterId: "felix", name: "Felix", x: 0, z: 3 },
-  { id: "arlo", characterId: "arlo", name: "Arlo", x: 7, z: -4 },
+  { id: "self", characterId: "chus", name: "Chus", x: -5.7, z: 2.6 },
+  { id: "felix", characterId: "felix", name: "Felix", x: 1.4, z: 5.6 },
+  { id: "arlo", characterId: "arlo", name: "Arlo", x: -6.15, z: -4 },
 ];
 
 const context = {
@@ -31,8 +31,8 @@ describe("answerAssistant", () => {
   test("finds a person by name and offers a walk action", () => {
     const reply = answerAssistant("where is Felix?", context);
     expect(reply.text).toContain("Felix is in Engineering");
-    expect(reply.action?.x).toBeCloseTo(0.5);
-    expect(reply.action?.z).toBeCloseTo(2.2);
+    expect(reply.action?.x).toBeCloseTo(1.4);
+    expect(reply.action?.z).toBeCloseTo(5.6);
   });
 
   test("reports meeting-room occupancy and privacy", () => {

@@ -22,6 +22,9 @@
     "test": "bun test",
     "typecheck": "cd apps/web && bun run typecheck && cd ../server && bun run typecheck",
     "shot": "bun scripts/shot.mjs",
+    "art:shot": "bun scripts/art-shot.mjs",
+    "art:compare": "bash scripts/art-compare.sh",
+    "art:iterate": "bash scripts/art-iterate.sh",
     "shot:multi": "bun scripts/multi-shot.mjs",
     "verify": "bash scripts/verify.sh",
     "usage": "bash scripts/usage.sh"

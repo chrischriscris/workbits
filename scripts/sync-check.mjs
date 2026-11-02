@@ -53,7 +53,7 @@ async function bot(characterId) {
 
 await bot("jules");
 await bot("fern");
-await bot("mira");
+await bot("arlo");
 await new Promise((resolve) => setTimeout(resolve, 400));
 
 console.log("jules avatar seen by fern:", Boolean(bots.fern.received.welcome?.players.find((p) => p.characterId === "jules")?.avatar));
@@ -64,17 +64,17 @@ await new Promise((resolve) => setTimeout(resolve, 300));
 console.log("layout broadcasts:", bots.fern.received.layout.length, bots.fern.received.layout[0]?.name, bots.fern.received.layout[0]?.rug);
 console.log("layout sanitized desks:", bots.fern.received.layout[0]?.desks?.length);
 
-bots.jules.room.send("chat", { channel: "room", body: "lounge-only message" });
+bots.jules.room.send("chat", { channel: "room", body: "kitchen-only message" });
 await new Promise((resolve) => setTimeout(resolve, 300));
-console.log("jules room chat count (self):", bots.jules.received.chat.length);
+console.log("jules room chat count (self, kitchen):", bots.jules.received.chat.length);
 console.log("fern room chat (engineering):", bots.fern.received.chat.length);
-console.log("mira room chat (lounge):", bots.mira.received.chat.length);
+console.log("arlo room chat (lounge):", bots.arlo.received.chat.length);
 
-bots.fern.room.send("move", { x: -5.2, z: 4.4, rotation: 0, moving: false });
+bots.fern.room.send("move", { x: 4.2, z: -4.2, rotation: 0, moving: false });
 await new Promise((resolve) => setTimeout(resolve, 150));
-bots.jules.room.send("chat", { channel: "room", body: "lounge message two" });
+bots.jules.room.send("chat", { channel: "room", body: "kitchen message two" });
 await new Promise((resolve) => setTimeout(resolve, 300));
-console.log("fern room chat after walking in:", bots.fern.received.chat.length);
+console.log("fern room chat after walking into kitchen:", bots.fern.received.chat.length);
 
 const browser = await chromium.launch({
   args: [

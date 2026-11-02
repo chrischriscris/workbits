@@ -9,14 +9,14 @@ describe("zoneAt", () => {
   });
 
   test("the meeting room has a private boundary", () => {
-    expect(zoneAt(7, -4)).toBe("meeting");
-    expect(zoneAt(3.2, -4)).not.toBe("meeting");
-    expect(zoneAt(11.1, -4)).not.toBe("meeting");
+    expect(zoneAt(-6.15, -4)).toBe("meeting");
+    expect(zoneAt(-2.0, -4)).not.toBe("meeting");
+    expect(zoneAt(1.0, -4)).not.toBe("meeting");
   });
 
   test("the garden and nap room split the right side", () => {
-    expect(zoneAt(9, 4.2)).toBe("nap");
-    expect(zoneAt(9, 7.6)).toBe("garden");
+    expect(zoneAt(8.5, 4.5)).toBe("nap");
+    expect(zoneAt(8.5, 1.6)).toBe("garden");
   });
 
   test("defaults to engineering in the open middle", () => {

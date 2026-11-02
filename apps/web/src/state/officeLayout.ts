@@ -5,14 +5,14 @@ export type { DeskPlacement, OfficeLayout };
 
 export const defaultLayout: OfficeLayout = {
   id: "default",
-  name: "Studio rows",
-  note: "4 desks · two rows · cream rug",
+  name: "Studio bench",
+  note: "4 desks · joined 2×2 bench · cream rug",
   rug: "cream",
   desks: [
-    { id: "d1", x: -1.2, z: 1.45, rotation: 0, variant: 0 },
-    { id: "d2", x: 1.65, z: 1.45, rotation: 0, variant: 1 },
-    { id: "d3", x: -1.2, z: 4.7, rotation: Math.PI, variant: 2 },
-    { id: "d4", x: 1.65, z: 4.7, rotation: Math.PI, variant: 3 },
+    { id: "d1", x: 0.15, z: 2.6, rotation: Math.PI, variant: 0 },
+    { id: "d2", x: 2.65, z: 2.6, rotation: Math.PI, variant: 1 },
+    { id: "d3", x: 0.15, z: 3.8, rotation: 0, variant: 2 },
+    { id: "d4", x: 2.65, z: 3.8, rotation: 0, variant: 3 },
   ],
 };
 
