@@ -7,7 +7,7 @@ Source of truth for what is actually done. Update at the end of every work sessi
 | Phase | Status | Evidence | Notes |
 |---|---|---|---|
 | 0 — Foundation | 🟢 Local foundation | `bun run dev`, `bun run typecheck` | Vite, Node/Colyseus, Docker LiveKit, seed data |
-| 1 — The Room | 🟡 Playable style frame | `art/workbits-demo.png`, `artifacts/shots/office-18.png` | Art still being polished |
+| 1 — The Room | 🟡 Playable style frame | `art/workbits-demo.png` | Art presentable; real-GPU perf not measured |
 | 2 — Presence | 🟢 Working + reconnect | `bun run shot:multi`, `scripts/reconnect-check.mjs` | Message-based presence (ADR-011) |
 | 3 — Voice | 🟢 Proximity + isolated meeting room | `scripts/voice-room-check.mjs`, `scripts/token-check.mjs` | Real-mic conversation still manual; auth-scoped identity pending |
 | 4 — Chat | 🟢 Channels + private DMs + room scoping | `scripts/dm-check.mjs`, `scripts/sync-check.mjs` | Group membership not built |
@@ -59,15 +59,18 @@ Source of truth for what is actually done. Update at the end of every work sessi
 
 ## Next
 
-1. Receive the user's model/seed references and record them in `docs/research/models.md`.
-2. Get explicit **go** for the all-night build.
-3. Phase 0: monorepo, infra, auth, orgs/offices, seed data, harness skeleton.
-4. Phase 1: real style frame in the actual renderer.
+1. **Auth, orgs, invites, Postgres.** Replace demo identities with better-auth sessions; scope every row by `org_id`; make invite links single-use; add cross-tenant denial tests.
+2. **Full office editor.** Drag/rotate/delete furniture with snap, undo/redo, collision/reachability validation, and publish/draft. Workspace Studio is the current generator slice.
+3. **LLM provider.** Keep the deterministic fallbacks; add a server-side provider adapter for the assistant, avatar prompt interpretation, and room programs. Add budget/audit controls.
+4. **Chat depth.** Group channels, read receipts, replies/reactions/mentions, rate limits, moderation, and channel membership authz.
+5. **Performance on real hardware.** Measure FPS/frame p95/draw calls on a 1080p integrated-GPU laptop and a phone; reduce draw calls/shadows if over budget.
+6. **Production edges.** Caddy/TLS, Postgres/Redis persistence, LiveKit public URL/keys, backups, and a 50-bot load test.
 
 ## Blockers
 
-- None for local build.
-- Public launch needs domain/deploy target, Stripe test keys, email provider, runtime AI key.
+- Public launch needs domain/TLS, Postgres, Stripe test keys, email provider, and runtime AI keys.
+- Performance budget is not yet verified on real hardware; the current evidence is functional, not a GPU benchmark.
+- The known React `synchronously unmount a root` console warning from the R3F HTML name-tag path is still present; it is non-visual.
 
 ## Changelog
 
