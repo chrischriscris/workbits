@@ -2,7 +2,8 @@ import { LayoutTemplate, Sparkles, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { generateOfficeLayouts } from "../ai/office";
 import { useAppStore } from "../state/app";
-import { useOfficeLayout, type OfficeLayout } from "../state/officeLayout";
+import { useRealtimeStore } from "../realtime/store";
+import { defaultLayout, useOfficeLayout, type OfficeLayout } from "../state/officeLayout";
 
 function PlanPreview({ layout }: { layout: OfficeLayout }) {
   return (
@@ -109,6 +110,7 @@ export function RoomStudio() {
                   type="button"
                   onClick={() => {
                     applyLayout(variant);
+                    useRealtimeStore.getState().sendLayout(variant);
                     setOpen(false);
                   }}
                 >
@@ -123,7 +125,14 @@ export function RoomStudio() {
           <span>
             Active: <strong>{layout.name}</strong> · {layout.note}. Changes the engineering pod only.
           </span>
-          <button className="text-button" type="button" onClick={resetLayout}>
+          <button
+            className="text-button"
+            type="button"
+            onClick={() => {
+              resetLayout();
+              useRealtimeStore.getState().sendLayout(defaultLayout);
+            }}
+          >
             Reset to studio rows
           </button>
         </div>

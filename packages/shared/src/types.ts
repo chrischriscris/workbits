@@ -57,6 +57,22 @@ export type SeedCharacter = {
   sourcePhoto?: string | null;
 };
 
+export type DeskPlacement = {
+  id: string;
+  x: number;
+  z: number;
+  rotation: number;
+  variant: number;
+};
+
+export type OfficeLayout = {
+  id: string;
+  name: string;
+  note: string;
+  rug: "cream" | "sage" | "terracotta";
+  desks: DeskPlacement[];
+};
+
 export type SeedPack = {
   version: number;
   id: string;

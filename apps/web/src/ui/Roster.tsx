@@ -1,6 +1,8 @@
 import { UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
+import { zoneAt, zoneName } from "@workbits/shared";
 import { localCharacterId, roomLabel, teamCharacters } from "../data/team";
+import { useRealtimeStore } from "../realtime/store";
 import { useAppStore } from "../state/app";
 import { palette, statusColor } from "../theme";
 
@@ -18,7 +20,15 @@ export function Roster() {
   const select = useAppStore((state) => state.select);
   const rosterOpen = useAppStore((state) => state.rosterOpen);
   const toggleRoster = useAppStore((state) => state.toggleRoster);
+  const livePlayers = useRealtimeStore((state) => state.players);
   const [filter, setFilter] = useState<Filter>("all");
+
+  const liveByCharacter = useMemo(() => {
+    const map = new Map<string, (typeof livePlayers)[string]>();
+    for (const player of Object.values(livePlayers)) map.set(player.characterId, player);
+    return map;
+  }, [livePlayers]);
+  const liveCount = liveByCharacter.size;
 
   const counts = useMemo(() => {
     const online = teamCharacters.filter((character) => character.status !== "away").length;
@@ -35,7 +45,7 @@ export function Roster() {
     return (
       <button className="roster-collapsed" type="button" onClick={toggleRoster} aria-label="Open team roster">
         <span className="live-pill__dot" />
-        {counts.online} online
+        {liveCount || counts.online} {liveCount ? "live" : "online"}
       </button>
     );
   }
@@ -47,6 +57,7 @@ export function Roster() {
           <div className="eyebrow">Your team</div>
           <h2>
             Team <span className="count-pill">{counts.all}</span>
+            {liveCount > 0 && <span className="roster__live">{liveCount} live</span>}
           </h2>
         </div>
         <button className="text-button" type="button" onClick={toggleRoster} aria-label="Collapse roster">
@@ -79,6 +90,8 @@ export function Roster() {
         {visible.map((character) => {
           const isYou = character.id === localCharacterId;
           const isSelected = selectedId === character.id;
+          const live = liveByCharacter.get(character.id);
+          const liveZone = live ? zoneName(zoneAt(live.x, live.z)) : null;
           return (
             <button
               key={character.id}
@@ -98,9 +111,14 @@ export function Roster() {
                 <span className="person__name">
                   {character.displayName}
                   {isYou && <span className="you-pill">you</span>}
+                  {live && <span className="person__live">live</span>}
                 </span>
                 <span className="person__meta">
-                  {isYou ? "Here with you" : `${statusLabel[character.status]} · ${roomLabel(character.room)}`}
+                  {isYou
+                    ? `You · ${liveZone ?? roomLabel(character.room)}`
+                    : live
+                      ? `Here now · ${liveZone}`
+                      : `${statusLabel[character.status]} · ${roomLabel(character.room)}`}
                 </span>
               </span>
               <span className="person__role">{character.kind === "mascot" ? "pet" : character.role}</span>
@@ -114,7 +132,9 @@ export function Roster() {
           <UserPlus size={15} />
           Invite teammate
         </button>
-        <span className="roster__hint">Demo team pack · local</span>
+        <span className="roster__hint">
+          {liveCount > 0 ? `${liveCount} connected to this office` : "Demo team pack · local"}
+        </span>
       </div>
     </aside>
   );

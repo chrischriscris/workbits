@@ -1,5 +1,7 @@
 import { ArrowRight, MapPin, MessageCircle, X } from "lucide-react";
-import { roomAnchors, roomLabel, teamById } from "../data/team";
+import { zoneAt, zoneName } from "@workbits/shared";
+import { localCharacterId, roomAnchors, roomLabel, teamById } from "../data/team";
+import { useRealtimeStore } from "../realtime/store";
 import { useAppStore } from "../state/app";
 import { statusColor } from "../theme";
 
@@ -16,11 +18,19 @@ export function CharacterSheet() {
   const setTarget = useAppStore((state) => state.setTarget);
   const setChatOpen = useAppStore((state) => state.setChatOpen);
   const setChatTab = useAppStore((state) => state.setChatTab);
+  const setDmTarget = useAppStore((state) => state.setDmTarget);
+  const livePlayers = useRealtimeStore((state) => state.players);
   const character = selectedId ? teamById[selectedId] : null;
 
   if (!character) return null;
 
-  const anchor = roomAnchors[character.room];
+  const live = Object.values(livePlayers).find(
+    (player) => player.characterId === character.id,
+  );
+  const anchor = live ? { x: live.x, z: live.z } : roomAnchors[character.room];
+  const status = live?.status ?? character.status;
+  const place = live ? zoneName(zoneAt(live.x, live.z)) : roomLabel(character.room);
+  const isSelf = character.id === localCharacterId;
 
   return (
     <aside className="character-card" aria-label={`${character.displayName} profile`}>
@@ -29,15 +39,16 @@ export function CharacterSheet() {
           {character.species === "frog" ? "🐸" : character.species === "crab" ? "🦀" : character.shortName.slice(0, 1)}
           <span
             className="avatar__status"
-            style={{ background: statusColor[character.status] }}
+            style={{ background: statusColor[status] }}
           />
         </span>
         <div className="character-card__identity">
           <div className="eyebrow">{character.kind === "mascot" ? "Mascot" : character.role}</div>
           <h3>{character.displayName}</h3>
           <span className="character-card__status">
-            <span className="live-pill__dot" style={{ background: statusColor[character.status] }} />
-            {statusLabel[character.status]} · {roomLabel(character.room)}
+            <span className="live-pill__dot" style={{ background: statusColor[status] }} />
+            {statusLabel[status] ?? status} · {place}
+            {live && <span className="person__live">live</span>}
           </span>
         </div>
         <button className="icon-button icon-button--small" type="button" onClick={() => select(null)} aria-label="Close profile">
@@ -51,7 +62,10 @@ export function CharacterSheet() {
         <button
           className="primary-button"
           type="button"
+          disabled={isSelf}
+          title={isSelf ? "That's you" : `Message ${character.shortName}`}
           onClick={() => {
+            setDmTarget(character.id);
             setChatTab("dm");
             setChatOpen(true);
           }}

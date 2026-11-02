@@ -1,6 +1,7 @@
 import { appendFile, mkdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { Client, Room } from "@colyseus/core";
+import { zoneAt, type AvatarConfig, type OfficeLayout } from "@workbits/shared";
 
 type PlayerData = {
   id: string;
@@ -11,6 +12,8 @@ type PlayerData = {
   rotation: number;
   moving: boolean;
   status: string;
+  zone: string;
+  avatar?: AvatarConfig;
 };
 
 const characterIds = new Set([
@@ -56,14 +59,142 @@ type StoredMessage = {
   channel: string;
   body: string;
   time: string;
+  zone?: string;
   to?: string;
 };
+
+const MAX_DESKS = 8;
+const MAX_HISTORY = 600;
+
+function text(value: unknown, max = 40): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return trimmed.slice(0, max);
+}
+
+function part(value: unknown): { style: string; color: string } | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const record = value as Record<string, unknown>;
+  const style = text(record.style, 32);
+  const color = text(record.color, 32);
+  return style && color ? { style, color } : undefined;
+}
+
+function sanitizeAvatar(value: unknown): AvatarConfig | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  if (JSON.stringify(value).length > 6000) return undefined;
+  const record = value as Record<string, unknown>;
+  const species = ["human", "frog", "crab"].includes(String(record.species))
+    ? (record.species as AvatarConfig["species"])
+    : "human";
+  const skin = text(record.skin, 32);
+  const outfitRecord =
+    record.outfit && typeof record.outfit === "object"
+      ? (record.outfit as Record<string, unknown>)
+      : null;
+  if (!skin || !outfitRecord) return undefined;
+
+  const outfit = {
+    top: text(outfitRecord.top, 32) ?? "crew-tee",
+    topColor: text(outfitRecord.topColor, 32) ?? "#5c6b7a",
+    bottom: text(outfitRecord.bottom, 32) ?? "jeans",
+    bottomColor: text(outfitRecord.bottomColor, 32) ?? "#2e3440",
+    shoes: text(outfitRecord.shoes, 32) ?? "sneakers",
+    shoesColor: text(outfitRecord.shoesColor, 32) ?? "#f5f5f5",
+  };
+
+  const paletteRecord =
+    record.palette && typeof record.palette === "object"
+      ? (record.palette as Record<string, unknown>)
+      : null;
+
+  const accessories = Array.isArray(record.accessories)
+    ? record.accessories
+        .filter((item): item is string => typeof item === "string")
+        .slice(0, 12)
+        .map((item) => item.slice(0, 32))
+    : [];
+
+  return {
+    species,
+    body: text(record.body, 32) ?? "male-average",
+    skin,
+    ...(text(record.belly, 32) ? { belly: text(record.belly, 32) } : {}),
+    ...(part(record.hair) ? { hair: part(record.hair) } : {}),
+    ...(part(record.facialHair) ? { facialHair: part(record.facialHair) } : {}),
+    ...(part(record.eyes) ? { eyes: part(record.eyes) } : {}),
+    ...(part(record.glasses) ? { glasses: part(record.glasses) } : {}),
+    ...(part(record.headwear) ? { headwear: part(record.headwear) } : {}),
+    ...(part(record.wings) ? { wings: part(record.wings) } : {}),
+    outfit,
+    accessories,
+    palette: {
+      primary: text(paletteRecord?.primary, 32) ?? outfit.topColor,
+      secondary: text(paletteRecord?.secondary, 32) ?? "#d9b98c",
+      accent: text(paletteRecord?.accent, 32) ?? "#6c8cff",
+    },
+  };
+}
+
+function finite(value: unknown, min: number, max: number): number | undefined {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return undefined;
+  return Math.max(min, Math.min(max, number));
+}
+
+function sanitizeLayout(value: unknown): OfficeLayout | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  if (JSON.stringify(value).length > 8000) return undefined;
+  const record = value as Record<string, unknown>;
+  const rugInput = text(record.rug, 20);
+  const rug: OfficeLayout["rug"] = ["cream", "sage", "terracotta"].includes(rugInput ?? "")
+    ? (rugInput as OfficeLayout["rug"])
+    : "cream";
+  if (!Array.isArray(record.desks)) return undefined;
+
+  const desks = record.desks
+    .slice(0, MAX_DESKS)
+    .map((item, index) => {
+      if (!item || typeof item !== "object") return undefined;
+      const desk = item as Record<string, unknown>;
+      const x = finite(desk.x, -3.4, 3.4);
+      const z = finite(desk.z, 0.4, 5.9);
+      if (x === undefined || z === undefined) return undefined;
+      const rotationNumber = Number(desk.rotation);
+      const rotation =
+        Number.isFinite(rotationNumber) && Math.abs(rotationNumber) > Math.PI / 2 ? Math.PI : 0;
+      const variantNumber = Number(desk.variant);
+      return {
+        id: text(desk.id, 24) ?? `desk-${index}`,
+        x,
+        z,
+        rotation,
+        variant: Number.isFinite(variantNumber)
+          ? Math.max(0, Math.min(3, Math.floor(variantNumber)))
+          : 0,
+      };
+    })
+    .filter((desk): desk is OfficeLayout["desks"][number] => Boolean(desk));
+
+  if (desks.length === 0) return undefined;
+
+  return {
+    id: text(record.id, 32) ?? "custom",
+    name: text(record.name, 60) ?? "Custom layout",
+    note: text(record.note, 120) ?? `${desks.length} desks`,
+    rug,
+    desks,
+  };
+}
 
 export class OfficeRoom extends Room {
   override maxClients = 32;
   private players = new Map<string, PlayerData>();
   private lastMove = new Map<string, number>();
+  private lastMeta = new Map<string, number>();
   private history: StoredMessage[] = [];
+  private layout?: OfficeLayout;
   private historyFile = join(process.cwd(), "data", "chat.jsonl");
 
   override async onCreate() {
@@ -71,16 +202,19 @@ export class OfficeRoom extends Room {
 
     this.onMessage("hello", (client) => {
       const player = this.players.get(client.sessionId);
-      const visibleHistory = this.history.filter(
-        (message) =>
-          message.channel !== "dm" ||
-          message.authorId === player?.characterId ||
-          message.to === player?.characterId,
-      );
+      const zone = player ? zoneAt(player.x, player.z) : "lounge";
+      const visibleHistory = this.history.filter((message) => {
+        if (message.channel === "dm") {
+          return message.authorId === player?.characterId || message.to === player?.characterId;
+        }
+        if (message.channel === "room") return message.zone === zone;
+        return true;
+      });
       client.send("welcome", {
         selfId: client.sessionId,
         players: [...this.players.values()],
-        messages: visibleHistory.slice(-100),
+        messages: visibleHistory.slice(-MAX_HISTORY),
+        ...(this.layout ? { layout: this.layout } : {}),
       });
     });
 
@@ -101,6 +235,7 @@ export class OfficeRoom extends Room {
       player.z = Math.max(-8.5, Math.min(8.5, z));
       player.rotation = Number.isFinite(Number(message.rotation)) ? Number(message.rotation) : 0;
       player.moving = Boolean(message.moving);
+      player.zone = zoneAt(player.x, player.z);
 
       this.broadcast("player_moved", player, { except: client });
     });
@@ -113,6 +248,32 @@ export class OfficeRoom extends Room {
       if (!allowed.has(status)) return;
       player.status = status;
       this.broadcast("player_updated", player);
+    });
+
+    this.onMessage("avatar", (client, message: { avatar?: unknown }) => {
+      const player = this.players.get(client.sessionId);
+      if (!player) return;
+      const now = Date.now();
+      if (now - (this.lastMeta.get(client.sessionId) ?? 0) < 400) return;
+      this.lastMeta.set(client.sessionId, now);
+
+      const avatar = sanitizeAvatar(message?.avatar);
+      if (avatar) player.avatar = avatar;
+      else delete player.avatar;
+      this.broadcast("player_updated", player);
+    });
+
+    this.onMessage("layout", (client, message: { layout?: unknown }) => {
+      const player = this.players.get(client.sessionId);
+      if (!player) return;
+      const now = Date.now();
+      if (now - (this.lastMeta.get(`layout:${client.sessionId}`) ?? 0) < 300) return;
+      this.lastMeta.set(`layout:${client.sessionId}`, now);
+
+      const layout = sanitizeLayout(message?.layout);
+      if (!layout) return;
+      this.layout = layout;
+      this.broadcast("layout", layout);
     });
 
     this.onMessage("emote", (client, message: { kind?: string }) => {
@@ -141,6 +302,7 @@ export class OfficeRoom extends Room {
 
       const to = channel === "dm" ? String(message.to ?? "") : undefined;
       if (channel === "dm" && !to) return;
+      const zone = channel === "room" ? zoneAt(player.x, player.z) : undefined;
 
       const stored: StoredMessage = {
         id,
@@ -152,10 +314,11 @@ export class OfficeRoom extends Room {
           hour: "numeric",
           minute: "2-digit",
         }),
+        ...(zone ? { zone } : {}),
         ...(to ? { to } : {}),
       };
       this.history.push(stored);
-      if (this.history.length > 300) this.history.shift();
+      if (this.history.length > MAX_HISTORY) this.history.shift();
       void appendFile(this.historyFile, `${JSON.stringify(stored)}\n`).catch((error) => {
         console.warn("Could not persist chat message", error);
       });
@@ -168,9 +331,20 @@ export class OfficeRoom extends Room {
             client.send("chat", stored);
           }
         }
-      } else {
-        this.broadcast("chat", stored);
+        return;
       }
+
+      if (channel === "room") {
+        for (const client of this.clients) {
+          const participant = this.players.get(client.sessionId);
+          if (participant && zoneAt(participant.x, participant.z) === zone) {
+            client.send("chat", stored);
+          }
+        }
+        return;
+      }
+
+      this.broadcast("chat", stored);
     });
   }
 
@@ -181,7 +355,7 @@ export class OfficeRoom extends Room {
       this.history = raw
         .split("\n")
         .filter(Boolean)
-        .slice(-300)
+        .slice(-MAX_HISTORY)
         .map((line) => JSON.parse(line) as StoredMessage)
         .filter((message) => message && message.body);
     } catch {
@@ -193,6 +367,7 @@ export class OfficeRoom extends Room {
     const requested = typeof options.characterId === "string" ? options.characterId : "chus";
     const characterId = characterIds.has(requested) ? requested : "chus";
     const spawn = spawns[characterId] ?? spawns.chus!;
+    const avatar = sanitizeAvatar(options.avatar);
 
     const player: PlayerData = {
       id: client.sessionId,
@@ -206,6 +381,8 @@ export class OfficeRoom extends Room {
       rotation: 0,
       moving: false,
       status: "available",
+      zone: zoneAt(spawn.x, spawn.z),
+      ...(avatar ? { avatar } : {}),
     };
 
     this.players.set(client.sessionId, player);
@@ -216,6 +393,7 @@ export class OfficeRoom extends Room {
   override onLeave(client: Client) {
     this.players.delete(client.sessionId);
     this.lastMove.delete(client.sessionId);
+    this.lastMeta.delete(client.sessionId);
     this.broadcast("player_left", { id: client.sessionId });
   }
 }

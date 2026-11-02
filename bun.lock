@@ -17,6 +17,7 @@
       "dependencies": {
         "@colyseus/core": "0.16.21",
         "@colyseus/ws-transport": "0.16.5",
+        "@workbits/shared": "workspace:*",
         "livekit-server-sdk": "^2.19.2",
       },
       "devDependencies": {

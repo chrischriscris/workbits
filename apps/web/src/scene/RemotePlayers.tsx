@@ -9,7 +9,11 @@ import { useVoiceStore } from "../voice/store";
 
 function RemoteAvatar({ player, speaking }: { player: RemotePlayerState; speaking: boolean }) {
   const base = teamById[player.characterId] ?? localCharacter;
-  const character = { ...base, status: player.status as Status };
+  const character = {
+    ...base,
+    status: player.status as Status,
+    ...(player.avatar ? { avatar: player.avatar } : {}),
+  };
   const emotes = useRealtimeStore((state) => state.emotes);
   const group = useRef<THREE.Group>(null);
   const target = useRef(new THREE.Vector3(player.x, 0, player.z));

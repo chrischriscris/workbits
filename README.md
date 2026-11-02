@@ -18,10 +18,10 @@ Workbits is built to be a product, not an internal tool: multi-tenant architectu
 - The Workbits team seed pack: 8 characters (human, frog, crab mascot), name tags, statuses, roles, and desks.
 - Click-to-walk and WASD movement with a floating move marker.
 - Colyseus realtime presence: two tabs see each other; movement is server-validated.
-- Shared text chat: Global, Office, Room, and DM; DMs are routed server-side to the two participants only. History persists.
+- Shared text chat: Global, Office, Room, and DM; room chat is scoped to the room you are standing in, DMs are routed server-side to the two participants only, and history persists.
 - Proximity voice via LiveKit: room token endpoint, mic publish, distance-based volume, deafen. Verified with two browser clients publishing simultaneously at the same 0.617 gain.
-- Avatar Studio: prompt → three modular base avatars → apply and persist locally. No API key required.
-- Workspace Studio: prompt → three desk layouts → apply to the engineering pod and persist.
+- Avatar Studio: prompt → three modular base avatars → apply and persist locally; your avatar syncs to everyone in the office.
+- Workspace Studio: prompt → three desk layouts → apply to the engineering pod for everyone, and persist.
 - Rooms popover with click-to-walk navigation, invite links with a pick-your-seat onboarding, status menu, and room-wide emotes.
 - Verification scripts: screenshots, headless bot, voice check, avatar studio, proximity math.
 

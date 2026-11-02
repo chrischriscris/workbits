@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import type { AvatarConfig } from "@workbits/shared";
 import { describeAvatar, generateAvatarBases } from "../ai/avatar";
 import { localCharacter } from "../data/team";
+import { useRealtimeStore } from "../realtime/store";
 import { useAppStore } from "../state/app";
 import { useAvatarStore } from "../state/avatar";
 
@@ -103,6 +104,7 @@ export function AvatarStudio() {
                   type="button"
                   onClick={() => {
                     setConfig(variant);
+                    useRealtimeStore.getState().setAvatar(variant);
                     setOpen(false);
                   }}
                 >
@@ -115,13 +117,16 @@ export function AvatarStudio() {
 
         <div className="forge__footer">
           <span>
-            {custom ? "Custom avatar active. Remote teammates see your team preset in this demo." : `Currently using ${localCharacter.displayName}'s preset.`}
+            {custom
+              ? "Custom avatar active. Everyone in the office sees it."
+              : `Currently using ${localCharacter.displayName}'s preset.`}
           </span>
           <button
             className="text-button"
             type="button"
             onClick={() => {
               setConfig(null);
+              useRealtimeStore.getState().setAvatar(null);
               setOpen(false);
             }}
           >

@@ -1,20 +1,7 @@
 import { create } from "zustand";
+import type { DeskPlacement, OfficeLayout } from "@workbits/shared";
 
-export type DeskPlacement = {
-  id: string;
-  x: number;
-  z: number;
-  rotation: number;
-  variant: number;
-};
-
-export type OfficeLayout = {
-  id: string;
-  name: string;
-  note: string;
-  rug: "cream" | "sage" | "terracotta";
-  desks: DeskPlacement[];
-};
+export type { DeskPlacement, OfficeLayout };
 
 export const defaultLayout: OfficeLayout = {
   id: "default",

@@ -1,6 +1,9 @@
 import { create } from "zustand";
 import { Client, type Room } from "colyseus.js";
+import { zoneAt, type AvatarConfig, type OfficeLayout } from "@workbits/shared";
 import { localCharacter, localCharacterId } from "../data/team";
+import { useAvatarStore } from "../state/avatar";
+import { useOfficeLayout } from "../state/officeLayout";
 
 export type RemotePlayer = {
   id: string;
@@ -11,6 +14,8 @@ export type RemotePlayer = {
   rotation: number;
   moving: boolean;
   status: string;
+  zone?: string;
+  avatar?: AvatarConfig;
 };
 
 export type RealtimeMessage = {
@@ -20,6 +25,8 @@ export type RealtimeMessage = {
   channel: string;
   body: string;
   time: string;
+  zone?: string;
+  to?: string;
 };
 
 type RealtimeStatus = "offline" | "connecting" | "connected";
@@ -40,6 +47,8 @@ type RealtimeState = {
   sendChat: (channel: string, body: string, to?: string) => void;
   sendEmote: (kind: string) => void;
   setStatus: (status: string) => void;
+  setAvatar: (avatar: AvatarConfig | null) => void;
+  sendLayout: (layout: OfficeLayout) => void;
 };
 
 let client: Client | null = null;
@@ -70,15 +79,22 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
       const room = await client.joinOrCreate("office", {
         characterId: localCharacterId,
         name: localCharacter.displayName,
+        avatar: useAvatarStore.getState().config ?? undefined,
       });
 
       set({ status: "connected", room, sessionId: room.sessionId });
 
       room.onMessage(
         "welcome",
-        (message: { selfId: string; players: RemotePlayer[]; messages?: RealtimeMessage[] }) => {
+        (message: {
+          selfId: string;
+          players: RemotePlayer[];
+          messages?: RealtimeMessage[];
+          layout?: OfficeLayout;
+        }) => {
           const players = Object.fromEntries(message.players.map((player) => [player.id, player]));
           const localStatus = message.players.find((player) => player.id === message.selfId)?.status ?? "available";
+          if (message.layout) useOfficeLayout.getState().applyLayout(message.layout);
           set((state) => {
             const merged = [...state.messages];
             for (const item of message.messages ?? []) {
@@ -115,6 +131,9 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
             return { emotes: next };
           });
         }, 2300);
+      });
+      room.onMessage("layout", (layout: OfficeLayout) => {
+        useOfficeLayout.getState().applyLayout(layout);
       });
       room.onMessage("chat", (message: RealtimeMessage) => {
         set((state) => {
@@ -153,6 +172,14 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
     get().room?.send("status", { status });
   },
 
+  setAvatar: (avatar) => {
+    get().room?.send("avatar", { avatar });
+  },
+
+  sendLayout: (layout) => {
+    get().room?.send("layout", { layout });
+  },
+
   sendEmote: (kind) => {
     const room = get().room;
     if (!room) return;
@@ -176,6 +203,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
     const trimmed = body.trim();
     if (!trimmed) return;
     const id = `${localCharacterId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const position = get().localPosition;
     const message: RealtimeMessage = {
       id,
       authorId: localCharacterId,
@@ -183,6 +211,8 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
       channel,
       body: trimmed,
       time: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+      ...(channel === "room" ? { zone: zoneAt(position.x, position.z) } : {}),
+      ...(to ? { to } : {}),
     };
     set((state) => ({ messages: [...state.messages, message] }));
     const room = get().room;
@@ -191,3 +221,28 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
     }
   },
 }));
+
+if (import.meta.env.DEV && typeof window !== "undefined") {
+  (
+    window as unknown as {
+      __WORKBITS_DEBUG__: () => {
+        status: string;
+        sessionId: string | null;
+        players: RemotePlayer[];
+        localZone: string;
+        layout: OfficeLayout;
+        avatar: AvatarConfig | null;
+      };
+    }
+  ).__WORKBITS_DEBUG__ = () => {
+    const state = useRealtimeStore.getState();
+    return {
+      status: state.status,
+      sessionId: state.sessionId,
+      players: Object.values(state.players),
+      localZone: zoneAt(state.localPosition.x, state.localPosition.z),
+      layout: useOfficeLayout.getState().layout,
+      avatar: useAvatarStore.getState().config,
+    };
+  };
+}

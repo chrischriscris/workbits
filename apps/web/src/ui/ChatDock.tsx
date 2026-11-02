@@ -1,5 +1,6 @@
 import { MessageCircle, Plus, SendHorizontal, Smile, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { zoneAt, zoneName } from "@workbits/shared";
 import { localCharacterId, teamById } from "../data/team";
 import { useRealtimeStore } from "../realtime/store";
 import { useAppStore, type ChatTab } from "../state/app";
@@ -12,6 +13,8 @@ type ChatMessage = {
   authorName?: string;
   body: string;
   time: string;
+  zone?: string;
+  to?: string;
 };
 
 const initialMessages: ChatMessage[] = [
@@ -56,6 +59,7 @@ const initialMessages: ChatMessage[] = [
     authorId: "jules",
     body: "Lounge is looking good today.",
     time: "9:36",
+    zone: "lounge",
   },
   {
     id: "d1",
@@ -63,6 +67,7 @@ const initialMessages: ChatMessage[] = [
     authorId: "arlo",
     body: "did you see the new beanbag?",
     time: "9:35",
+    to: "chus",
   },
   {
     id: "d2",
@@ -70,14 +75,15 @@ const initialMessages: ChatMessage[] = [
     authorId: "chus",
     body: "obviously. it's perfect.",
     time: "9:35",
+    to: "arlo",
   },
 ];
 
 const tabs: Array<{ key: ChatTab; label: string }> = [
   { key: "global", label: "Global" },
   { key: "office", label: "Office" },
-  { key: "room", label: "Lounge" },
-  { key: "dm", label: "DM · Arlo" },
+  { key: "room", label: "Room" },
+  { key: "dm", label: "DM" },
 ];
 
 export function ChatDock() {
@@ -88,11 +94,27 @@ export function ChatDock() {
   const realtimeMessages = useRealtimeStore((state) => state.messages);
   const sendChat = useRealtimeStore((state) => state.sendChat);
   const connection = useRealtimeStore((state) => state.status);
+  const localPosition = useRealtimeStore((state) => state.localPosition);
+  const dmTargetId = useAppStore((state) => state.dmTargetId);
+  const dmTarget = teamById[dmTargetId];
   const [draft, setDraft] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
 
+  const localZone = zoneAt(localPosition.x, localPosition.z);
+  const roomName = zoneName(localZone);
   const messages: ChatMessage[] = [...initialMessages, ...realtimeMessages];
-  const visibleMessages = messages.filter((message) => message.channel === chatTab);
+  const visibleMessages = messages.filter((message) => {
+    if (message.channel !== chatTab) return false;
+    if (chatTab === "room" && message.zone !== localZone) return false;
+    if (chatTab === "dm") {
+      return (
+        message.authorId === dmTargetId ||
+        message.to === dmTargetId ||
+        (message.authorId === localCharacterId && message.to === dmTargetId)
+      );
+    }
+    return true;
+  });
 
   useEffect(() => {
     if (!chatOpen) return;
@@ -102,7 +124,7 @@ export function ChatDock() {
   const send = () => {
     const body = draft.trim();
     if (!body) return;
-    const to = chatTab === "dm" ? (localCharacterId === "arlo" ? "chus" : "arlo") : undefined;
+    const to = chatTab === "dm" ? dmTargetId : undefined;
     sendChat(chatTab, body, to);
     setDraft("");
   };
@@ -146,7 +168,7 @@ export function ChatDock() {
             aria-selected={chatTab === tab.key}
             onClick={() => setChatTab(tab.key)}
           >
-            {tab.label}
+            {tab.key === "room" ? roomName : tab.key === "dm" ? `DM · ${dmTarget?.shortName ?? "Team"}` : tab.label}
           </button>
         ))}
       </div>
@@ -193,7 +215,9 @@ export function ChatDock() {
             if (event.key === "Enter") send();
             if (event.key === "Escape") setChatOpen(false);
           }}
-          placeholder={`Message ${chatTab === "dm" ? "Arlo" : chatTab === "room" ? "#lounge" : `#${chatTab}`}…`}
+          placeholder={`Message ${
+            chatTab === "dm" ? dmTarget?.shortName ?? "teammate" : chatTab === "room" ? `#${roomName.toLowerCase().replace(/ /g, "-")}` : `#${chatTab}`
+          }…`}
           aria-label="Message"
         />
         <button className="icon-button icon-button--small" type="button" aria-label="Emoji" title="Emoji">

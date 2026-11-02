@@ -12,6 +12,8 @@ type AppState = {
   setChatOpen: (open: boolean) => void;
   chatTab: ChatTab;
   setChatTab: (tab: ChatTab) => void;
+  dmTargetId: string;
+  setDmTarget: (id: string) => void;
   muted: boolean;
   toggleMuted: () => void;
   deafened: boolean;
@@ -37,6 +39,8 @@ export const useAppStore = create<AppState>((set) => ({
   setChatOpen: (chatOpen) => set({ chatOpen }),
   chatTab: "office",
   setChatTab: (chatTab) => set({ chatTab }),
+  dmTargetId: "arlo",
+  setDmTarget: (dmTargetId) => set({ dmTargetId }),
   muted: true,
   toggleMuted: () => set((state) => ({ muted: !state.muted })),
   deafened: false,

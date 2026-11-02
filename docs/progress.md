@@ -10,8 +10,8 @@ Source of truth for what is actually done. Update at the end of every work sessi
 | 1 — The Room | 🟡 Playable style frame | `art/workbits-demo.png`, `artifacts/shots/office-18.png` | Art still being polished |
 | 2 — Presence | 🟢 Working | `bun run shot:multi`, bot welcome/chat | Message-based presence (ADR-011) |
 | 3 — Voice | 🟢 Publish + proximity | `scripts/voice-check.mjs`, `scripts/voice-two.mjs` | Meeting-room isolation is client-side; real-mic conversation still manual |
-| 4 — Chat | 🟡 UI + realtime + persistence + private DMs | `bun run shot:multi`, `scripts/dm-check.mjs` | Room/Group membership not authz-scoped |
-| 5 — Customization | 🟡 Avatar Studio + Workspace Studio + rooms menu | `scripts/forge-shot.mjs`, `scripts/room-studio-shot.mjs` | Full office editor not built |
+| 4 — Chat | 🟢 Channels + private DMs + room scoping | `scripts/dm-check.mjs`, `scripts/sync-check.mjs` | Group membership not built |
+| 5 — Customization | 🟢 Avatar + workspace, synced | `scripts/sync-check.mjs` | Full drag-and-drop office editor not built |
 | 6 — AI | 🟡 Local avatar generator | `apps/web/src/ai/avatar.ts` | No runtime LLM keys; room generator pending |
 | 7 — Product | 🔴 Not started | — | Auth, billing, landing |
 | 8 — Ship | 🔴 Not started | — | Deploy hardening |
@@ -45,6 +45,7 @@ Source of truth for what is actually done. Update at the end of every work sessi
 - 2026-11-02 — Added Workspace Studio: data-driven engineering desks/chairs, deterministic prompt → 3 layouts, apply/reset/persist. Added mobile polish and share link.
 - 2026-11-02 — Added server-routed private DMs with history filtering; verified Arlo receives a DM while Jules does not. Added avatar/workspace screenshots to the docs.
 - 2026-11-02 — Verified two simultaneous browser voice clients; both publish a track and see the same 0.617 proximity gain at spawn distance. Added emote broadcast (wave/clap/heart), status broadcast, invite picker, and share-link onboarding.
+- 2026-11-02 — Synced avatar configs and workspace layouts through the server; added zone-scoped room chat, per-person DM targets, live roster presence, and live locate. Verified with `scripts/sync-check.mjs` (avatar in welcome, layout broadcast, room chat isolation, roster).
 
 ## Next
 
