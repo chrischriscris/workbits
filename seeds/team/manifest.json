@@ -1,0 +1,293 @@
+{
+  "version": 1,
+  "id": "workbits-team",
+  "name": "Workbits Team",
+  "description": "Optional demo cast for the Workbits crew. Loaded explicitly as a seed pack; never hardcoded in product components.",
+  "privacy": "Raw reference photos live in photos/ and are gitignored. This manifest contains only stylized avatar configs. Do not ship photos or use them in marketing without consent.",
+  "office": {
+    "name": "Workbits Loft",
+    "template": "team-loft",
+    "spawnRoom": "lounge",
+    "rooms": [
+      { "id": "lounge", "name": "Lounge", "type": "lounge", "private": false },
+      { "id": "engineering", "name": "Engineering", "type": "open", "private": false },
+      { "id": "meeting", "name": "Meeting Room", "type": "meeting", "private": true },
+      { "id": "nap", "name": "Nap Room", "type": "private", "private": true },
+      { "id": "kitchen", "name": "Kitchen", "type": "kitchen", "private": false },
+      { "id": "garden", "name": "Garden", "type": "outdoor", "private": false }
+    ],
+    "desks": [
+      { "id": "founder-desk", "room": "engineering", "assignedTo": "jules" },
+      { "id": "eng-desk-1", "room": "engineering", "assignedTo": "fern" },
+      { "id": "eng-desk-2", "room": "engineering", "assignedTo": "arlo" },
+      { "id": "eng-desk-3", "room": "engineering", "assignedTo": "felix" },
+      { "id": "design-desk", "room": "engineering", "assignedTo": "mira" },
+      { "id": "product-desk", "room": "engineering", "assignedTo": "chus" },
+      { "id": "nap-bed", "room": "nap", "assignedTo": "theo" }
+    ]
+  },
+  "characters": [
+    {
+      "id": "jules",
+      "displayName": "Jules",
+      "shortName": "Jules",
+      "role": "Founder",
+      "kind": "user",
+      "species": "human",
+      "status": "available",
+      "room": "lounge",
+      "desk": "founder-desk",
+      "avatar": {
+        "body": "male-average",
+        "skin": "#C98E6B",
+        "hair": { "style": "wavy-medium", "color": "#2B1B12" },
+        "facialHair": { "style": "short-beard", "color": "#2B1B12" },
+        "outfit": {
+          "top": "crew-tee",
+          "topColor": "#1F2A44",
+          "bottom": "chinos",
+          "bottomColor": "#2E3440",
+          "shoes": "sneakers",
+          "shoesColor": "#F5F5F5"
+        },
+        "accessories": ["gold-chain", "gold-watch"],
+        "palette": { "primary": "#1F2A44", "secondary": "#D4AF37", "accent": "#F5F5F5" }
+      },
+      "persona": {
+        "vibe": "hustler",
+        "tagline": "Making it rain (revenue).",
+        "props": ["money-briefcase"]
+      },
+      "sourcePhoto": "photos/jules.png"
+    },
+    {
+      "id": "mira",
+      "displayName": "Mira",
+      "shortName": "Mira",
+      "role": "Design",
+      "kind": "user",
+      "species": "human",
+      "status": "available",
+      "room": "lounge",
+      "desk": "design-desk",
+      "avatar": {
+        "body": "male-average",
+        "skin": "#C98E6B",
+        "hair": { "style": "slick-short", "color": "#1A1A1A" },
+        "facialHair": { "style": "short-goatee", "color": "#1A1A1A" },
+        "glasses": { "style": "sunglasses", "color": "#111111" },
+        "outfit": {
+          "top": "suit-jacket",
+          "topColor": "#1B1B1B",
+          "bottom": "suit-pants",
+          "bottomColor": "#1B1B1B",
+          "shoes": "dress-shoes",
+          "shoesColor": "#111111"
+        },
+        "accessories": ["white-shirt", "tie"],
+        "palette": { "primary": "#1B1B1B", "secondary": "#F5F5F5", "accent": "#6B7280" }
+      },
+      "persona": {
+        "vibe": "suit-mode",
+        "tagline": "Suit mode: engaged."
+      },
+      "notes": "Group-reference look. Photo alternate: pink cap, glasses, pink jersey.",
+      "sourcePhoto": "photos/mira.png"
+    },
+    {
+      "id": "felix",
+      "displayName": "Felix",
+      "shortName": "Felix",
+      "role": "Engineering",
+      "kind": "user",
+      "species": "human",
+      "status": "focus",
+      "room": "engineering",
+      "desk": "eng-desk-3",
+      "avatar": {
+        "body": "male-slim",
+        "skin": "#E0B090",
+        "hair": { "style": "slick-short", "color": "#1A1A1A" },
+        "glasses": { "style": "sunglasses", "color": "#111111" },
+        "outfit": {
+          "top": "suit-jacket",
+          "topColor": "#1B1B1B",
+          "bottom": "suit-pants",
+          "bottomColor": "#1B1B1B",
+          "shoes": "dress-shoes",
+          "shoesColor": "#111111"
+        },
+        "accessories": ["white-shirt"],
+        "palette": { "primary": "#1B1B1B", "secondary": "#F5F5F5", "accent": "#6B7280" }
+      },
+      "persona": {
+        "vibe": "closer",
+        "tagline": "Ship it. Then polish it."
+      },
+      "notes": "No photo supplied; based on the group reference.",
+      "sourcePhoto": null
+    },
+    {
+      "id": "fern",
+      "displayName": "Fern",
+      "shortName": "Fern",
+      "role": "Engineering",
+      "kind": "user",
+      "species": "human",
+      "status": "available",
+      "room": "lounge",
+      "desk": "eng-desk-1",
+      "avatar": {
+        "body": "male-average",
+        "skin": "#D8A07A",
+        "hair": { "style": "curly-medium", "color": "#2A1C17" },
+        "facialHair": { "style": "full-beard", "color": "#2A1C17" },
+        "glasses": { "style": "rect", "color": "#1A1A1A" },
+        "outfit": {
+          "top": "graphic-tee",
+          "topColor": "#1C1C1C",
+          "bottom": "jeans",
+          "bottomColor": "#3A4A5A",
+          "shoes": "sneakers",
+          "shoesColor": "#F5F5F5"
+        },
+        "accessories": ["earbud"],
+        "palette": { "primary": "#1C1C1C", "secondary": "#8FA3B8", "accent": "#F5F5F5" }
+      },
+      "persona": {
+        "vibe": "engineer",
+        "tagline": "One more refactor."
+      },
+      "sourcePhoto": "photos/fern.png"
+    },
+    {
+      "id": "arlo",
+      "displayName": "Arlo",
+      "shortName": "Arlo",
+      "role": "Engineering",
+      "kind": "user",
+      "species": "frog",
+      "status": "available",
+      "room": "lounge",
+      "desk": "eng-desk-2",
+      "avatar": {
+        "body": "frog-average",
+        "skin": "#6FA84A",
+        "belly": "#B7D98A",
+        "eyes": { "style": "wide", "color": "#FFFFFF" },
+        "outfit": {
+          "top": "crew-tee",
+          "topColor": "#2D6CDF",
+          "bottom": "none",
+          "bottomColor": "#6FA84A",
+          "shoes": "none",
+          "shoesColor": "#6FA84A"
+        },
+        "accessories": ["laptop"],
+        "palette": { "primary": "#6FA84A", "secondary": "#2D6CDF", "accent": "#B7D98A" }
+      },
+      "companion": { "species": "cat", "color": "#E8D3B0", "name": "cat" },
+      "persona": {
+        "vibe": "frog-mode",
+        "tagline": "Frog mode. Do not disturb."
+      },
+      "notes": "Original frog-person design inspired by the persona; do not copy Pepe the Frog.",
+      "sourcePhoto": "photos/arlo.png"
+    },
+    {
+      "id": "theo",
+      "displayName": "Theo",
+      "shortName": "Theo",
+      "role": "Engineering",
+      "kind": "user",
+      "species": "human",
+      "status": "away",
+      "state": "sleeping",
+      "pose": "sleeping",
+      "room": "nap",
+      "desk": "nap-bed",
+      "avatar": {
+        "body": "male-average",
+        "skin": "#D9A07A",
+        "hair": { "style": "medium-swept", "color": "#2A1C17" },
+        "facialHair": { "style": "mustache-goatee", "color": "#2A1C17" },
+        "glasses": { "style": "rect", "color": "#3A3A3A" },
+        "outfit": {
+          "top": "hoodie",
+          "topColor": "#2F7D4F",
+          "bottom": "sleep-pants",
+          "bottomColor": "#1E2A44",
+          "shoes": "none",
+          "shoesColor": "#2F7D4F"
+        },
+        "accessories": ["sleep-mask"],
+        "palette": { "primary": "#2F7D4F", "secondary": "#1E2A44", "accent": "#F5F5F5" }
+      },
+      "persona": {
+        "vibe": "sleepy",
+        "tagline": "Sleep is a feature."
+      },
+      "sourcePhoto": "photos/theo.png"
+    },
+    {
+      "id": "chus",
+      "displayName": "Chus",
+      "shortName": "Chus",
+      "role": "Product",
+      "kind": "user",
+      "species": "human",
+      "status": "available",
+      "room": "lounge",
+      "desk": "product-desk",
+      "avatar": {
+        "body": "male-average",
+        "skin": "#C98E6B",
+        "hair": { "style": "short-textured", "color": "#1F1A17" },
+        "facialHair": { "style": "goatee", "color": "#1F1A17" },
+        "glasses": { "style": "sunglasses", "color": "#111111" },
+        "outfit": {
+          "top": "crew-tee",
+          "topColor": "#151515",
+          "bottom": "cream-chinos",
+          "bottomColor": "#E8DCC8",
+          "shoes": "sneakers",
+          "shoesColor": "#F5F5F5"
+        },
+        "accessories": ["black-bracelet"],
+        "palette": { "primary": "#151515", "secondary": "#E8DCC8", "accent": "#F5F5F5" }
+      },
+      "persona": {
+        "vibe": "product",
+        "tagline": "Keeping the vibe shipped."
+      },
+      "notes": "Group-reference look. Photo alternate: black suit, tie, sunglasses.",
+      "sourcePhoto": "photos/chus.jpg"
+    },
+    {
+      "id": "clawd",
+      "displayName": "Claw'd",
+      "shortName": "Claw'd",
+      "role": "Mascot",
+      "kind": "mascot",
+      "species": "crab",
+      "status": "available",
+      "room": "lounge",
+      "pet": true,
+      "companionOf": "chus",
+      "avatar": {
+        "body": "crab-small",
+        "skin": "#E07A5F",
+        "wings": { "style": "feather", "color": "#F5F5F5" },
+        "eyes": { "style": "dot", "color": "#111111" },
+        "accessories": [],
+        "palette": { "primary": "#E07A5F", "secondary": "#F5F5F5", "accent": "#2E3440" }
+      },
+      "persona": {
+        "vibe": "chaos",
+        "tagline": "Chief chaos officer."
+      },
+      "notes": "Original winged-crab mascot; no photo supplied.",
+      "sourcePhoto": null
+    }
+  ]
+}

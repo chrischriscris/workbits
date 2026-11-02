@@ -55,6 +55,25 @@ Path: `~/.t3/userdata/attachments/...dfb0171a...png`
 - The characters are slightly more adult-proportioned than the 1/3-head chibi target; the lineup is still the charm/consistency bar.
 - The UI uses placeholder labels; real UI must be legible, accessible, and denser.
 
+## Team seed pack (2026-11-02)
+
+The user supplied a group illustration and six photos of the team. The group image is the **persona/style** reference; the photos are **likeness** references for hair, skin, glasses, beard, and build.
+
+- Group illustration: [`art/team-reference.png`](../../art/team-reference.png) — reference only, not a shipping asset.
+- Raw photos: `seeds/team/photos/` — local only, gitignored, never shipped.
+- Cast analysis: [`team-cast.md`](team-cast.md).
+- Data pack: [`seeds/team/manifest.json`](../../seeds/team/manifest.json).
+- Avatar system: [`../architecture/avatars.md`](../architecture/avatars.md).
+
+Key calls:
+
+- The team pack is a **loadable demo seed**, not hardcoded characters.
+- The 2D illustration is translated into the 3D chibi style; we keep silhouette, outfit, accessories, and personality, not the exact drawing.
+- Arlo's frog is an **original frog-person**, not a Pepe the Frog copy.
+- Claw'd is an original winged-crab mascot.
+- Mira/Chus have two valid looks; the group reference is the default, the photo look is an alternate outfit.
+- Raw photos stay local; the demo uses stylized avatars.
+
 ## Anti-references
 
 - **SoWork** — the screenshots are from an existing product. Do not copy its name, logo, UI, copy, or assets.

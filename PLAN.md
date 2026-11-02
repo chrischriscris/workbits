@@ -323,6 +323,7 @@ These are slightly more rendered than the in-engine target. The build should kee
 - Base: Kenney Furniture Kit, Quaternius furniture/characters/animation library, KayKit props — all CC0, commercial-safe.
 - Re-material into a single palette + material set; consistent scale/pivot conventions.
 - Characters: modular base + outfits/hair; humanoid rig; animation set (idle, walk, sit, type, wave, emote). Retarget via glTF.
+- Demo cast: optional `seeds/team/manifest.json` data pack (not hardcoded) + `docs/architecture/avatars.md`. Supports human/frog/crab species and a no-key deterministic avatar generator.
 - Procedural accents: rugs, plants, screens, posters, lights, floor patterns.
 - Custom/AI decor only through the catalog QA gate.
 - Export: glTF/GLB, Draco + KTX2, thumbnail renders, footprint/height metadata, license manifest.

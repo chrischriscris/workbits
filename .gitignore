@@ -38,3 +38,7 @@ blob-report/
 *.sqlite
 *.sqlite3
 uploads/
+
+# personal reference photos (local only; never shipped)
+seeds/team/photos/
+seeds/team/portraits/

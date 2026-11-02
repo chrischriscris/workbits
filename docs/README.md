@@ -28,12 +28,15 @@ The documentation is split by purpose. Keep it current; stale docs are worse tha
 
 - [`art/direction.md`](art/direction.md) — the approved style bible.
 - [`art/references.md`](art/references.md) — analysis of the user's references and the generated concepts.
+- [`art/team-cast.md`](art/team-cast.md) — the Workbits team cast, translated from the group reference + photos.
 - [`../art/`](../art/) — the actual reference images.
+- [`../seeds/team/`](../seeds/team/) — the optional, data-driven team demo pack.
 
 ### Architecture
 
 - [`architecture/overview.md`](architecture/overview.md) — system diagram and trust boundaries.
 - [`architecture/data-model.md`](architecture/data-model.md) — tables and tenant isolation.
+- [`architecture/avatars.md`](architecture/avatars.md) — modular avatars, species, generator, seed packs.
 - [`architecture/realtime.md`](architecture/realtime.md) — movement, rooms, zones, reconnection.
 - [`architecture/voice.md`](architecture/voice.md) — LiveKit, proximity, privacy.
 - [`architecture/chat.md`](architecture/chat.md) — channels, persistence, moderation.
