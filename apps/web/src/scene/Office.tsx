@@ -415,6 +415,9 @@ const START = SPAWNS[localCharacterId] ?? SPAWNS.chus!;
 
 function LocalPlayer() {
   const customAvatar = useAvatarStore((state) => state.config);
+  const localEmote = useRealtimeStore((state) =>
+    state.sessionId ? state.emotes[state.sessionId]?.kind : undefined,
+  );
   const character = useMemo(
     () => (customAvatar ? { ...localCharacter, avatar: customAvatar } : localCharacter),
     [customAvatar],
@@ -523,7 +526,7 @@ function LocalPlayer() {
         character={character}
         position={[0, 0, 0]}
         pose="standing"
-        motion={moving ? "walk" : "idle"}
+        motion={localEmote === "wave" ? "wave" : moving ? "walk" : "idle"}
         isLocal
       />
     </group>

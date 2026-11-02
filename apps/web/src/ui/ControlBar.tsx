@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   Headphones,
   LayoutTemplate,
@@ -13,6 +13,7 @@ import {
   VolumeX,
   Wand2,
 } from "lucide-react";
+import { useRealtimeStore } from "../realtime/store";
 import { useAppStore } from "../state/app";
 import { useVoiceStore } from "../voice/store";
 import { palette } from "../theme";
@@ -57,6 +58,8 @@ export function ControlBar() {
   const setChatOpen = useAppStore((state) => state.setChatOpen);
   const setAvatarStudioOpen = useAppStore((state) => state.setAvatarStudioOpen);
   const setRoomStudioOpen = useAppStore((state) => state.setRoomStudioOpen);
+  const sendEmote = useRealtimeStore((state) => state.sendEmote);
+  const [emoteOpen, setEmoteOpen] = useState(false);
 
   const voiceStatus = useVoiceStore((state) => state.status);
   const muted = useVoiceStore((state) => state.muted);
@@ -134,7 +137,7 @@ export function ControlBar() {
       <ControlButton label={screenOn ? "Stop sharing" : "Share screen"} active={screenOn} onClick={toggleScreen} hideMobile>
         <MonitorUp size={18} />
       </ControlButton>
-      <ControlButton label="Emotes" onClick={() => undefined} hideMobile>
+      <ControlButton label="Emotes" active={emoteOpen} onClick={() => setEmoteOpen((open) => !open)} hideMobile>
         <Smile size={18} />
       </ControlButton>
       <div className="controls__divider" />
@@ -154,6 +157,30 @@ export function ControlBar() {
       <ControlButton label="Settings" onClick={() => undefined} hideMobile>
         <Settings2 size={18} />
       </ControlButton>
+
+      {emoteOpen && (
+        <div className="emote-menu" role="menu" aria-label="Emotes">
+          {([
+            ["wave", "👋", "Wave"],
+            ["clap", "👏", "Clap"],
+            ["heart", "❤️", "Heart"],
+          ] as Array<[string, string, string]>).map(([kind, emoji, label]) => (
+            <button
+              key={kind}
+              className="emote-menu__item"
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                sendEmote(kind);
+                setEmoteOpen(false);
+              }}
+            >
+              <span>{emoji}</span>
+              <small>{label}</small>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

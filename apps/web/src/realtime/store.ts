@@ -31,11 +31,13 @@ type RealtimeState = {
   players: Record<string, RemotePlayer>;
   messages: RealtimeMessage[];
   localPosition: { x: number; z: number };
+  emotes: Record<string, { kind: string; until: number }>;
   connect: () => Promise<void>;
   disconnect: () => void;
   setLocalPosition: (position: { x: number; z: number }) => void;
   sendMove: (data: { x: number; z: number; rotation: number; moving: boolean }) => void;
   sendChat: (channel: string, body: string, to?: string) => void;
+  sendEmote: (kind: string) => void;
 };
 
 let client: Client | null = null;
@@ -54,6 +56,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
   players: {},
   messages: [],
   localPosition: { x: -3.5, z: 6.5 },
+  emotes: {},
 
   connect: async () => {
     if (get().status !== "offline") return;
@@ -94,6 +97,18 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
           return { players: next };
         });
       });
+      room.onMessage("emote", (event: { id: string; kind: string }) => {
+        const until = Date.now() + 2200;
+        set((state) => ({ emotes: { ...state.emotes, [event.id]: { kind: event.kind, until } } }));
+        window.setTimeout(() => {
+          set((state) => {
+            if (state.emotes[event.id]?.until !== until) return state;
+            const next = { ...state.emotes };
+            delete next[event.id];
+            return { emotes: next };
+          });
+        }, 2300);
+      });
       room.onMessage("chat", (message: RealtimeMessage) => {
         set((state) => {
           if (state.messages.some((item) => item.id === message.id)) return state;
@@ -124,6 +139,25 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
 
   sendMove: (data) => {
     get().room?.send("move", data);
+  },
+
+  sendEmote: (kind) => {
+    const room = get().room;
+    if (!room) return;
+    const identity = get().sessionId;
+    if (identity) {
+      const until = Date.now() + 2200;
+      set((state) => ({ emotes: { ...state.emotes, [identity]: { kind, until } } }));
+      window.setTimeout(() => {
+        set((state) => {
+          if (state.emotes[identity]?.until !== until) return state;
+          const next = { ...state.emotes };
+          delete next[identity];
+          return { emotes: next };
+        });
+      }, 2300);
+    }
+    room.send("emote", { kind });
   },
 
   sendChat: (channel, body, to) => {

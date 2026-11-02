@@ -26,6 +26,7 @@ run "Proximity gain math" bun scripts/gain-check.mjs
 run "Single-client office screenshot" bun run shot http://127.0.0.1:3100/ "artifacts/shots/verify-office.png"
 run "Realtime presence + chat bot" bun run shot:multi
 run "Voice token + publish" bun scripts/voice-check.mjs
+run "Two-client proximity voice" bun scripts/voice-two.mjs
 run "Avatar studio" bun scripts/forge-shot.mjs
 run "Workspace studio" bun scripts/room-studio-shot.mjs
 run "DM privacy" bun scripts/dm-check.mjs

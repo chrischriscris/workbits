@@ -30,6 +30,7 @@ type VoiceState = {
 let voiceRoom: Room | null = null;
 let audioContainer: HTMLDivElement | null = null;
 let proximityTimer: number | null = null;
+const lastVolumes: Record<string, number> = {};
 
 function apiBase() {
   return (
@@ -66,13 +67,16 @@ function updateProximity() {
     const player = players[participant.identity];
     if (!player) {
       participant.setVolume(deafened ? 0 : 0.35);
+      lastVolumes[participant.identity] = deafened ? 0 : 0.35;
       return;
     }
     const distance = Math.hypot(player.x - localPosition.x, player.z - localPosition.z);
     const localInMeeting = inMeetingRoom(localPosition.x, localPosition.z);
     const remoteInMeeting = inMeetingRoom(player.x, player.z);
     const isolated = localInMeeting !== remoteInMeeting;
-    participant.setVolume(deafened || isolated ? 0 : proximityGain(distance));
+    const volume = deafened || isolated ? 0 : proximityGain(distance);
+    participant.setVolume(volume);
+    lastVolumes[participant.identity] = volume;
   });
 }
 
@@ -203,6 +207,7 @@ if (import.meta.env.DEV) {
       audioBlocked: state.audioBlocked,
       error: state.error,
       speaking: state.speaking,
+      volumes: { ...lastVolumes },
     };
   };
 }

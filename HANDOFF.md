@@ -46,7 +46,7 @@ bun run dev
 - **LLM room generation** — not built. Workspace Studio is the deterministic local slice.
 - **Chat authz** — Global/Office/Room still broadcast to the room; DMs are server-routed and history-filtered, but group/room membership is not enforced.
 - **Meeting-room privacy** — client-side volume gate, not a separate LiveKit room.
-- **Two real microphones** — the voice path is verified with a fake device and one published track; a manual two-person audio test is still needed.
+- **Two real microphones** — verified with two browser clients and fake devices, both publishing and reading the same proximity gain. A manual real-mic conversation is still worth doing.
 - **React console warning** — `Attempted to synchronously unmount a root...` comes from the R3F HTML name-tag portal path. It does not break the scene, but should be cleaned up.
 - **Scale** — single realtime instance; the Redis/horizontal path is designed but not exercised.
 

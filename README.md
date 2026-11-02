@@ -19,7 +19,7 @@ Workbits is built to be a product, not an internal tool: multi-tenant architectu
 - Click-to-walk and WASD movement with a floating move marker.
 - Colyseus realtime presence: two tabs see each other; movement is server-validated.
 - Shared text chat: Global, Office, Room, and DM; DMs are routed server-side to the two participants only. History persists.
-- Proximity voice via LiveKit: room token endpoint, mic publish, distance-based volume, deafen.
+- Proximity voice via LiveKit: room token endpoint, mic publish, distance-based volume, deafen. Verified with two browser clients publishing simultaneously at the same 0.617 gain.
 - Avatar Studio: prompt → three modular base avatars → apply and persist locally. No API key required.
 - Workspace Studio: prompt → three desk layouts → apply to the engineering pod and persist.
 - Rooms popover with click-to-walk navigation.

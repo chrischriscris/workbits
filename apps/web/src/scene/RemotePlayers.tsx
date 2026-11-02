@@ -8,6 +8,7 @@ import { useVoiceStore } from "../voice/store";
 
 function RemoteAvatar({ player, speaking }: { player: RemotePlayerState; speaking: boolean }) {
   const character = teamById[player.characterId] ?? localCharacter;
+  const emotes = useRealtimeStore((state) => state.emotes);
   const group = useRef<THREE.Group>(null);
   const target = useRef(new THREE.Vector3(player.x, 0, player.z));
   const targetRotation = useRef(player.rotation);
@@ -32,7 +33,7 @@ function RemoteAvatar({ player, speaking }: { player: RemotePlayerState; speakin
         character={character}
         position={[0, 0, 0]}
         pose={player.characterId === "theo" ? "sleeping" : "standing"}
-        motion={player.moving ? "walk" : "idle"}
+        motion={emotes[player.id]?.kind === "wave" ? "wave" : player.moving ? "walk" : "idle"}
         speaking={speaking}
       />
     </group>
@@ -43,6 +44,7 @@ export function RemotePlayers() {
   const players = useRealtimeStore((state) => state.players);
   const sessionId = useRealtimeStore((state) => state.sessionId);
   const speaking = useVoiceStore((state) => state.speaking);
+  const emotes = useRealtimeStore((state) => state.emotes);
 
   return (
     <group>
