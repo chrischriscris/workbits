@@ -19,6 +19,7 @@
     "typecheck": "cd apps/web && bun run typecheck && cd ../server && bun run typecheck",
     "shot": "bun scripts/shot.mjs",
     "shot:multi": "bun scripts/multi-shot.mjs",
+    "verify": "bash scripts/verify.sh",
     "usage": "bash scripts/usage.sh"
   },
   "devDependencies": {

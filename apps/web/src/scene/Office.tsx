@@ -1,9 +1,10 @@
 import { RoundedBox } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { localCharacter, localCharacterId, teamCharacters } from "../data/team";
 import { useRealtimeStore } from "../realtime/store";
+import { useAvatarStore } from "../state/avatar";
 import { useAppStore } from "../state/app";
 import { palette } from "../theme";
 import { TeamAvatar, type AvatarMotion, type AvatarPose } from "./avatars";
@@ -342,7 +343,7 @@ function Team() {
       <Beanbag position={[-2.6, 0, 5.2]} color="#e0b84f" />
       <Cat position={[-1.9, 0, 5.9]} rotation={[0, -0.7, 0]} />
       {teamCharacters
-        .filter((character) => !occupied.has(character.id))
+        .filter((character) => character.id !== localCharacterId)
         .map((character) => {
           const placement = placements[character.id];
           if (!placement) return null;
@@ -355,6 +356,7 @@ function Team() {
               pose={placement.pose}
               motion={placement.motion}
               speaking={character.id === "jules"}
+              hidden={occupied.has(character.id)}
             />
           );
         })}
@@ -379,6 +381,11 @@ const SPAWNS: Record<string, [number, number, number]> = {
 const START = SPAWNS[localCharacterId] ?? SPAWNS.chus!;
 
 function LocalPlayer() {
+  const customAvatar = useAvatarStore((state) => state.config);
+  const character = useMemo(
+    () => (customAvatar ? { ...localCharacter, avatar: customAvatar } : localCharacter),
+    [customAvatar],
+  );
   const target = useAppStore((state) => state.target);
   const setTarget = useAppStore((state) => state.setTarget);
   const group = useRef<THREE.Group>(null);
@@ -480,7 +487,7 @@ function LocalPlayer() {
   return (
     <group ref={group} position={START}>
       <TeamAvatar
-        character={localCharacter}
+        character={character}
         position={[0, 0, 0]}
         pose="standing"
         motion={moving ? "walk" : "idle"}

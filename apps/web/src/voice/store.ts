@@ -7,8 +7,9 @@ import {
   type RemoteParticipant,
   type RemoteTrack,
 } from "livekit-client";
-import { localCharacter, localCharacterId } from "../data/team";
+import { localCharacter } from "../data/team";
 import { useRealtimeStore } from "../realtime/store";
+import { proximityGain } from "./gain";
 
 type VoiceStatus = "idle" | "connecting" | "connected" | "error";
 
@@ -68,8 +69,7 @@ function updateProximity() {
       return;
     }
     const distance = Math.hypot(player.x - localPosition.x, player.z - localPosition.z);
-    const gain = Math.max(0, Math.min(1, 1 - (distance - 1.2) / 6.3));
-    participant.setVolume(deafened ? 0 : gain);
+    participant.setVolume(deafened ? 0 : proximityGain(distance));
   });
 }
 

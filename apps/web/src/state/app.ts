@@ -22,6 +22,8 @@ type AppState = {
   toggleScreen: () => void;
   rosterOpen: boolean;
   toggleRoster: () => void;
+  avatarStudioOpen: boolean;
+  setAvatarStudioOpen: (open: boolean) => void;
 };
 
 export const useAppStore = create<AppState>((set) => ({
@@ -43,4 +45,6 @@ export const useAppStore = create<AppState>((set) => ({
   toggleScreen: () => set((state) => ({ screenOn: !state.screenOn })),
   rosterOpen: false,
   toggleRoster: () => set((state) => ({ rosterOpen: !state.rosterOpen })),
+  avatarStudioOpen: false,
+  setAvatarStudioOpen: (avatarStudioOpen) => set({ avatarStudioOpen }),
 }));

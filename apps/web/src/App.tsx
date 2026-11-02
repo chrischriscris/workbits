@@ -4,6 +4,7 @@ import { useRealtimeStore } from "./realtime/store";
 import { OfficeScene } from "./scene/OfficeScene";
 import { useAppStore } from "./state/app";
 import { useVoiceStore } from "./voice/store";
+import { AvatarStudio } from "./ui/AvatarStudio";
 import { CharacterSheet } from "./ui/CharacterSheet";
 import { ChatDock } from "./ui/ChatDock";
 import { ControlBar } from "./ui/ControlBar";
@@ -62,6 +63,7 @@ export default function App() {
       <CharacterSheet />
       <ChatDock />
       <ControlBar />
+      <AvatarStudio />
       <InteractionHint />
     </div>
   );

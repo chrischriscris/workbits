@@ -22,10 +22,12 @@ function usePhase(id: string) {
 function NameTag({
   character,
   isLocal,
+  hidden,
   y = 1.96,
 }: {
   character: SeedCharacter;
   isLocal?: boolean;
+  hidden?: boolean;
   y?: number;
 }) {
   return (
@@ -33,7 +35,7 @@ function NameTag({
       position={[0, y, 0]}
       center
       zIndexRange={[30, 0]}
-      style={{ pointerEvents: "none", userSelect: "none" }}
+      style={{ pointerEvents: "none", userSelect: "none", display: hidden ? "none" : undefined }}
     >
       <div className={`name-tag${isLocal ? " name-tag--you" : ""}`}>
         <span
@@ -407,12 +409,14 @@ function HumanAvatar({
   motion,
   speaking,
   isLocal,
+  hidden,
 }: {
   character: SeedCharacter;
   pose: AvatarPose;
   motion: AvatarMotion;
   speaking?: boolean;
   isLocal?: boolean;
+  hidden?: boolean;
 }) {
   const cfg = character.avatar;
   const root = useRef<THREE.Group>(null);
@@ -635,7 +639,7 @@ function HumanAvatar({
         )}
       </group>
       <VoiceRing active={speaking} />
-      <NameTag character={character} isLocal={isLocal} />
+      <NameTag character={character} isLocal={isLocal} hidden={hidden} />
     </group>
   );
 }
@@ -644,10 +648,12 @@ function FrogAvatar({
   character,
   speaking,
   isLocal,
+  hidden,
 }: {
   character: SeedCharacter;
   speaking?: boolean;
   isLocal?: boolean;
+  hidden?: boolean;
 }) {
   const cfg = character.avatar;
   const root = useRef<THREE.Group>(null);
@@ -715,7 +721,7 @@ function FrogAvatar({
         </RoundedBox>
       </group>
       <VoiceRing active={speaking} />
-      <NameTag character={character} isLocal={isLocal} y={1.6} />
+      <NameTag character={character} isLocal={isLocal} hidden={hidden} y={1.6} />
     </group>
   );
 }
@@ -724,10 +730,12 @@ function CrabAvatar({
   character,
   speaking,
   isLocal,
+  hidden,
 }: {
   character: SeedCharacter;
   speaking?: boolean;
   isLocal?: boolean;
+  hidden?: boolean;
 }) {
   const cfg = character.avatar;
   const root = useRef<THREE.Group>(null);
@@ -794,7 +802,7 @@ function CrabAvatar({
         </mesh>
       </group>
       <VoiceRing active={speaking} />
-      <NameTag character={character} isLocal={isLocal} y={1.85} />
+      <NameTag character={character} isLocal={isLocal} hidden={hidden} y={1.85} />
     </group>
   );
 }
@@ -803,14 +811,16 @@ export function SleepingAvatar({
   character,
   position,
   rotation = [0, 0, 0],
+  hidden,
 }: {
   character: SeedCharacter;
   position: [number, number, number];
   rotation?: [number, number, number];
+  hidden?: boolean;
 }) {
   const cfg = character.avatar;
   return (
-    <group position={position} rotation={rotation}>
+    <group position={position} rotation={rotation} visible={!hidden}>
       <group position={[0, 0.02, 0]} rotation={[-0.95, 0, 0]}>
         <mesh scale={[0.95, 1, 0.92]} castShadow>
           <sphereGeometry args={[0.28, 24, 18]} />
@@ -833,7 +843,7 @@ export function SleepingAvatar({
       <Html position={[0.55, 0.75, 0]} center zIndexRange={[30, 0]} style={{ pointerEvents: "none" }}>
         <div className="zzz">z&nbsp;z&nbsp;z</div>
       </Html>
-      <NameTag character={character} y={1.15} />
+      <NameTag character={character} hidden={hidden} y={1.15} />
     </group>
   );
 }
@@ -846,6 +856,7 @@ export function TeamAvatar({
   motion = "idle",
   speaking,
   isLocal,
+  hidden,
 }: {
   character: SeedCharacter;
   position: [number, number, number];
@@ -854,32 +865,34 @@ export function TeamAvatar({
   motion?: AvatarMotion;
   speaking?: boolean;
   isLocal?: boolean;
+  hidden?: boolean;
 }) {
   if (pose === "sleeping") {
-    return <SleepingAvatar character={character} position={position} rotation={rotation} />;
+    return <SleepingAvatar character={character} position={position} rotation={rotation} hidden={hidden} />;
   }
   if (character.species === "frog") {
     return (
-      <group position={position} rotation={rotation}>
-        <FrogAvatar character={character} speaking={speaking} isLocal={isLocal} />
+      <group position={position} rotation={rotation} visible={!hidden}>
+        <FrogAvatar character={character} speaking={speaking} isLocal={isLocal} hidden={hidden} />
       </group>
     );
   }
   if (character.species === "crab") {
     return (
-      <group position={position} rotation={rotation}>
-        <CrabAvatar character={character} speaking={speaking} isLocal={isLocal} />
+      <group position={position} rotation={rotation} visible={!hidden}>
+        <CrabAvatar character={character} speaking={speaking} isLocal={isLocal} hidden={hidden} />
       </group>
     );
   }
   return (
-    <group position={position} rotation={rotation}>
+    <group position={position} rotation={rotation} visible={!hidden}>
       <HumanAvatar
         character={character}
         pose={pose}
         motion={motion}
         speaking={speaking}
         isLocal={isLocal}
+        hidden={hidden}
       />
     </group>
   );

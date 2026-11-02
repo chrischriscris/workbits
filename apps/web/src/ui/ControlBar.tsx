@@ -52,6 +52,7 @@ export function ControlBar() {
   const toggleScreen = useAppStore((state) => state.toggleScreen);
   const chatOpen = useAppStore((state) => state.chatOpen);
   const setChatOpen = useAppStore((state) => state.setChatOpen);
+  const setAvatarStudioOpen = useAppStore((state) => state.setAvatarStudioOpen);
 
   const voiceStatus = useVoiceStore((state) => state.status);
   const muted = useVoiceStore((state) => state.muted);
@@ -140,7 +141,7 @@ export function ControlBar() {
       >
         <MessageCircle size={18} />
       </ControlButton>
-      <ControlButton label="Customize office" onClick={() => undefined}>
+      <ControlButton label="Avatar studio" onClick={() => setAvatarStudioOpen(true)}>
         <Wand2 size={18} />
       </ControlButton>
       <ControlButton label="Settings" onClick={() => undefined}>
