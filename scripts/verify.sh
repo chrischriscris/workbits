@@ -11,16 +11,28 @@ section() {
   printf '\n## %s\n\n' "$1" | tee -a "$OUT/report.md"
 }
 
+timed() {
+  local start=$SECONDS
+  local status=0
+  "$@" || status=$?
+  printf '_%ss_\n' "$((SECONDS - start))" | tee -a "$OUT/report.md"
+  return $status
+}
+
 run() {
   local label="$1"
   shift
   section "$label"
-  "$@" 2>&1 | tee -a "$OUT/report.md"
+  timed "$@" 2>&1 | tee -a "$OUT/report.md"
 }
 
 # Browser and SwiftShader runs can occasionally miss their ready flag after a
 # long sequence of launches. Retry those once; pure checks fail hard.
 run_ui() {
+  timed run_ui_inner "$@"
+}
+
+run_ui_inner() {
   local label="$1"
   shift
   section "$label"

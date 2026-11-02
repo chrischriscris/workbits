@@ -17,7 +17,7 @@ const browser = await chromium.launch({
 });
 const page = await browser.newPage({ viewport: { width: 1200, height: 800 } });
 page.on("pageerror", (error) => console.log("pageerror:", error.message));
-await page.goto("http://127.0.0.1:3100/?character=chus", { waitUntil: "domcontentloaded" });
+await page.goto("http://127.0.0.1:3100/?character=chus&e2e=1", { waitUntil: "domcontentloaded" });
 await page.waitForFunction(() => window.__WORKBITS_READY__ === true, undefined, { timeout: 60000 });
 await page.locator('button[aria-label="Avatar studio"]').click();
 await page.waitForTimeout(600);
@@ -66,5 +66,6 @@ const ok =
 console.log("AVATAR TUNING:", ok ? "PASS" : "FAIL");
 
 await bot.leave();
-await browser.close();
+// Exit instead of browser.close(): once WebRTC is up, Chromium's graceful
+// shutdown takes ~25s. Playwright kills the browser when the process exits.
 process.exit(ok ? 0 : 1);

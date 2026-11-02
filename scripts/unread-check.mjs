@@ -41,5 +41,6 @@ const ok = count === "1" && stillBadge === 0 && tabBadge === 0 && messages.inclu
 console.log("UNREAD:", ok ? "PASS" : "FAIL");
 
 await bot.leave();
-await browser.close();
+// Exit instead of browser.close(): once WebRTC is up, Chromium's graceful
+// shutdown takes ~25s. Playwright kills the browser when the process exits.
 process.exit(ok ? 0 : 1);

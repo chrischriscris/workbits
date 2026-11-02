@@ -27,4 +27,6 @@ console.log("status updates:", updates);
 console.log("local status:", await page.evaluate(() => window.__WORKBITS_VOICE__?.()));
 
 await bot.leave();
-await browser.close();
+// Exit instead of browser.close(): once WebRTC is up, Chromium's graceful
+// shutdown takes ~25s. Playwright kills the browser when the process exits.
+process.exit(0);

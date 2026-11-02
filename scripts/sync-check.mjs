@@ -116,4 +116,6 @@ console.log("browser room messages:", await page.locator(".chat__messages").inne
 for (const entry of Object.values(bots)) {
   await entry.room.leave();
 }
-await browser.close();
+// Exit instead of browser.close(): once WebRTC is up, Chromium's graceful
+// shutdown takes ~25s. Playwright kills the browser when the process exits.
+process.exit(0);

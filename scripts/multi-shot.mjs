@@ -59,4 +59,6 @@ await page.locator(".icon-button[aria-label='Close chat']").click();
 await page.screenshot({ path: "artifacts/shots/multi-bot.png", timeout: 120000, animations: "disabled" });
 
 await bot.leave();
-await browser.close();
+// Exit instead of browser.close(): once WebRTC is up, Chromium's graceful
+// shutdown takes ~25s. Playwright kills the browser when the process exits.
+process.exit(0);

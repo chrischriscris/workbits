@@ -96,7 +96,8 @@ console.log(
 
 await page.screenshot({ path: "artifacts/shots/reconnect.png", timeout: 120000, animations: "disabled" });
 await observerRoom.leave();
-await browser.close();
+// Exit instead of browser.close(): once WebRTC is up, Chromium's graceful
+// shutdown takes ~25s. Playwright kills the browser when the process exits.
 process.exit(
   sessionChanged && sameZone && voiceRebound && micPreserved && inMeeting && restored ? 0 : 1,
 );

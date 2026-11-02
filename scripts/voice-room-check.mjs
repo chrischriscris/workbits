@@ -81,6 +81,6 @@ console.log("ROOM ISOLATION:", isolated ? "PASS" : "FAIL");
 await chus.page.screenshot({ path: "artifacts/shots/voice-meeting.png", timeout: 120000, animations: "disabled" });
 await jules.page.screenshot({ path: "artifacts/shots/voice-floor.png", timeout: 120000, animations: "disabled" });
 
-await chus.browser.close();
-await jules.browser.close();
+// Exit instead of browser.close(): once WebRTC is up, Chromium's graceful
+// shutdown takes ~25s. Playwright kills the browser when the process exits.
 process.exit(isolated ? 0 : 1);

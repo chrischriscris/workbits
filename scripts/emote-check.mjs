@@ -42,5 +42,6 @@ const ok = wave === "👋" && clap === "👏" && heart === "❤️" && received.
 console.log("EMOTES:", ok ? "PASS" : "FAIL");
 
 await bot.leave();
-await browser.close();
+// Exit instead of browser.close(): once WebRTC is up, Chromium's graceful
+// shutdown takes ~25s. Playwright kills the browser when the process exits.
 process.exit(ok ? 0 : 1);

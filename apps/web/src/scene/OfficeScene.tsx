@@ -107,7 +107,9 @@ export function OfficeScene() {
       shadows={!e2e}
       orthographic
       camera={{ position: [20, 15, 20], zoom: 46, near: -100, far: 200 }}
-      dpr={e2e ? 1 : [1, 1.75]}
+      // e2e checks run in SwiftShader (CPU); half-resolution 3D keeps them fast.
+      // The HTML UI on top stays sharp, and art checks use art-view, not e2e.
+      dpr={e2e ? 0.5 : [1, 1.75]}
       gl={{ antialias: !e2e, alpha: true, powerPreference: e2e ? "low-power" : "high-performance" }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
@@ -115,7 +117,7 @@ export function OfficeScene() {
       }}
     >
       <Suspense fallback={null}>
-        <SoftShadows size={26} samples={8} focus={0.7} />
+        {!e2e && <SoftShadows size={26} samples={8} focus={0.7} />}
         <SoftEnvironment intensity={0.25} />
         <hemisphereLight args={["#ffeedd", "#f0d8bf", 0.2]} />
         {/* Warm, lower afternoon sun from the window side: longer soft shadows. */}
@@ -138,15 +140,18 @@ export function OfficeScene() {
         <directionalLight position={[4, 8, 16]} intensity={0.3} color="#fff7e8" />
         <Office />
         <DevExport />
-        <ContactShadows
-          position={[0, 0.055, 0]}
-          opacity={0.36}
-          scale={34}
-          blur={2.4}
-          far={4.5}
-          resolution={1024}
-          color="#6b5844"
-        />
+        {/* Re-renders the scene from below every frame: skipped in e2e checks. */}
+        {!e2e && (
+          <ContactShadows
+            position={[0, 0.055, 0]}
+            opacity={0.36}
+            scale={34}
+            blur={2.4}
+            far={4.5}
+            resolution={1024}
+            color="#6b5844"
+          />
+        )}
         <CameraRig />
         {!e2e && (
           <EffectComposer multisampling={0} enableNormalPass>

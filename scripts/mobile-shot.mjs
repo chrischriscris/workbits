@@ -21,4 +21,6 @@ await page.goto("http://127.0.0.1:3100/?character=chus&e2e=1", {
 await page.waitForFunction(() => window.__WORKBITS_READY__ === true, { timeout: 30000 });
 await page.waitForTimeout(1200);
 await page.screenshot({ path: "artifacts/shots/mobile.png", timeout: 120000, animations: "disabled" });
-await browser.close();
+// Exit instead of browser.close(): once WebRTC is up, Chromium's graceful
+// shutdown takes ~25s. Playwright kills the browser when the process exits.
+process.exit(0);
