@@ -11,7 +11,7 @@ Source of truth for what is actually done. Update at the end of every work sessi
 | 2 — Presence | 🟢 Working + reconnect | `bun run shot:multi`, `scripts/reconnect-check.mjs` | Message-based presence (ADR-011) |
 | 3 — Voice | 🟢 Proximity + isolated meeting room | `scripts/voice-room-check.mjs`, `scripts/token-check.mjs` | Real-mic conversation still manual; auth-scoped identity pending |
 | 4 — Chat | 🟢 Channels + private DMs + room scoping | `scripts/dm-check.mjs`, `scripts/sync-check.mjs` | Group membership not built |
-| 5 — Customization | 🟢 Avatar + workspace, synced | `scripts/sync-check.mjs` | Full drag-and-drop office editor not built |
+| 5 — Customization | 🟢 Generated + tuned avatars, synced layouts | `scripts/forge-shot.mjs`, `scripts/sync-check.mjs` | Full drag-and-drop office editor not built |
 | 6 — AI | 🟢 Local avatar, workspace, assistant | `scripts/assistant-check.mjs`, `apps/web/src/ai/` | No runtime LLM keys; provider adapter pending |
 | 7 — Product | 🔴 Not started | — | Auth, billing, landing |
 | 8 — Ship | 🔴 Not started | — | Deploy hardening |
@@ -49,6 +49,7 @@ Source of truth for what is actually done. Update at the end of every work sessi
 - 2026-11-02 — Replaced the client-side meeting-room audio gate with real LiveKit room isolation. Tokens are minted from the server-authoritative zone, client room overrides are ignored, and unauthorized identities get 403. Verified two browser clients: one in the meeting room, one on the floor, no cross-room tracks. Added `voice-room-check` and `token-check`.
 - 2026-11-02 — Added automatic realtime reconnect with backoff. Reconnect restores the player position/zone and status, rebinds voice to the new Colyseus identity, and preserves the mic state. Added emote bubbles for wave/clap/heart. Verified with `scripts/reconnect-check.mjs` and the updated `emote-check`.
 - 2026-11-02 — Added the Workbits Assistant: a local, no-key chat panel that answers presence, room, meeting, and summary questions from live data and offers walk-to actions. Clearly labeled Local engine; provider seam documented in `docs/architecture/ai.md`.
+- 2026-11-02 — Added manual avatar tuning (skin, hair style/color, top color, glasses, beard, cap, chain) on top of generated bases, with live sync to other clients. Updated `forge-shot` to assert the edited config reaches a remote observer.
 
 ## Next
 

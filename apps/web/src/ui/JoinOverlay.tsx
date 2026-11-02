@@ -5,8 +5,12 @@ import { palette, statusColor } from "../theme";
 
 export function JoinOverlay() {
   const params = new URLSearchParams(window.location.search);
+  const hostId = params.get("host");
   const [open, setOpen] = useState(params.get("join") === "1");
-  const [selected, setSelected] = useState("chus");
+  const [selected, setSelected] = useState(() => {
+    if (!hostId) return "chus";
+    return teamCharacters.find((character) => character.id !== hostId)?.id ?? "chus";
+  });
 
   if (!open) return null;
 
@@ -65,7 +69,10 @@ export function JoinOverlay() {
                 <i style={{ background: statusColor[item.status] ?? palette.green }} />
               </span>
               <span>
-                <strong>{item.shortName}</strong>
+                <strong>
+                  {item.shortName}
+                  {item.id === hostId && <span className="join-person__tag">host</span>}
+                </strong>
                 <small>{item.role}</small>
               </span>
             </button>

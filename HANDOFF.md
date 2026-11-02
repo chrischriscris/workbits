@@ -24,7 +24,7 @@ bun run dev
 3. **Second user** — click the user chip (top-right) → **Demo as Jules**, or open `http://localhost:3100/?character=jules` in another tab. You should see each other move.
 4. **Chat** — click the bottom composer, send a message, then open the other tab. Both messages appear. Room chat follows the room you are standing in. History is persisted to `apps/server/data/chat.jsonl` (gitignored).
 5. **Voice** — click the mic in the bottom-right control bar. Allow microphone access. The "Proximity" pill should say `live`, and walking away lowers the other person's volume. Walk into the glass meeting room and the pill becomes `Meeting room · private`; you leave the floor audio room and can only hear others inside the meeting room.
-6. **Avatar Studio** — click the wand (bottom-right). Type a prompt, generate three bases, apply one. The avatar updates in-scene and persists in localStorage.
+6. **Avatar Studio** — click the wand (bottom-right). Type a prompt, generate three bases, then **Tune** one: skin, hair style/color, top color, glasses, beard, cap, chain. Save and the avatar updates in-scene for everyone.
 7. **Workspace Studio** — click the layout icon next to the wand. Generate three desk configurations and apply one; the engineering pod rebuilds for everyone. Persists in localStorage.
 8. **Rooms** — click the office name (top-left) to open the room list; click a room to walk there.
 9. **Invite** — click the share icon. The copied link opens a pick-your-seat screen (Jules, Mira, Felix, Fern, Arlo, Theo, Chus, Claw'd).

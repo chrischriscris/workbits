@@ -32,6 +32,7 @@ export function TopBar() {
       const url = new URL(window.location.href);
       url.searchParams.delete("character");
       url.searchParams.set("join", "1");
+      url.searchParams.set("host", localCharacterId);
       await navigator.clipboard.writeText(url.toString());
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2200);

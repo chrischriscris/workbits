@@ -21,7 +21,7 @@ Workbits is built to be a product, not an internal tool: multi-tenant architectu
 - Shared text chat: Global, Office, Room, and DM; room chat is scoped to the room you are standing in, DMs are routed server-side to the two participants only, and history persists.
 - Local AI assistant: ask where people are, which room is free, who is in the meeting room, or for a summary. Answers come from live presence; no API key, with walk-to actions.
 - Proximity voice via LiveKit: server-minted room-scoped tokens, mic publish, distance-based volume, deafen, and a truly separate LiveKit room for the meeting room. Verified with two browser clients and cross-room isolation.
-- Avatar Studio: prompt → three modular base avatars → apply and persist locally; your avatar syncs to everyone in the office.
+- Avatar Studio: prompt → three modular bases → tune skin, hair, outfit, glasses, beard, cap, and chain → apply and persist; your avatar syncs to everyone in the office.
 - Workspace Studio: prompt → three desk layouts → apply to the engineering pod for everyone, and persist.
 - Office assistant panel: live presence/room Q&A, scene-aware answers, walk-to actions, and an explicit local-engine label.
 - Rooms popover with click-to-walk navigation, invite links with a pick-your-seat onboarding, status menu, animated room-wide emotes, and automatic reconnect.
