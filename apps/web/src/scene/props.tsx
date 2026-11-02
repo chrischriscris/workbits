@@ -758,6 +758,34 @@ export function OfficeChair({
 }
 
 /** Plush upholstered meeting chair: thick seat, rounded back, padded arms. */
+/** Curved chair back: a bevelled annular sector extruded upward, opening toward +z. */
+const chairBackGeometry = (() => {
+  const shape = new THREE.Shape();
+  const inner = 0.2;
+  const outer = 0.245;
+  const from = 0.25;
+  const to = Math.PI - 0.25;
+  shape.absarc(0, 0, outer, from, to, false);
+  shape.absarc(0, 0, inner, to, from, true);
+  shape.closePath();
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth: 0.34,
+    bevelEnabled: true,
+    bevelThickness: 0.025,
+    bevelSize: 0.018,
+    bevelSegments: 3,
+    curveSegments: 28,
+  });
+  geometry.rotateX(-Math.PI / 2);
+  geometry.translate(0, 0.025, 0);
+  return geometry;
+})();
+
+/**
+ * Upholstered shell chair on slim splayed black legs, like the reference's
+ * meeting room: thin seat cushion, a back that curves round into low arms.
+ * Seat faces +z.
+ */
 export function DiningChair({
   position = [0, 0, 0],
   rotation = [0, 0, 0],
@@ -765,21 +793,21 @@ export function DiningChair({
   color = palette.terracotta,
 }: Placement & { color?: string }) {
   const geometry = baked(`diningchair|${color}`, () => {
-    const side = tint(color, -0.07);
+    const shell = tint(color, -0.05);
+    const seatY = 0.46;
     const parts: Part[] = [
-      rbox([0.58, 0.17, 0.54], [0, 0.5, 0.02], color, 0.075),
-      rbox([0.5, 0.05, 0.46], [0, 0.6, 0.05], tint(color, 0.07), 0.025),
-      rbox([0.6, 0.52, 0.15], [0, 0.84, -0.22], color, 0.075, [-0.14, 0, 0]),
-      rbox([0.09, 0.26, 0.46], [-0.29, 0.66, -0.02], side, 0.045),
-      rbox([0.09, 0.26, 0.46], [0.29, 0.66, -0.02], side, 0.045),
+      rbox([0.5, 0.05, 0.46], [0, seatY - 0.02, 0.02], shell, 0.02),
+      rbox([0.48, 0.07, 0.46], [0, seatY + 0.035, 0.03], color, 0.035),
     ];
-    for (const [x, z] of [
-      [-0.22, -0.18],
-      [0.22, -0.18],
-      [-0.22, 0.2],
-      [0.22, 0.2],
+    // Back shell: one smooth tub wrapping round into low arms.
+    parts.push({ g: chairBackGeometry, p: [0, seatY + 0.02, 0.04], c: color });
+    for (const [sx, sz] of [
+      [-1, -1],
+      [1, -1],
+      [-1, 1],
+      [1, 1],
     ] as Array<[number, number]>) {
-      parts.push(box([0.035, 0.44, 0.035], [x, 0.21, z], ink.charcoal, [z * 0.25, 0, -x * 0.25]));
+      parts.push(cyl(0.014, 0.46, [sx * 0.2, 0.22, sz * 0.19 + 0.02], "#2b2f35", [-sz * 0.13, 0, sx * 0.13], G.cylLow));
     }
     return parts;
   });
@@ -1909,49 +1937,30 @@ export function MeetingTable({
   chairScale = 1,
 }: Placement & { length?: number; width?: number; chairColor?: string; chairScale?: number }) {
   const table = baked(`meetingtable|${length}|${width}`, () => {
+    const top = 0.76;
     const parts: Part[] = [
-      rbox([length, 0.06, width], [0, 0.75, 0], ink.oak, 0.025),
-      box([length - 0.3, 0.06, width - 0.3], [0, 0.69, 0], ink.oakDeep),
+      rbox([length, 0.05, width], [0, top - 0.025, 0], palette.oakLight, 0.022),
+      box([length - 0.5, 0.05, width - 0.4], [0, top - 0.075, 0], ink.oakDeep),
     ];
-    for (const x of [-length / 2 + 0.18, length / 2 - 0.18]) {
-      for (const z of [-width / 2 + 0.14, width / 2 - 0.14]) {
-        parts.push(cyl(0.035, 0.72, [x, 0.36, z], ink.oakDeep, undefined, G.cylLow));
+    for (const x of [-length / 2 + 0.28, length / 2 - 0.28]) {
+      for (const z of [-width / 2 + 0.18, width / 2 - 0.18]) {
+        parts.push(cyl(0.038, top - 0.05, [x, (top - 0.05) / 2, z], ink.oakDeep, [Math.PI, 0, 0], G.pot));
       }
     }
-    parts.push(...bookStackParts(2, [length * 0.32, 0.78, -0.25], 3));
-    parts.push(...mugParts([-length * 0.18, 0.78, 0.32], palette.paper));
-    parts.push(...mugParts([length * 0.2, 0.78, 0.3], "#a8bfa3"));
-    parts.push(...mugParts([-length * 0.36, 0.78, -0.28], "#d98e73"));
-    parts.push(rbox([0.12, 0.02, 0.2], [length * 0.05, 0.79, -0.3], "#2b313a", 0.01));
-    parts.push(cyl(0.1, 0.05, [length * 0.12, 0.8, 0.05], ink.charcoal));
-    // A paper and pen at every seat, plus a water carafe and glasses.
-    [-length / 3, 0, length / 3].forEach((x, index) => {
-      for (const side of [-1, 1]) {
-        const z = side * (width / 2 - 0.27);
-        const turn = (index + side) * 0.12;
-        parts.push(box([0.22, 0.005, 0.3], [x + 0.18, 0.783, z], ink.white, [0, turn, 0]));
-        parts.push(box([0.2, 0.004, 0.28], [x + 0.21, 0.788, z + side * 0.02], "#f1ede4", [0, turn + 0.1, 0]));
-        parts.push(cyl(0.007, 0.15, [x + 0.36, 0.792, z], pick([ink.charcoal, palette.terracotta, palette.slate], index), [Math.PI / 2, 0, 0.5], G.cylLow));
-      }
-    });
-    parts.push(cyl(0.065, 0.24, [-length * 0.06, 0.9, 0.22], "#dce9ea", undefined, G.pot));
-    parts.push(cyl(0.03, 0.04, [-length * 0.06, 1.04, 0.22], "#c9d4d6"));
-    for (const [x, z] of [[-length * 0.02, 0.32], [-length * 0.11, 0.3]] as Array<[number, number]>) {
-      parts.push(cyl(0.035, 0.1, [x, 0.83, z], "#e6eeee", undefined, G.pot));
-    }
-    parts.push(...mugParts([length * 0.4, 0.78, 0.36], "#e8dccb"));
-    parts.push(...mugParts([-length * 0.05, 0.78, -0.42], "#7f9fb8"));
+    // Sparse, like the reference: a conference puck, two mugs, a closed notebook.
+    parts.push(cyl(0.09, 0.035, [length * 0.1, top + 0.018, 0.1], ink.charcoal, undefined, G.round));
+    parts.push(...grow(mugParts([-length * 0.22, top, 0.3], palette.paper), 1.25, [-length * 0.22, top, 0.3]));
+    parts.push(...grow(mugParts([length * 0.28, top, -0.32], "#e8dccb"), 1.25, [length * 0.28, top, -0.32]));
     return parts;
   });
   const xs = [-length / 3, 0, length / 3];
-  const offset = width / 2 + 0.3 * chairScale;
+  const offset = width / 2 + 0.16 * chairScale;
   return (
     <group position={position}>
       <BakedMesh geometry={table} />
-      <Laptop position={[-length * 0.3, 0.78, 0.12]} rotation={[0, 0.35, 0]} />
-      <Notebook position={[length * 0.32, 0.78, 0.22]} rotation={[0, -0.25, 0]} color={palette.sage} />
-      <Plant position={[-0.1, 0.78, -0.05]} scale={0.55} pot={ink.cream} kind="leafy" />
-      <Plant position={[length * 0.42, 0.78, -0.02]} scale={0.5} pot={palette.terracotta} kind="succulent" />
+      <Laptop position={[-length * 0.3, 0.76, 0.12]} rotation={[0, 0.35, 0]} />
+      <Notebook position={[length * 0.32, 0.76, 0.22]} rotation={[0, -0.25, 0]} color={palette.sage} />
+      <Plant position={[-0.15, 0.76, -0.05]} scale={0.6} pot={palette.paper} kind="leafy" />
       {xs.map((x) => (
         <group key={x}>
           <DiningChair position={[x, 0, -offset]} color={chairColor} scale={chairScale} />
@@ -2109,7 +2118,7 @@ export function Pendant({
   length = 2.4,
   light = false,
   size = 1,
-}: Placement & { kind?: "dome" | "cone" | "bar"; drop?: number; length?: number; light?: boolean; size?: number }) {
+}: Placement & { kind?: "dome" | "cone" | "bell" | "bar"; drop?: number; length?: number; light?: boolean; size?: number }) {
   return (
     <group position={position}>
       {kind === "bar" ? (
@@ -2125,9 +2134,11 @@ export function Pendant({
           <Block size={[0.01, drop, 0.01]} position={[0, 0.28 + drop / 2, 0]} color={ink.charcoal} castShadow={false} />
           <mesh
             position={[0, 0.15, 0]}
-            scale={kind === "dome" ? [0.42 * size, 0.3 * size, 0.42 * size] : [0.3 * size, 0.32 * size, 0.3 * size]}
-            geometry={kind === "dome" ? domeGeometry : G.cone}
-            material={kind === "dome" ? mat("#f4eee4", 0.7) : mat(ink.oak, 0.8)}
+            scale={
+              kind === "dome" ? [0.42 * size, 0.3 * size, 0.42 * size] : kind === "bell" ? [0.24 * size, 0.24 * size, 0.24 * size] : [0.3 * size, 0.32 * size, 0.3 * size]
+            }
+            geometry={kind === "dome" ? domeGeometry : kind === "bell" ? bellGeometry : G.cone}
+            material={kind === "dome" ? mat("#f4eee4", 0.7) : kind === "bell" ? shadeMaterial : mat(ink.oak, 0.8)}
             dispose={null}
           />
           <mesh position={[0, 0.05, 0]} scale={0.08 * size} geometry={G.sphere} material={glowMaterial} dispose={null} />
@@ -2139,6 +2150,19 @@ export function Pendant({
 }
 
 const domeGeometry = new THREE.SphereGeometry(1, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2);
+/** Bell shade: narrow neck flaring to a wide lip, unit size, open at the bottom. */
+const bellGeometry = new THREE.LatheGeometry(
+  [
+    [0.0, 1.0],
+    [0.16, 1.0],
+    [0.2, 0.9],
+    [0.3, 0.62],
+    [0.52, 0.3],
+    [0.86, 0.08],
+    [1.0, 0.0],
+  ].map(([x, y]) => new THREE.Vector2(x, y)),
+  40,
+);
 domeGeometry.translate(0, -0.5, 0);
 
 export function Whiteboard({

@@ -217,7 +217,7 @@ function MeetingRoom() {
 
       <Rug position={[-4.8, 0.035, -3.2]} width={4.6} depth={3.6} variant="cream" />
       <MeetingTable position={[-4.8, 0, -3.25]} length={3.4} width={1.45} chairScale={1.2} />
-      <Pendant position={[-4.8, 1.72, -3.25]} kind="dome" drop={0.7} size={1.4} light />
+      <Pendant position={[-4.8, 1.62, -3.25]} kind="bell" drop={1.2} size={1.6} light />
 
       <WallArt position={[LEFT_FACE + 0.03, 1.62, -3.25]} rotation={[0, HALF_PI, 0]} variant={0} width={1.7} height={1.3} />
       <Credenza position={[LEFT_FACE + 0.25, 0, -3.25]} rotation={[0, HALF_PI, 0]} length={1.9} height={0.62} depth={0.42} />
