@@ -69,13 +69,22 @@ const walkLabel = await walkButton.innerText();
 console.log("action:", walkLabel.replace(/\n/g, " "));
 await page.screenshot({ path: "artifacts/shots/assistant.png", timeout: 120000 });
 
+await walkButton.click();
+await page.waitForFunction(
+  () => window.__WORKBITS_DEBUG__?.().localZone === "engineering",
+  undefined,
+  { timeout: 25000 },
+);
+console.log("walk action arrived:", await page.evaluate(() => window.__WORKBITS_DEBUG__?.().localZone));
+
 const ok =
   greeting.includes("Hi.") &&
   presence.includes("Connected now") &&
   presence.toLowerCase().includes("fern") &&
   meeting.toLowerCase().includes("meeting room") &&
   fern.toLowerCase().includes("engineering") &&
-  walkLabel.toLowerCase().includes("walk to engineering");
+  walkLabel.toLowerCase().includes("walk to engineering") &&
+  (await page.evaluate(() => window.__WORKBITS_DEBUG__?.().localZone)) === "engineering";
 console.log("ASSISTANT:", ok ? "PASS" : "FAIL");
 
 await bot.leave();
