@@ -29,7 +29,7 @@ Source of truth for what is actually done. Update at the end of every work sessi
 - 2026-11-02 — Smoke-tested all nine models through T3 Code: Luna, Astra, Sol, Terra, Opus 5.5, Sonnet 5.5, Haiku 5.5, DeepSeek V4.1 Flash, Kimi K3.1 Pro. All green; no provider failures.
 - 2026-11-02 — Recorded the delegation policy: subagents only for parallel/bulk/fresh-context/other-model work, never as a default; handoff tax and cost are real. Claude weekly at 55% left, resets ~19:00 UTC; Claude is the workhorse for this run.
 - 2026-11-02 — Received the team seed pack. Preserved the group reference in `art/team-reference.png`; raw photos in `seeds/team/photos/` (gitignored). Created `seeds/team/manifest.json`, `docs/art/team-cast.md`, and `docs/architecture/avatars.md`. No product code.
-- 2026-11-02 — Recorded the Codex/ChatGPT plan: Luna for bulk reads, Terra for copy, Sol for planning/critique and limited image generation, Astra 0–1 critical call; ~6–10 Codex calls total for the run.
+- 2026-11-02 — Recorded Codex/ChatGPT routing: Luna for bulk reads, Terra for copy, Sol for planning/critique and image generation, Astra only for rare critical calls. No fixed call budget; usage is checked with `codexbar`.
 
 ## Next
 

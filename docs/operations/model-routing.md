@@ -53,26 +53,25 @@ Subagents are expensive: they pay a handoff tax, lack the parent's full context,
 
 ---
 
-## Codex / ChatGPT plan for this run
+## Codex / ChatGPT usage
 
-Codex is scarce ($20 Plus plan, ~94% weekly left at baseline). Use it deliberately, not per phase.
+**No call budget.** Use the right model for the job, and let the remaining weekly usage decide when to slow down.
 
-The call counts below are a **soft planning estimate, not a hard cap**. They exist to avoid spending the week on low-value calls. Adjust upward when a task genuinely benefits, downward when usage gets tight; the real signal is the weekly percentage from `codexbar`, not the call count.
-
-| Model | Use in this run | Budget |
-|---|---|---|
-| **Luna 6** | Bulk reads: summarize long docs, scan license pages, triage test/log output, compare options | 2–4 calls |
-| **Terra 6.1** | Communication/text: landing copy, onboarding, empty/error states, UX microcopy, demo script | 1–2 calls |
-| **Sol 6.1** | Planner/critic: phase-plan review, realtime/voice protocol critique, art/UX second opinion | 2–3 calls |
-| **Astra 6** | Only if one irreversible architecture/security decision needs it (e.g., final authz/tenant-isolation review). Low effort, short prompt, never `xhigh` | 0–1 call |
-| **Sol image generation** | Concept/portrait/decor generation for the demo; no runtime API key needed | 2–4 images |
+| Model | Use |
+|---|---|
+| **Luna 6** | Bulk reads: summarize long docs, scan license pages, triage test/log output, compare options |
+| **Terra 6.1** | Communication/text: landing copy, onboarding, empty/error states, UX microcopy, demo script |
+| **Sol 6.1** | Planner/critic: phase-plan review, realtime/voice protocol critique, art/UX second opinion |
+| **Astra 6** | Only if one irreversible architecture/security decision needs it. Low effort, short prompt, never `xhigh` |
+| **Sol image generation** | Concept/portrait/decor generation for the demo; no runtime API key needed |
 
 Rules:
 
-- Total Codex usage for the night should be roughly **6–10 calls**, not one per phase.
-- Prefer Sol/Terra/Luna. Astra is the drawer model.
+- Check remaining usage with `codexbar usage --provider codex --format json` (or `bun run usage`) before and after significant Codex use.
+- No fixed call counts. The weekly percentage is the signal; adjust based on what is left.
+- Prefer Sol/Terra/Luna. Astra is the expensive one; keep it rare and short.
 - If a Codex call can be replaced by a local test, grep, or screenshot, do that instead.
-- Snapshot usage before and after Codex-heavy moments.
+- If usage drops faster than expected, shift to Claude/DeepSeek.
 - Never use Astra `xhigh` unless the user explicitly asks.
 
 ## Claude weekly context (2026-11-02)
