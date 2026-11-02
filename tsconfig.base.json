@@ -15,12 +15,9 @@
     "isolatedModules": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "baseUrl": ".",
     "paths": {
-      "@workbits/shared/*": ["packages/shared/src/*"],
-      "@workbits/db/*": ["packages/db/src/*"],
-      "@workbits/ui/*": ["packages/ui/src/*"],
-      "@workbits/assets/*": ["packages/assets/src/*"]
+      "@workbits/shared": ["./packages/shared/src/index.ts"],
+      "@workbits/shared/*": ["./packages/shared/src/*"]
     }
   }
 }

@@ -125,6 +125,19 @@ Append-only. If a decision changes, add a new ADR that supersedes the old one; d
 
 ---
 
+## ADR-011 — Message-based presence for the MVP realtime layer
+
+- **Status:** Accepted for the MVP; revisit before scale.
+- **Date:** 2026-11-02
+- **Context:** The Colyseus 0.16 schema/reflection path produced an empty `players` map on the client across multiple schema and version combinations. The room/message protocol worked reliably, and presence/chat are the critical path.
+- **Decision:** For the first sellable demo, the `OfficeRoom` keeps an authoritative in-memory player map and broadcasts `welcome`, `player_added`, `player_moved`, `player_left`, and `chat` messages. Movement is validated and clamped server-side. The state schema is not used.
+- **Consequences:**
+  - Realtime presence and chat work now; the client has no schema decoder dependency.
+  - Bandwidth is higher than schema delta sync; acceptable at 25–50 players.
+  - Late joiners get a full `welcome` snapshot; no schema handshake.
+  - Before horizontal scale/100-player offices, migrate to Colyseus Schema or a binary protocol and load-test.
+  - The server is still authoritative for positions, chat identity, and bounds.
+
 ## ADR-010 — AI is constrained and optional
 
 - **Status:** Accepted

@@ -31,6 +31,11 @@ Source of truth for what is actually done. Update at the end of every work sessi
 - 2026-11-02 — Received the team seed pack. Preserved the group reference in `art/team-reference.png`; raw photos in `seeds/team/photos/` (gitignored). Created `seeds/team/manifest.json`, `docs/art/team-cast.md`, and `docs/architecture/avatars.md`. No product code.
 - 2026-11-02 — Recorded Codex/ChatGPT routing: Luna for bulk reads, Terra for copy, Sol for planning/critique and image generation, Astra only for rare critical calls. No fixed call budget; usage is checked with `codexbar`.
 
+- 2026-11-02 — Built the first playable web slice: Vite/React/R3F office, procedural furniture and rooms, team avatars from the seed pack, camera pan/zoom, click-to-walk and WASD, roster, chat dock, controls, and product shell.
+- 2026-11-02 — Added the Colyseus realtime server (0.16, Node + tsx) with authoritative movement bounds, presence messages, and shared chat. Verified with a headless bot: welcome snapshot, chat both directions, and a remote avatar in the scene.
+- 2026-11-02 — Added `bun run shot`, `bun run shot:multi`, and the bot-check script. Known issue: conditional static-avatar replacement can emit a React `removeChild` console error; the scene remains usable.
+- 2026-11-02 — Recorded ADR-011: message-based presence for the MVP, schema migration before scale.
+
 ## Next
 
 1. Receive the user's model/seed references and record them in `docs/research/models.md`.

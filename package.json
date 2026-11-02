@@ -12,6 +12,18 @@
     "node": ">=22"
   },
   "scripts": {
+    "dev": "bash scripts/dev.sh",
+    "dev:web": "cd apps/web && bun run dev",
+    "dev:server": "cd apps/server && bun run dev",
+    "build": "cd apps/web && bun run build",
+    "typecheck": "cd apps/web && bun run typecheck && cd ../server && bun run typecheck",
+    "shot": "bun scripts/shot.mjs",
+    "shot:multi": "bun scripts/multi-shot.mjs",
     "usage": "bash scripts/usage.sh"
+  },
+  "devDependencies": {
+    "@colyseus/schema": "3.0.76",
+    "colyseus.js": "^0.16.22",
+    "playwright": "^1.64.1"
   }
 }

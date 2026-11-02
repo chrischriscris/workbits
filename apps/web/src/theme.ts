@@ -1,0 +1,33 @@
+export const palette = {
+  sand: "#f4e9dc",
+  warmWhite: "#fbf7f1",
+  paper: "#fffdf8",
+  oak: "#d9b98c",
+  oakLight: "#e7cfa9",
+  oakDark: "#b98f62",
+  terracotta: "#d98e73",
+  terracottaDeep: "#c47358",
+  sage: "#a8bfa3",
+  sageDeep: "#7f9c7b",
+  olive: "#6f8f6a",
+  slate: "#5c6b7a",
+  slateDeep: "#3f4c5a",
+  ink: "#2e3440",
+  muted: "#7a8494",
+  glass: "#cfe8ef",
+  accent: "#6c8cff",
+  accentDeep: "#4f6ef0",
+  green: "#58b98a",
+  amber: "#e0a458",
+  red: "#e07a5f",
+  water: "#bfdde8",
+  grass: "#a9c98e",
+  sky: "#dff0f4",
+} as const;
+
+export const statusColor: Record<string, string> = {
+  available: palette.green,
+  focus: palette.red,
+  away: palette.amber,
+  meeting: palette.accent,
+};

@@ -1,0 +1,61 @@
+import { mkdir } from "node:fs/promises";
+import { chromium } from "playwright";
+import { Client } from "colyseus.js";
+
+const base = process.argv[2] ?? "http://127.0.0.1:3100/";
+await mkdir("artifacts/shots", { recursive: true });
+
+const browser = await chromium.launch({
+  args: [
+    "--use-gl=angle",
+    "--use-angle=swiftshader",
+    "--enable-unsafe-swiftshader",
+    "--ignore-gpu-blocklist",
+  ],
+});
+const page = await browser.newPage({ viewport: { width: 1200, height: 760 } });
+page.on("pageerror", (error) => console.log("pageerror:", error.message));
+await page.goto(`${base}?character=chus&e2e=1`, { waitUntil: "domcontentloaded" });
+await page.waitForFunction(() => window.__WORKBITS_READY__ === true, { timeout: 30000 });
+await page
+  .waitForFunction(
+    () => document.querySelector(".live-pill")?.textContent?.includes("Live"),
+    { timeout: 20000 },
+  )
+  .catch(() => console.error("browser did not reach Live"));
+
+const client = new Client("ws://127.0.0.1:3101");
+const bot = await client.joinOrCreate("office", {
+  characterId: "jules",
+  name: "Jules (bot)",
+});
+const received = [];
+bot.onMessage("chat", (message) => {
+  received.push(message);
+  console.log("bot received chat:", message.authorName, message.body);
+});
+
+console.log("bot state keys", Object.keys(bot.state ?? {}));
+console.log("bot players type", typeof bot.state?.players, typeof bot.state?.players?.onAdd, bot.state?.players?.size);
+console.log("bot players", bot.state?.players ? [...bot.state.players.values()].map((p) => ({ ...p })) : null);
+bot.send("move", { x: -4.9, z: 4.3, rotation: 0.5, moving: false });
+await page.waitForTimeout(1500);
+
+console.log("tags:", await page.locator(".name-tag").allTextContents());
+console.log("debug:", await page.evaluate(() => window.__WORKBITS_DEBUG__?.()));
+
+await page.locator(".chat-bar").click();
+await page.locator('input[aria-label="Message"]').fill("hello from chus");
+await page.locator('input[aria-label="Message"]').press("Enter");
+await page.waitForTimeout(900);
+console.log("browser chat:", await page.locator(".chat__messages").innerText());
+
+bot.send("chat", { channel: "office", body: "hello from jules bot" });
+await page.waitForTimeout(900);
+console.log("browser chat after bot:", await page.locator(".chat__messages").innerText());
+
+await page.locator(".icon-button[aria-label='Close chat']").click();
+await page.screenshot({ path: "artifacts/shots/multi-bot.png", timeout: 120000, animations: "disabled" });
+
+await bot.leave();
+await browser.close();
