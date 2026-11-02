@@ -53,6 +53,26 @@ Subagents are expensive: they pay a handoff tax, lack the parent's full context,
 
 ---
 
+## Codex / ChatGPT plan for this run
+
+Codex is scarce ($20 Plus plan, ~94% weekly left at baseline). Use it deliberately, not per phase.
+
+| Model | Use in this run | Budget |
+|---|---|---|
+| **Luna 6** | Bulk reads: summarize long docs, scan license pages, triage test/log output, compare options | 2–4 calls |
+| **Terra 6.1** | Communication/text: landing copy, onboarding, empty/error states, UX microcopy, demo script | 1–2 calls |
+| **Sol 6.1** | Planner/critic: phase-plan review, realtime/voice protocol critique, art/UX second opinion | 2–3 calls |
+| **Astra 6** | Only if one irreversible architecture/security decision needs it (e.g., final authz/tenant-isolation review). Low effort, short prompt, never `xhigh` | 0–1 call |
+| **Sol image generation** | Concept/portrait/decor generation for the demo; no runtime API key needed | 2–4 images |
+
+Rules:
+
+- Total Codex usage for the night should be roughly **6–10 calls**, not one per phase.
+- Prefer Sol/Terra/Luna. Astra is the drawer model.
+- If a Codex call can be replaced by a local test, grep, or screenshot, do that instead.
+- Snapshot usage before and after Codex-heavy moments.
+- Never use Astra `xhigh` unless the user explicitly asks.
+
 ## Claude weekly context (2026-11-02)
 
 - Claude weekly is at **45% used / 55% left**, resets in ~14 h (19:00 UTC). The user used 45% over six days; today is the last day of the window.
