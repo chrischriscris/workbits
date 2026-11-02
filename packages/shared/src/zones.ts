@@ -1,4 +1,4 @@
-export type ZoneId = "lounge" | "engineering" | "meeting" | "kitchen" | "nap" | "garden";
+export type ZoneId = "lounge" | "engineering" | "meeting" | "kitchen" | "nap";
 
 export type Zone = {
   id: ZoneId;
@@ -8,12 +8,11 @@ export type Zone = {
 };
 
 export const zones: Zone[] = [
-  { id: "lounge", name: "Lounge", private: false, anchor: { x: -5.7, z: 2.6 } },
-  { id: "engineering", name: "Engineering", private: false, anchor: { x: 1.4, z: 5.6 } },
-  { id: "meeting", name: "Meeting Room", private: true, anchor: { x: -6.15, z: -2.2 } },
-  { id: "kitchen", name: "Kitchen", private: false, anchor: { x: 6.4, z: -5.1 } },
-  { id: "nap", name: "Nap Room", private: true, anchor: { x: 7.7, z: 5.1 } },
-  { id: "garden", name: "Garden", private: false, anchor: { x: 8.2, z: 1.6 } },
+  { id: "lounge", name: "Lounge", private: false, anchor: { x: -4.6, z: 3.2 } },
+  { id: "engineering", name: "Engineering", private: false, anchor: { x: -1.3, z: 3.8 } },
+  { id: "meeting", name: "Meeting Room", private: true, anchor: { x: -3.0, z: -1.6 } },
+  { id: "kitchen", name: "Kitchen", private: false, anchor: { x: 3.6, z: -3.2 } },
+  { id: "nap", name: "Nap Room", private: true, anchor: { x: 5.2, z: 4.9 } },
 ];
 
 const byId = Object.fromEntries(zones.map((zone) => [zone.id, zone]));
@@ -27,11 +26,10 @@ export function zoneById(id: string): Zone | undefined {
  * for chat routing and private-room gating, so client and server cannot drift.
  */
 export function zoneAt(x: number, z: number): ZoneId {
-  if (x < -2.4 && z < -1.1) return "meeting";
-  if (x < -4.2 && z >= -1.1) return "lounge";
-  if (x >= -2.4 && z < -3.0) return "kitchen";
-  if (x > 6.6 && z >= 3.1) return "nap";
-  if (x > 6.6) return "garden";
+  if (x < -2.2 && z < -0.9) return "meeting";
+  if (x < -3.4 && z >= -0.9) return "lounge";
+  if (x >= -2.2 && z < -2.6) return "kitchen";
+  if (x > 4.6 && z >= 2.0) return "nap";
   return "engineering";
 }
 

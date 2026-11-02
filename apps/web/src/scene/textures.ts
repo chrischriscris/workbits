@@ -115,10 +115,58 @@ function rugTexture(
 export function createTextures() {
   const random = seeded(4217);
 
-  // Light honey oak planks: long boards, staggered butt joints, soft grain.
-  // Seams are a few texels wide so they survive mipmapping at diorama distance.
+  // Pale washed oak: long boards, staggered butt joints, very soft grain.
+  // The reference floor is close to warm ivory, not honey; keep the value high
+  // and the saturation low so the props carry the color.
+  // Window-shaped pool of sunlight: four soft panes on black, for additive
+  // blending onto the floor.
+  const sunPatch = makeTexture(256, (ctx, size) => {
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, size, size);
+    ctx.filter = "blur(9px)";
+    ctx.fillStyle = "#fff";
+    const pane = size * 0.36;
+    const gap = size * 0.05;
+    const start = (size - pane * 2 - gap) / 2;
+    for (const x of [start, start + pane + gap]) {
+      for (const y of [start, start + pane + gap]) ctx.fillRect(x, y, pane, pane);
+    }
+    ctx.filter = "none";
+  });
+
+  // Pale warm microcement: big soft clouds and a faint speckle, drawn with
+  // wrap-around so it tiles without seams.
+  const concrete = makeTexture(1024, (ctx, size) => {
+    ctx.fillStyle = "#e3dfda";
+    ctx.fillRect(0, 0, size, size);
+    const blob = (x: number, y: number, radius: number, color: string) => {
+      for (const dx of [-size, 0, size]) {
+        for (const dy of [-size, 0, size]) {
+          const gradient = ctx.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, radius);
+          gradient.addColorStop(0, color);
+          gradient.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.fillStyle = gradient;
+          ctx.fillRect(x + dx - radius, y + dy - radius, radius * 2, radius * 2);
+        }
+      }
+    };
+    for (let index = 0; index < 26; index += 1) {
+      const light = random() > 0.5;
+      blob(
+        random() * size,
+        random() * size,
+        120 + random() * 260,
+        light ? `rgba(248, 246, 243, ${0.18 + random() * 0.16})` : `rgba(196, 190, 182, ${0.1 + random() * 0.12})`,
+      );
+    }
+    for (let index = 0; index < 5000; index += 1) {
+      ctx.fillStyle = random() > 0.5 ? "rgba(255,255,255,0.18)" : "rgba(160,148,132,0.12)";
+      ctx.fillRect(random() * size, random() * size, 1.5, 1.5);
+    }
+  });
+
   const wood = makeTexture(512, (ctx, size) => {
-    ctx.fillStyle = "#e0b77f";
+    ctx.fillStyle = "#e7d7c4";
     ctx.fillRect(0, 0, size, size);
     const rows = 10;
     const rowHeight = size / rows;
@@ -129,18 +177,18 @@ export function createTextures() {
         const tone = random();
         ctx.fillStyle =
           tone > 0.62
-            ? `rgba(255, 236, 200, ${0.16 + random() * 0.14})`
+            ? `rgba(255, 246, 232, ${0.18 + random() * 0.14})`
             : tone > 0.3
-              ? `rgba(228, 182, 120, ${0.12 + random() * 0.14})`
-              : `rgba(210, 160, 98, ${0.1 + random() * 0.12})`;
+              ? `rgba(228, 210, 188, ${0.12 + random() * 0.14})`
+              : `rgba(208, 186, 160, ${0.1 + random() * 0.12})`;
         ctx.fillRect(x, row * rowHeight, length, rowHeight);
-        // Butt joint: a dark seam with a pale bevel next to it.
-        ctx.fillStyle = "rgba(128, 86, 46, 0.5)";
-        ctx.fillRect(x, row * rowHeight, 3, rowHeight);
-        ctx.fillStyle = "rgba(255, 244, 222, 0.4)";
-        ctx.fillRect(x + 3, row * rowHeight, 2, rowHeight);
+        // Butt joint: a soft seam with a pale bevel next to it.
+        ctx.fillStyle = "rgba(150, 120, 92, 0.32)";
+        ctx.fillRect(x, row * rowHeight, 2, rowHeight);
+        ctx.fillStyle = "rgba(255, 250, 240, 0.5)";
+        ctx.fillRect(x + 2, row * rowHeight, 2, rowHeight);
         for (let grain = 0; grain < 4; grain += 1) {
-          ctx.strokeStyle = `rgba(170, 124, 72, ${0.08 + random() * 0.07})`;
+          ctx.strokeStyle = `rgba(188, 162, 132, ${0.06 + random() * 0.05})`;
           ctx.lineWidth = 1.2;
           ctx.beginPath();
           const y = row * rowHeight + 5 + random() * (rowHeight - 10);
@@ -151,10 +199,10 @@ export function createTextures() {
         x += length;
       }
       // Long seam between rows, with a highlight on the lower board's edge.
-      ctx.fillStyle = "rgba(122, 82, 44, 0.55)";
-      ctx.fillRect(0, row * rowHeight, size, 3.5);
-      ctx.fillStyle = "rgba(255, 244, 222, 0.45)";
-      ctx.fillRect(0, row * rowHeight + 3.5, size, 2);
+      ctx.fillStyle = "rgba(146, 116, 88, 0.34)";
+      ctx.fillRect(0, row * rowHeight, size, 3);
+      ctx.fillStyle = "rgba(255, 250, 240, 0.55)";
+      ctx.fillRect(0, row * rowHeight + 3, size, 2);
     }
   });
   repeat(wood, 5, 3.6);
@@ -377,6 +425,8 @@ export function createTextures() {
   });
 
   return {
+    sunPatch,
+    concrete,
     wood,
     tile,
     stone,

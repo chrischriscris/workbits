@@ -478,33 +478,29 @@ function plantParts(kind: PlantKind, pot: string, leaf: string): Part[] {
       parts.push(...bladeParts([0, h, 0], index * 1.26 + 0.6, 0.45, 0.42, 0.24, pick(shades, index + 1), 0.45));
     }
   } else if (kind === "bush") {
-    const clumps: Array<[number, number, number, number]> = [
-      [0, 0.22, 0, 0.23],
-      [0.15, 0.15, 0.06, 0.17],
-      [-0.14, 0.17, -0.05, 0.18],
-      [0.03, 0.38, -0.08, 0.17],
-      [-0.06, 0.14, 0.15, 0.16],
-      [0.09, 0.32, 0.12, 0.15],
-      [-0.12, 0.32, 0.06, 0.14],
-      [0.12, 0.18, -0.14, 0.14],
-      [-0.02, 0.48, 0.04, 0.12],
-    ];
-    clumps.forEach(([x, y, z, size], index) => parts.push(ball([size, size * 0.9, size], [x, h + y, z], pick(shades, index))));
-  } else if (kind === "trailing") {
-    parts.push(ball([0.14, 0.1, 0.14], [0, h + 0.1, 0], palette.olive));
-    for (let index = 0; index < 9; index += 1) {
-      const angle = index * 0.75;
-      parts.push(ball([0.12, 0.09, 0.12], [Math.cos(angle) * 0.11, h + 0.06 + (index % 3) * 0.035, Math.sin(angle) * 0.11], pick(shades, index)));
+    // Pothos-style mound: three tiers of broad leaves, no balls.
+    parts.push(ball([0.16, 0.12, 0.16], [0, h + 0.1, 0], tint(palette.olive, -0.04)));
+    for (let index = 0; index < 30; index += 1) {
+      const tier = index % 3;
+      const angle = (index / 30) * Math.PI * 2 * 3 + tier * 0.5;
+      const tilt = tier === 0 ? 0.25 : tier === 1 ? 0.7 : 1.15;
+      const length = tier === 0 ? 0.34 : tier === 1 ? 0.36 : 0.3;
+      parts.push(...bladeParts([0, h + 0.05 + (2 - tier) * 0.04, 0], angle, tilt, length, 0.22, pick(shades, index), 0.4));
     }
-    // Vines spill over the rim and keep reaching outward as they fall.
-    for (let vine = 0; vine < 13; vine += 1) {
-      const angle = (vine / 13) * Math.PI * 2 + 0.2;
-      const drop = 4 + (vine % 4);
+  } else if (kind === "trailing") {
+    parts.push(ball([0.12, 0.08, 0.12], [0, h + 0.07, 0], tint(palette.olive, -0.04)));
+    for (let index = 0; index < 12; index += 1) {
+      const angle = (index / 12) * Math.PI * 2;
+      parts.push(...bladeParts([0, h + 0.04, 0], angle, 0.55 + (index % 3) * 0.3, 0.24, 0.17, pick(shades, index), 0.5));
+    }
+    // Vines spill over the rim: fewer, larger, flat heart leaves.
+    for (let vine = 0; vine < 7; vine += 1) {
+      const angle = (vine / 7) * Math.PI * 2 + 0.2;
+      const drop = 3 + (vine % 3);
       for (let step = 0; step < drop; step += 1) {
-        const reach = r + 0.04 + step * 0.022;
-        const sway = (step % 2 === 0 ? 1 : -1) * 0.02;
+        const reach = r + 0.05 + step * 0.03;
         parts.push(
-          ball([0.085, 0.055, 0.075], [Math.cos(angle) * reach - Math.sin(angle) * sway, h - step * 0.09, Math.sin(angle) * reach + Math.cos(angle) * sway], pick(shades, vine + step), [0, -angle, 0.5], G.leaf),
+          ball([0.11, 0.022, 0.085], [Math.cos(angle) * reach, h - 0.02 - step * 0.11, Math.sin(angle) * reach], pick(shades, vine + step), [0.9, -angle, 0.25 * (step % 2 ? 1 : -1)], G.leaf),
         );
       }
     }
@@ -547,19 +543,18 @@ export function Tree({ position = [0, 0, 0], scale = 1, pot = ink.cream }: Place
       cyl(0.026, 0.8, [-0.12, 1.2, 0.04], "#8a6a4f", [0.1, 0, 0.4], G.cylLow),
       cyl(0.026, 0.7, [0.16, 1.25, -0.04], "#8a6a4f", [-0.1, 0, -0.45], G.cylLow),
     ];
+    // Fiddle-leaf crown: a dark core so gaps never show through, then broad
+    // leaves pointing outward from an ellipsoid shell.
+    parts.push(ball([0.3, 0.27, 0.3], [0, 1.74, 0], tint(palette.sageDeep, -0.1)));
     const random = rng(311);
-    for (let index = 0; index < 18; index += 1) {
-      const angle = index * 2.4;
-      const layer = index % 3;
-      const reach = 0.18 + layer * 0.17 + random() * 0.08;
-      const size = 0.34 - layer * 0.04 + random() * 0.06;
-      parts.push(
-        ball(
-          [size, size * 0.82, size],
-          [Math.cos(angle) * reach, 1.45 + (2 - layer) * 0.24 + random() * 0.18, Math.sin(angle) * reach],
-          pick(shades, index),
-        ),
-      );
+    for (let index = 0; index < 64; index += 1) {
+      const angle = index * 2.399;
+      const elevation = -0.6 + random() * 1.8;
+      const ring = Math.cos(elevation);
+      // Same azimuth convention as leafDirection, so every leaf points outward.
+      const base: V3 = [-Math.cos(angle) * 0.3 * ring, 1.74 + Math.sin(elevation) * 0.27, Math.sin(angle) * 0.3 * ring];
+      const tilt = Math.max(0.2, Math.PI / 2 - elevation * 0.8);
+      parts.push(...bladeParts(base, angle, tilt, 0.42 + random() * 0.1, 0.3, pick(shades, index), 0.25));
     }
     return parts;
   });
@@ -649,16 +644,18 @@ export function Monitor({
   width = 0.72,
   height = 0.42,
 }: Placement & { width?: number; height?: number }) {
+  // Chunky toy proportions: thick bezel, solid neck and foot.
+  const lift = 0.26;
   const body = baked(`monitor|${width}|${height}`, () => [
-    rbox([0.26, 0.02, 0.18], [0, 0.01, 0], "#c9ced4", 0.02),
-    box([0.05, 0.3, 0.035], [0, 0.17, -0.04], "#c9ced4"),
-    rbox([width + 0.04, height + 0.04, 0.03], [0, 0.22 + height / 2, -0.01], "#2b313a", 0.015),
+    rbox([0.36, 0.035, 0.26], [0, 0.0175, 0], "#d9dde2", 0.016),
+    rbox([0.08, lift + 0.04, 0.06], [0, (lift + 0.04) / 2, -0.06], "#d9dde2", 0.025),
+    rbox([width + 0.08, height + 0.08, 0.065], [0, lift + height / 2, -0.02], "#2a2f37", 0.03),
   ]);
   return (
     <group position={position} rotation={rotation}>
       <BakedMesh geometry={body} />
       <mesh
-        position={[0, 0.22 + height / 2, 0.0065]}
+        position={[0, lift + height / 2, 0.0135]}
         scale={[width, height, 1]}
         geometry={G.plane}
         material={screenMaterial}
@@ -693,27 +690,35 @@ export function OfficeChair({
   color = ink.fabric,
   accent = ink.white,
 }: Placement & { color?: string; accent?: string }) {
+  // Chunky task chair: white shell, padded seat, ribbed back, arms, wide star base.
   const geometry = baked(`officechair|${color}|${accent}`, () => {
+    const rib = tint(color, 0.08);
     const parts: Part[] = [
-      cyl(0.05, 0.08, [0, 0.07, 0], ink.charcoal),
-      cyl(0.03, 0.4, [0, 0.33, 0], ink.chrome, undefined, G.cylLow),
-      rbox([0.5, 0.05, 0.46], [0, 0.535, 0], accent, 0.02),
-      rbox([0.56, 0.11, 0.52], [0, 0.615, 0.01], color, 0.05),
-      box([0.06, 0.34, 0.04], [0, 0.72, -0.27], accent),
-      rbox([0.56, 0.6, 0.05], [0, 1.0, -0.3], accent, 0.024, [-0.12, 0, 0]),
-      rbox([0.5, 0.52, 0.06], [0, 1.0, -0.27], color, 0.03, [-0.12, 0, 0]),
+      cyl(0.075, 0.09, [0, 0.1, 0], ink.charcoal),
+      cyl(0.035, 0.34, [0, 0.31, 0], ink.chrome, undefined, G.cylLow),
+      rbox([0.56, 0.07, 0.52], [0, 0.52, 0], accent, 0.03),
+      rbox([0.6, 0.13, 0.56], [0, 0.615, 0.01], color, 0.06),
+      rbox([0.09, 0.3, 0.06], [0, 0.72, -0.29], accent, 0.03),
+      // Thin white frame around a thicker dark mesh back that shows from both sides.
+      rbox([0.64, 0.68, 0.05], [0, 1.03, -0.31], accent, 0.03, [-0.12, 0, 0]),
+      rbox([0.55, 0.59, 0.1], [0, 1.03, -0.31], color, 0.04, [-0.12, 0, 0]),
     ];
+    for (let index = 0; index < 5; index += 1) {
+      for (const side of [-1, 1]) {
+        parts.push(box([0.48, 0.016, 0.012], [0, 0.82 + index * 0.1, -0.31 + side * 0.052 - index * 0.012], rib, [-0.12, 0, 0]));
+      }
+    }
     for (let index = 0; index < 5; index += 1) {
       const angle = (index / 5) * Math.PI * 2;
       parts.push(
-        box([0.24, 0.035, 0.045], [Math.cos(angle) * 0.13, 0.06, Math.sin(angle) * 0.13], ink.charcoal, [0, -angle, 0]),
-        ball(0.035, [Math.cos(angle) * 0.25, 0.035, Math.sin(angle) * 0.25], "#2a2e34", undefined, G.leaf),
+        rbox([0.32, 0.05, 0.07], [Math.cos(angle) * 0.17, 0.075, Math.sin(angle) * 0.17], ink.charcoal, 0.02, [0, -angle, 0]),
+        ball(0.045, [Math.cos(angle) * 0.33, 0.045, Math.sin(angle) * 0.33], "#2a2e34", undefined, G.leaf),
       );
     }
-    for (const x of [-0.3, 0.3]) {
+    for (const x of [-0.31, 0.31]) {
       parts.push(
-        box([0.035, 0.2, 0.035], [x, 0.72, -0.02], accent),
-        rbox([0.07, 0.03, 0.28], [x, 0.83, 0.02], ink.charcoal, 0.012),
+        rbox([0.05, 0.24, 0.05], [x, 0.74, -0.02], accent, 0.02),
+        rbox([0.09, 0.045, 0.32], [x, 0.865, 0.0], accent, 0.02),
       );
     }
     return parts;
@@ -776,24 +781,30 @@ export function Desk({
   // Items keep their size; their spots stretch with the top. Front edge is +z.
   const kx = width / 1.8;
   const front = (z: number) => z + hd - 0.425;
-  const pedestalDepth = Math.min(0.72, depth - 0.16);
-  const pedestalX = hw - 0.3;
+  // Chunky toy proportions: thick rounded top, square legs, and a white
+  // drawer pedestal flush with the front so its drawers read from the aisle.
+  const top = 0.075;
+  const pedestal = { width: 0.5, depth: Math.min(0.62, depth - 0.2) };
+  const pedestalX = hw - 0.36;
+  const pedestalZ = hd - 0.05 - pedestal.depth / 2;
   const body = baked(`desk-body|${width}|${depth}`, () => {
-    const pedestalFront = -0.04 + pedestalDepth / 2;
+    const pedestalHeight = deskTop - top - 0.02;
+    const pedestalFront = pedestalZ + pedestal.depth / 2;
     const parts: Part[] = [
-      rbox([width, 0.05, depth], [0, deskTop - 0.025, 0], ink.oak, 0.02),
-      box([width - 0.02, 0.012, depth - 0.02], [0, deskTop - 0.056, 0], ink.oakDeep),
-      rbox([0.42, 0.64, pedestalDepth], [pedestalX, 0.34, -0.04], ink.white, 0.02),
-      box([0.38, 0.006, 0.006], [pedestalX, 0.47, pedestalFront + 0.002], "#d8d3ca"),
-      box([0.38, 0.006, 0.006], [pedestalX, 0.26, pedestalFront + 0.002], "#d8d3ca"),
-      box([0.12, 0.014, 0.014], [pedestalX, 0.56, pedestalFront + 0.006], ink.metal),
-      box([0.12, 0.014, 0.014], [pedestalX, 0.37, pedestalFront + 0.006], ink.metal),
-      box([0.12, 0.014, 0.014], [pedestalX, 0.16, pedestalFront + 0.006], ink.metal),
+      rbox([width, top, depth], [0, deskTop - top / 2, 0], ink.oak, 0.028),
+      rbox([pedestal.width, pedestalHeight, pedestal.depth], [pedestalX, pedestalHeight / 2, pedestalZ], "#f3efe7", 0.035),
     ];
-    for (const z of [-hd + 0.065, hd - 0.065]) {
-      parts.push(rbox([0.05, deskTop - 0.05, 0.05], [-hw + 0.06, (deskTop - 0.05) / 2, z], ink.oakDeep, 0.015));
-      parts.push(rbox([0.05, deskTop - 0.05, 0.05], [hw - 0.06, (deskTop - 0.05) / 2, z], ink.oakDeep, 0.015));
+    for (const y of [0.18, 0.4]) {
+      parts.push(box([pedestal.width - 0.06, 0.012, 0.008], [pedestalX, y, pedestalFront + 0.002], "#ddd6ca"));
     }
+    for (const y of [0.1, 0.3, 0.52]) {
+      parts.push(rbox([0.16, 0.025, 0.025], [pedestalX, y, pedestalFront + 0.012], "#b9b2a7", 0.01));
+    }
+    const legHeight = deskTop - top;
+    for (const z of [-hd + 0.07, hd - 0.07]) {
+      parts.push(rbox([0.085, legHeight, 0.085], [-hw + 0.07, legHeight / 2, z], ink.oakDeep, 0.025));
+    }
+    parts.push(rbox([0.085, legHeight, 0.085], [hw - 0.07, legHeight / 2, -hd + 0.07], ink.oakDeep, 0.025));
     return parts;
   });
   const items = baked(`desk-items|${v}|${width}|${depth}`, () => {
@@ -822,7 +833,7 @@ export function Desk({
     <group position={position} rotation={rotation}>
       <BakedMesh geometry={body} />
       <BakedMesh geometry={items} castShadow={false} />
-      <Monitor position={[0.08 * kx, deskTop, -hd + 0.28]} width={width > 2 ? 0.86 : 0.66} height={width > 2 ? 0.5 : 0.38} />
+      <Monitor position={[0.08 * kx, deskTop, -hd + 0.34]} width={width >= 1.8 ? 0.92 : 0.7} height={width >= 1.8 ? 0.55 : 0.42} />
       {v % 2 === 0 && <Laptop position={[-0.6 * kx, deskTop, front(0.02)]} rotation={[0, 0.3, 0]} />}
       {v !== 1 && <Mug position={[0.68 * kx, deskTop, front(0.02)]} color={pick(mugColors, v + 1)} scale={1.25} />}
       {v % 2 === 1 && <Plant position={[-0.78 * kx, deskTop, -hd + 0.2]} scale={0.42} pot={ink.cream} kind="leafy" />}
@@ -846,37 +857,40 @@ export function DeskPartition({
   length = 3.6,
   depth = 0.85,
 }: Placement & { length?: number; depth?: number }) {
+  // Tall, thick cream screens with a planted trough and binders, like a
+  // furniture-catalogue bench rather than thin panels.
   const geometry = baked(`deskpartition|${length}|${depth}`, () => {
-    const panel = "#efe7da";
+    const panel = "#ece3d4";
     const rail = ink.oak;
-    const tall = 0.48;
-    const arm = depth - 0.2;
+    const tall = 0.58;
+    const arm = depth - 0.26;
     const parts: Part[] = [
-      rbox([length - 0.06, tall, 0.035], [0, deskTop + tall / 2, -0.16], panel, 0.014),
-      rbox([length - 0.06, tall, 0.035], [0, deskTop + tall / 2, 0.16], panel, 0.014),
-      box([length - 0.04, 0.024, 0.05], [0, deskTop + tall + 0.012, -0.16], rail),
-      box([length - 0.04, 0.024, 0.05], [0, deskTop + tall + 0.012, 0.16], rail),
-      box([length - 0.12, 0.17, 0.28], [0, deskTop + 0.085, 0], rail),
-      box([length - 0.16, 0.01, 0.24], [0, deskTop + 0.172, 0], ink.soil),
+      rbox([length - 0.06, tall, 0.06], [0, deskTop + tall / 2, -0.19], panel, 0.025),
+      rbox([length - 0.06, tall, 0.06], [0, deskTop + tall / 2, 0.19], panel, 0.025),
+      rbox([length - 0.12, 0.24, 0.32], [0, deskTop + 0.12, 0], rail, 0.03),
+      box([length - 0.2, 0.012, 0.27], [0, deskTop + 0.245, 0], ink.soil),
     ];
-    // Cross arms between left and right desks.
     for (const side of [-1, 1]) {
-      parts.push(
-        rbox([0.035, tall, arm], [0, deskTop + tall / 2, side * (0.18 + arm / 2)], panel, 0.014),
-        box([0.05, 0.024, arm], [0, deskTop + tall + 0.012, side * (0.18 + arm / 2)], rail),
-      );
+      parts.push(rbox([0.06, tall, arm], [0, deskTop + tall / 2, side * (0.22 + arm / 2)], panel, 0.025));
     }
-    // Binders standing in the trough at one end.
-    for (let index = 0; index < 6; index += 1) {
-      parts.push(
-        box([0.065, 0.32, 0.22], [length / 2 - 0.3 - index * 0.07, deskTop + 0.33, 0], pick(["#efe9df", "#d9cfc0", "#a8bfa3", "#efe9df", "#5c6b7a", "#d98e73"], index)),
-      );
+    // Binders in a cubby at each end.
+    for (const end of [-1, 1]) {
+      for (let index = 0; index < 5; index += 1) {
+        parts.push(
+          rbox(
+            [0.075, 0.36, 0.26],
+            [end * (length / 2 - 0.22 - index * 0.085), deskTop + 0.3, 0],
+            pick(["#f3eee6", "#ddd2c2", "#f3eee6", "#a8bfa3", "#e9e2d6"], index + (end > 0 ? 2 : 0)),
+            0.012,
+          ),
+        );
+      }
     }
-    const count = Math.max(2, Math.round(length / 0.62));
+    const count = Math.max(2, Math.round((length - 1.2) / 0.9));
     for (let index = 0; index < count; index += 1) {
-      const x = -length / 2 + 0.35 + (index * (length - 1.1)) / (count - 1);
-      const kind = pick<PlantKind>(["bush", "leafy", "trailing", "leafy", "bush"], index);
-      parts.push(...placed(plantParts(kind, ink.cream, palette.sageDeep), [x, deskTop + 0.02, 0], index * 1.1, 0.62));
+      const x = -length / 2 + 0.85 + (index * (length - 1.7)) / Math.max(1, count - 1);
+      const kind = pick<PlantKind>(["leafy", "bush", "leafy", "tall"], index);
+      parts.push(...placed(plantParts(kind, ink.cream, palette.sageDeep), [x, deskTop + 0.1, 0], index * 1.1, kind === "tall" ? 0.75 : 1.0));
     }
     return parts;
   });
@@ -1206,19 +1220,19 @@ export function Planter({
       parts.push(box([0.01, height - 0.1, 0.004], [x, height / 2, -width / 2 - 0.002], ink.oakDeep));
     }
     const leaf = palette.sageDeep;
-    const spine = Math.max(2, Math.round(length / 0.42));
+    // A few big, lush specimens read as one planting at diorama distance;
+    // many small ones read as noise.
+    const spine = Math.max(2, Math.round(length / 0.85));
     for (let index = 0; index < spine; index += 1) {
-      const x = -length / 2 + 0.28 + (index * (length - 0.56)) / (spine - 1);
-      const kind = pick<PlantKind>(["bush", "leafy", "bush", "leafy", "tall"], index);
-      const scale = kind === "tall" ? 0.68 : 0.95;
+      const x = -length / 2 + 0.4 + (index * (length - 0.8)) / (spine - 1);
+      const kind = pick<PlantKind>(["leafy", "tall", "leafy", "bush"], index);
+      const scale = kind === "tall" ? 0.95 : 1.3;
       parts.push(...placed(plantParts(kind, ink.charcoal, leaf), [x, height - 0.3 * scale, 0], index * 1.3, scale));
     }
-    const edge = Math.max(2, Math.round(length / 0.7));
+    const edge = Math.max(1, Math.round(length / 1.4));
     for (let index = 0; index < edge; index += 1) {
-      for (const side of [-1, 1]) {
-        const x = -length / 2 + 0.35 + ((index + (side > 0 ? 0 : 0.5)) * (length - 0.7)) / edge;
-        parts.push(...placed(plantParts("trailing", ink.charcoal, leaf), [x, height - 0.26, side * width * 0.3], index * 0.8, 0.85));
-      }
+      const x = -length / 2 + 0.6 + (index * (length - 1.2)) / Math.max(1, edge - 1);
+      parts.push(...placed(plantParts("trailing", ink.charcoal, leaf), [x, height - 0.26, width * 0.3], index * 0.8, 1.0));
     }
     return parts;
   });

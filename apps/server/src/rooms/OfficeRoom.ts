@@ -30,14 +30,14 @@ const characterIds = new Set([
 ]);
 
 const spawns: Record<string, { x: number; z: number }> = {
-  chus: { x: -5.4, z: 5.9 },
-  jules: { x: 2.75, z: -4.15 },
-  mira: { x: 0.15, z: 4.75 },
-  felix: { x: 2.65, z: 1.65 },
-  fern: { x: 0.15, z: 1.65 },
-  arlo: { x: -5.5, z: 4.55 },
-  theo: { x: 8.75, z: 4.05 },
-  clawd: { x: 3.35, z: -3.0 },
+  chus: { x: -3.6, z: 4.2 },
+  jules: { x: 2.6, z: -3.35 },
+  mira: { x: -1.7, z: 2.0 },
+  felix: { x: 3.5, z: 2.25 },
+  fern: { x: -1.7, z: -0.9 },
+  arlo: { x: -5.15, z: 0.55 },
+  theo: { x: 6.4, z: 3.05 },
+  clawd: { x: 1.4, z: -2.75 },
 };
 
 type MoveMessage = {
@@ -160,8 +160,8 @@ function sanitizeLayout(value: unknown): OfficeLayout | undefined {
     .map((item, index) => {
       if (!item || typeof item !== "object") return undefined;
       const desk = item as Record<string, unknown>;
-      const x = finite(desk.x, -3.4, 3.4);
-      const z = finite(desk.z, 0.4, 5.9);
+      const x = finite(desk.x, -3.0, 4.0);
+      const z = finite(desk.z, -0.4, 4.9);
       if (x === undefined || z === undefined) return undefined;
       const rotationNumber = Number(desk.rotation);
       const rotation =
@@ -234,8 +234,8 @@ export class OfficeRoom extends Room {
       const z = Number(message?.z);
       if (!Number.isFinite(x) || !Number.isFinite(z)) return;
 
-      player.x = Math.max(-12.2, Math.min(12.2, x));
-      player.z = Math.max(-8.5, Math.min(8.5, z));
+      player.x = Math.max(-8.2, Math.min(8.2, x));
+      player.z = Math.max(-6.2, Math.min(6.2, z));
       player.rotation = Number.isFinite(Number(message.rotation)) ? Number(message.rotation) : 0;
       player.moving = Boolean(message.moving);
       player.zone = zoneAt(player.x, player.z);

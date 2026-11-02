@@ -8,7 +8,6 @@ const roomAccent: Record<string, string> = {
   meeting: palette.slate,
   nap: "#8b9dc3",
   kitchen: palette.amber,
-  garden: palette.sageDeep,
 };
 
 export function RoomList() {

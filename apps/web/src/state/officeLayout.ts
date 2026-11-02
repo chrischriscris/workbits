@@ -3,17 +3,29 @@ import type { DeskPlacement, OfficeLayout } from "@workbits/shared";
 
 export type { DeskPlacement, OfficeLayout };
 
+/**
+ * Default engineering area: two joined 2x2 pods offset on the diagonal, like
+ * the reference. Kept here so the rendered benches, the persisted default
+ * layout, and the seat placements cannot drift.
+ */
+export const BENCH_PODS = [
+  { x: -0.8, z: 0.55 },
+  { x: 2.6, z: 3.7 },
+];
+export const BENCH_DESK = { width: 1.8, depth: 1.0 };
+export const BENCH_DESKS: DeskPlacement[] = BENCH_PODS.flatMap((pod, index) => [
+  { id: `p${index}d1`, x: pod.x - BENCH_DESK.width / 2, z: pod.z - BENCH_DESK.depth / 2, rotation: Math.PI, variant: 0 },
+  { id: `p${index}d2`, x: pod.x + BENCH_DESK.width / 2, z: pod.z - BENCH_DESK.depth / 2, rotation: Math.PI, variant: 1 },
+  { id: `p${index}d3`, x: pod.x - BENCH_DESK.width / 2, z: pod.z + BENCH_DESK.depth / 2, rotation: 0, variant: 2 },
+  { id: `p${index}d4`, x: pod.x + BENCH_DESK.width / 2, z: pod.z + BENCH_DESK.depth / 2, rotation: 0, variant: 3 },
+]);
+
 export const defaultLayout: OfficeLayout = {
   id: "default",
-  name: "Studio bench",
-  note: "4 desks · joined 2×2 bench · cream rug",
+  name: "Studio pods",
+  note: "8 desks · two 2×2 pods · cream rug",
   rug: "cream",
-  desks: [
-    { id: "d1", x: 0.15, z: 2.6, rotation: Math.PI, variant: 0 },
-    { id: "d2", x: 2.65, z: 2.6, rotation: Math.PI, variant: 1 },
-    { id: "d3", x: 0.15, z: 3.8, rotation: 0, variant: 2 },
-    { id: "d4", x: 2.65, z: 3.8, rotation: 0, variant: 3 },
-  ],
+  desks: BENCH_DESKS,
 };
 
 type OfficeLayoutState = {

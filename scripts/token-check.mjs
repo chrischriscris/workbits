@@ -39,7 +39,7 @@ check(
   `granted ${floorBody.room}`,
 );
 
-room.send("move", { x: -6.15, z: -4, rotation: 0, moving: false });
+room.send("move", { x: -4.8, z: -3.2, rotation: 0, moving: false });
 await new Promise((resolve) => setTimeout(resolve, 250));
 
 const meeting = await fetch(

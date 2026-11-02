@@ -1,6 +1,7 @@
 import { chromium } from "playwright";
 import { Client } from "colyseus.js";
 import { RoomServiceClient } from "livekit-server-sdk";
+import { zoneAt } from "../packages/shared/src/zones.ts";
 
 const observer = new Client("ws://127.0.0.1:3101");
 const observerRoom = await observer.joinOrCreate("office", {
@@ -68,7 +69,8 @@ const after = await page.evaluate(() => window.__WORKBITS_DEBUG__?.());
 const voiceAfter = await page.evaluate(() => window.__WORKBITS_VOICE__?.());
 console.log("after:", { session: after.sessionId, zone: after.localZone, voice: voiceAfter.channel, muted: voiceAfter.muted, identity: voiceAfter.identity });
 
-const restored = joined.find((player) => player.characterId === "chus" && player.x > 3.3 && player.z < -1.1);
+// The rejoin must restore Chus where they were (inside the meeting room), not at the spawn.
+const restored = joined.find((player) => player.characterId === "chus" && zoneAt(player.x, player.z) === "meeting");
 const sessionChanged = reconnected && before.sessionId !== after.sessionId;
 const sameZone = before.localZone === after.localZone;
 const voiceRebound = voiceAfter.identity === after.sessionId && voiceAfter.channel === "meeting";

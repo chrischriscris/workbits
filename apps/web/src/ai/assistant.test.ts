@@ -1,10 +1,11 @@
 import { describe, expect, test } from "bun:test";
+import { zones } from "@workbits/shared";
 import { answerAssistant, type AssistantPlayer } from "./assistant";
 
 const players: AssistantPlayer[] = [
-  { id: "self", characterId: "chus", name: "Chus", x: -5.7, z: 2.6 },
-  { id: "felix", characterId: "felix", name: "Felix", x: 1.4, z: 5.6 },
-  { id: "arlo", characterId: "arlo", name: "Arlo", x: -6.15, z: -4 },
+  { id: "self", characterId: "chus", name: "Chus", x: -4.6, z: 3.2 },
+  { id: "felix", characterId: "felix", name: "Felix", x: 2.7, z: 0.05 },
+  { id: "arlo", characterId: "arlo", name: "Arlo", x: -4.8, z: -3.2 },
 ];
 
 const context = {
@@ -31,8 +32,9 @@ describe("answerAssistant", () => {
   test("finds a person by name and offers a walk action", () => {
     const reply = answerAssistant("where is Felix?", context);
     expect(reply.text).toContain("Felix is in Engineering");
-    expect(reply.action?.x).toBeCloseTo(1.4);
-    expect(reply.action?.z).toBeCloseTo(5.6);
+    const anchor = zones.find((zone) => zone.id === "engineering")!.anchor;
+    expect(reply.action?.x).toBeCloseTo(anchor.x);
+    expect(reply.action?.z).toBeCloseTo(anchor.z);
   });
 
   test("reports meeting-room occupancy and privacy", () => {

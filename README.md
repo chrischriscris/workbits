@@ -14,7 +14,7 @@ Workbits is built to be a product, not an internal tool: multi-tenant architectu
 
 **Working locally now:**
 
-- Isometric 3D office with lounge, engineering pod, glass meeting room, kitchen, nap room, and garden.
+- Isometric 3D office with lounge, engineering pod, glass meeting room, kitchen, and nap nook.
 - The Workbits team seed pack: 8 characters (human, frog, crab mascot), name tags, statuses, roles, and desks.
 - Click-to-walk and WASD movement with a floating move marker.
 - Colyseus realtime presence: two tabs see each other; movement is server-validated.

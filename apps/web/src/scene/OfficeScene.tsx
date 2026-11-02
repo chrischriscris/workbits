@@ -2,6 +2,7 @@ import { ContactShadows, MapControls, SoftShadows } from "@react-three/drei";
 import { Canvas, useThree } from "@react-three/fiber";
 import { Bloom, BrightnessContrast, EffectComposer, HueSaturation, SSAO, Vignette } from "@react-three/postprocessing";
 import { Suspense, useEffect } from "react";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import * as THREE from "three";
 import { localCharacterId } from "../data/team";
 import { spawnFor } from "../data/spawns";
@@ -13,25 +14,31 @@ function CameraRig() {
   const controls = useThree((state) => state.controls) as
     | { target: THREE.Vector3; update: () => void }
     | null;
-  const artMode = new URLSearchParams(window.location.search).has("art");
+  const params = new URLSearchParams(window.location.search);
+  const artMode = params.has("art");
+  // Framing knobs for art experiments: ?art&artWidth=19.5&artTarget=0,0.6,-0.3
+  const artWidth = Number(params.get("artWidth") ?? 19.5);
+  const artTarget = (params.get("artTarget") ?? "0,0.6,-0.3").split(",").map(Number);
   const mobile = size.width < 900 && !artMode;
   const spawn = spawnFor(localCharacterId);
-  const targetX = mobile ? spawn[0] : 0;
-  const targetZ = mobile ? Math.max(3, spawn[2] - 2) : 0;
+  const targetX = mobile ? spawn[0] : artMode ? artTarget[0]! : 0;
+  const targetY = artMode ? artTarget[1]! : 0;
+  const targetZ = mobile ? Math.max(3, spawn[2] - 2) : artMode ? artTarget[2]! : 0;
 
   useEffect(() => {
     const orthographic = camera as THREE.OrthographicCamera;
     if (!orthographic.isOrthographicCamera) return;
-    const targetWidth = artMode ? 27.5 : mobile ? 15 : 29.5;
+    // The compact 15 x 11 room fills the frame, like the reference.
+    const targetWidth = artMode ? artWidth : mobile ? 15 : 19.5;
     orthographic.zoom = size.width / targetWidth;
     orthographic.updateProjectionMatrix();
-  }, [artMode, camera, mobile, size.width]);
+  }, [artMode, artWidth, camera, mobile, size.width]);
 
   useEffect(() => {
     if (!controls) return;
-    controls.target.set(targetX, 0, targetZ);
+    controls.target.set(targetX, targetY, targetZ);
     controls.update();
-  }, [controls, targetX, targetZ]);
+  }, [controls, targetX, targetY, targetZ]);
   return (
     <MapControls
       makeDefault
@@ -40,11 +47,49 @@ function CameraRig() {
       enableZoom
       minZoom={20}
       maxZoom={90}
-      target={[targetX, 0, targetZ]}
+      target={[targetX, targetY, targetZ]}
       panSpeed={0.85}
       zoomSpeed={0.85}
     />
   );
+}
+
+/**
+ * Soft image-based light from three's procedural studio room, generated
+ * locally (no HDR download). It gives every surface the gentle wrap-around
+ * fill and soft highlights the plush reference renders have.
+ */
+function SoftEnvironment({ intensity = 0.5 }: { intensity?: number }) {
+  const gl = useThree((state) => state.gl);
+  const scene = useThree((state) => state.scene);
+  useEffect(() => {
+    const pmrem = new THREE.PMREMGenerator(gl);
+    const room = new RoomEnvironment();
+    const target = pmrem.fromScene(room, 0.04);
+    scene.environment = target.texture;
+    scene.environmentIntensity = intensity;
+    return () => {
+      scene.environment = null;
+      target.dispose();
+      room.dispose();
+      pmrem.dispose();
+    };
+  }, [gl, scene, intensity]);
+  return null;
+}
+
+/** Dev-only hook for offline renders: window.__WORKBITS_EXPORT__() -> base64 GLB. */
+function DevExport() {
+  const scene = useThree((state) => state.scene);
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const target = window as unknown as { __WORKBITS_EXPORT__?: () => Promise<string> };
+    target.__WORKBITS_EXPORT__ = async () => (await import("./devExport")).exportSceneGlb(scene);
+    return () => {
+      delete target.__WORKBITS_EXPORT__;
+    };
+  }, [scene]);
+  return null;
 }
 
 export function OfficeScene() {
@@ -61,23 +106,24 @@ export function OfficeScene() {
     <Canvas
       shadows={!e2e}
       orthographic
-      camera={{ position: [20, 22, 20], zoom: 46, near: -100, far: 200 }}
+      camera={{ position: [20, 15, 20], zoom: 46, near: -100, far: 200 }}
       dpr={e2e ? 1 : [1, 1.75]}
       gl={{ antialias: !e2e, alpha: true, powerPreference: e2e ? "low-power" : "high-performance" }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.1;
+        gl.toneMappingExposure = 1.16;
       }}
     >
       <Suspense fallback={null}>
-        <SoftShadows size={22} samples={10} focus={0.7} />
-        <ambientLight intensity={0.18} color="#fff6ea" />
-        <hemisphereLight args={["#fff8ec", "#d8cbb8", 0.64]} />
+        <SoftShadows size={26} samples={8} focus={0.7} />
+        <SoftEnvironment intensity={0.25} />
+        <hemisphereLight args={["#ffeedd", "#f0d8bf", 0.2]} />
+        {/* Warm, lower afternoon sun from the window side: longer soft shadows. */}
         <directionalLight
           castShadow
-          position={[-10, 18, 8]}
-          intensity={2.55}
-          color="#ffe9c5"
+          position={[-12, 13, 7]}
+          intensity={3.3}
+          color="#ffd6a3"
           shadow-mapSize={[2048, 2048]}
           shadow-camera-left={-17}
           shadow-camera-right={17}
@@ -88,15 +134,15 @@ export function OfficeScene() {
           shadow-bias={-0.00015}
           shadow-normalBias={0.03}
         />
-        <directionalLight position={[10, 8, -8]} intensity={0.35} color="#dbe8ff" />
-        <directionalLight position={[12, 9, 2]} intensity={0.5} color="#fff1dd" />
-        <directionalLight position={[4, 8, 16]} intensity={0.55} color="#fff7e8" />
+        <directionalLight position={[10, 8, -8]} intensity={0.18} color="#dbe8ff" />
+        <directionalLight position={[4, 8, 16]} intensity={0.3} color="#fff7e8" />
         <Office />
+        <DevExport />
         <ContactShadows
           position={[0, 0.055, 0]}
-          opacity={0.3}
+          opacity={0.36}
           scale={34}
-          blur={2.6}
+          blur={2.4}
           far={4.5}
           resolution={1024}
           color="#6b5844"
@@ -104,16 +150,16 @@ export function OfficeScene() {
         <CameraRig />
         {!e2e && (
           <EffectComposer multisampling={0} enableNormalPass>
-            <SSAO samples={16} radius={4} intensity={14} luminanceInfluence={0.26} color="#1b1b1b" />
-            <HueSaturation saturation={0.09} />
-            <BrightnessContrast brightness={0.02} contrast={0.06} />
+            <SSAO samples={16} radius={5} intensity={10} luminanceInfluence={0.22} color="#1b1b1b" />
+            <HueSaturation saturation={0.12} />
+            <BrightnessContrast brightness={0} contrast={0.11} />
             <Bloom
-              intensity={0.07}
-              luminanceThreshold={0.95}
-              luminanceSmoothing={0.3}
+              intensity={0.06}
+              luminanceThreshold={0.98}
+              luminanceSmoothing={0.35}
               mipmapBlur
             />
-            <Vignette eskil={false} offset={0.16} darkness={0.25} />
+            <Vignette eskil={false} offset={0.16} darkness={0.18} />
           </EffectComposer>
         )}
       </Suspense>

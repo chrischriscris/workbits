@@ -31,7 +31,6 @@ const roomWords: Array<{ id: ZoneId; words: string[] }> = [
   { id: "lounge", words: ["lounge", "sofa", "couch"] },
   { id: "kitchen", words: ["kitchen", "coffee", "lunch", "dining"] },
   { id: "nap", words: ["nap", "sleep", "bed"] },
-  { id: "garden", words: ["garden", "outside", "trees"] },
   { id: "engineering", words: ["engineering", "desks", "pod", "dev"] },
 ];
 

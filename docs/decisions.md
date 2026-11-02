@@ -148,3 +148,44 @@ Append-only. If a decision changes, add a new ADR that supersedes the old one; d
   - Demo works without keys.
   - No hallucinated asset keys or coordinates.
   - Slightly less "magical" than free-form generation; much more reliable and sellable.
+
+---
+
+## ADR-012 — Model-based prop kit; procedural stays for architecture and layout
+
+- **Status:** Accepted; lounge slice in progress.
+- **Date:** 2026-11-02
+- **Context:** The procedural primitive kit (`props.tsx`, `avatars.tsx`) reached its fidelity ceiling: furniture reads as assembled rounded boxes next to `art/style-scene.png`. `PLAN.md` and `docs/research/assets.md` already specified a glTF pipeline, but the repo shipped with zero GLB assets and `packages/assets` was empty. The user asked to iterate toward the concept using real models instead of geometric figures.
+- **Decision:** Furniture, props, and avatars move to authored GLB assets, normalized to 1 unit = 1 m, Y up, +Z forward, origin at the floor center of the footprint. Materials are exported with Workbits slot names and replaced at runtime from the palette. Architecture (walls, plinth, glass, floor zones), desk/workspace layouts, room anchors, collision, and generators stay procedural. One kit at a time, re-materialed; no mixed packs. AI image-to-3D remains limited to decor behind a QA gate and never core architecture or avatars (ADR-010 still applies there).
+- **Consequences:**
+  - A real asset pipeline: Blender conversion, `packages/assets/manifest.json` with license/source fields, GLBs under `apps/web/public/assets/models/`.
+  - Higher visual ceiling for upholstery, props, and eventually characters.
+  - Draw calls rise from one merged mesh per procedural prop to one call per material slot; instance repeated props and keep the <400 budget.
+  - Layout/customization features keep working because the shell and desk system remain parametric.
+  - Source packs must be CC0 or commercially licensed; every shipped model needs a manifest entry.
+
+---
+
+## ADR-013 — Reference composition pass: lower camera, open plan, human scale
+
+- **Status:** Accepted.
+- **Date:** 2026-11-02
+- **Context:** The three-way reference / before / after comparison showed the GLB seat swap barely moved the likeness. The gap was composition, character scale, and visual hierarchy, not the loader. A Sol critique (Codex CLI) and an Opus plan (Claude Code CLI) both said: lock the camera first, demote competing vignettes, make the engineering bench the foreground anchor.
+- **Decision:** Lower the orthographic camera from `[20, 22, 20]` to `[20, 15, 20]`, refit the art frame to 25.4 units with a raised target, remove the second seating group and bistro stools, move the default bench from x 1.4 to 2.4 and widen desks to 2.8 m, add a coffee island in the opened band, extend the kitchen tile, group plants instead of scattering pots, tighten the lounge cluster, and scale humans up (1.5) while reducing the frog/crab mascots (1.25/1.3).
+- **Consequences:**
+  - The engineering anchor moves to `(2.4, 5.9)` in `packages/shared/src/zones.ts`, `apps/web/src/data/team.ts`, and the server spawns for Mira, Felix, and Fern.
+  - The default bench constants live in `state/officeLayout.ts`; custom layouts center their rug/pendant on `POD` so they do not drift.
+  - `zones.test.ts` covers the widened bench and coffee island.
+  - The room now reads as one open plan; the next highest-value slice is a character benchmark (one human), not more lounge props.
+
+## ADR-014 — Compact four-zone floor plan
+
+- **Status:** Accepted.
+- **Date:** 2026-11-02
+- **Context:** Against `art/style-scene.png`, a person spanned ~8% of the room's screen width versus ~14% in the reference. The reference room holds four zones (lounge, glass meeting room, kitchen, one desk cluster); ours held seven in the same frame, so every person and prop read at half size. Scaling people alone couldn't close that without dwarfing the furniture.
+- **Decision:** Shrink the room from 20 × 14 to 15 × 11 and lay it out like the reference: glass meeting room back-left, one kitchen run on the rear wall (communal table and coffee island removed), lounge front-left, the 2×2 bench in the centre, a bookcase and tree on the right edge, and the nap nook shrunk to the front-right corner so Theo keeps his bed. Remove the garden zone. Frame the whole room at 19.5 units in both art and app views.
+- **Consequences:**
+  - `ZoneId` drops `"garden"`; `zoneAt` boundaries and every anchor move (`packages/shared/src/zones.ts`). `roomAnchors` now derives from `zones`, so it can't drift again.
+  - Default bench centre moves to `(1.3, 1.6)`; client and server spawns move; the server clamps positions to ±8.2 / ±6.2 and custom-layout desks to z ≤ 4.9.
+  - The seed pack, room list and assistant drop the garden.
+  - `scripts/reconnect-check.mjs` asserted a restored position at `x > 3.3`, stale since ADR-013 moved the meeting room; it now checks `zoneAt(...) === "meeting"`.
