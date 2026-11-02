@@ -11,8 +11,15 @@ if [ -f .env ]; then
 fi
 
 if command -v docker >/dev/null 2>&1; then
-  echo "Starting LiveKit…"
-  docker compose -f infra/docker-compose.yml up -d livekit >/dev/null
+  if ! curl -fsS http://127.0.0.1:7880 >/dev/null 2>&1; then
+    if docker inspect workbits-livekit >/dev/null 2>&1; then
+      echo "Starting existing LiveKit container…"
+      docker start workbits-livekit >/dev/null
+    else
+      echo "Starting LiveKit…"
+      docker compose -f infra/docker-compose.yml up -d livekit >/dev/null
+    fi
+  fi
   for _ in $(seq 1 30); do
     if curl -fsS http://127.0.0.1:7880 >/dev/null 2>&1; then
       break
