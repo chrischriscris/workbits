@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { appendFile, mkdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { Client, Room } from "@colyseus/core";
@@ -213,6 +214,7 @@ export class OfficeRoom extends Room {
       });
       client.send("welcome", {
         selfId: client.sessionId,
+        voiceKey: presence.get(client.sessionId)?.voiceKey,
         players: [...this.players.values()],
         messages: visibleHistory.slice(-MAX_HISTORY),
         ...(this.layout ? { layout: this.layout } : {}),
@@ -409,6 +411,7 @@ export class OfficeRoom extends Room {
       x: player.x,
       z: player.z,
       zone: player.zone,
+      voiceKey: randomUUID(),
     });
     this.broadcast("player_added", player, { except: client });
   }

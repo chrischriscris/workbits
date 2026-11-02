@@ -55,6 +55,7 @@ Source of truth for what is actually done. Update at the end of every work sessi
 - 2026-11-02 — Removed dead camera/share/search controls, wired the roster invite button, added a chat emoji picker and unread badges. Added a navigation/composer UI check and an unread check to `bun run verify`.
 - 2026-11-02 — Added generated 2D portraits derived from the avatar config across the roster, chat, profile, invite picker, and account chip. Removed the last dead UI controls so every visible button does something.
 - 2026-11-02 — Added a responsive welcome/marketing page at `/welcome.html` using the real demo screenshot, honest demo caveats, and a CTA into the invite picker. Added desktop/mobile welcome checks to `bun run verify`.
+- 2026-11-02 — Hardened voice token minting: each Colyseus session receives a private voice key in its welcome; the token endpoint requires it, so a broadcast session id cannot be used to mint someone else's voice token. Added no-key/wrong-key regression checks.
 
 ## Next
 

@@ -43,6 +43,7 @@ function InteractionHint() {
 export default function App() {
   const realtimeStatus = useRealtimeStore((state) => state.status);
   const sessionId = useRealtimeStore((state) => state.sessionId);
+  const realtimeReady = useRealtimeStore((state) => state.ready);
   const connectVoice = useVoiceStore((state) => state.connect);
   const syncVoiceZone = useVoiceStore((state) => state.syncZone);
   const localPosition = useRealtimeStore((state) => state.localPosition);
@@ -57,7 +58,7 @@ export default function App() {
   }, [isJoinScreen]);
 
   useEffect(() => {
-    if (isJoinScreen || realtimeStatus !== "connected" || !sessionId) return;
+    if (isJoinScreen || realtimeStatus !== "connected" || !sessionId || !realtimeReady) return;
     const voice = useVoiceStore.getState();
     if (voice.status === "connected" && voice.identity && voice.identity !== sessionId) {
       const wasUnmuted = !voice.muted;
@@ -68,7 +69,7 @@ export default function App() {
       return;
     }
     void connectVoice();
-  }, [isJoinScreen, realtimeStatus, sessionId, connectVoice]);
+  }, [isJoinScreen, realtimeStatus, realtimeReady, sessionId, connectVoice]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {

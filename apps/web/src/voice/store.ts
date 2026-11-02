@@ -88,11 +88,13 @@ async function joinVoice(
   set: (partial: Partial<VoiceState>) => void,
   publish: boolean,
 ) {
-  const sessionId = useRealtimeStore.getState().sessionId;
+  const { sessionId, voiceKey } = useRealtimeStore.getState();
   if (!sessionId) throw new Error("Join the office before voice.");
+  if (!voiceKey) throw new Error("Still joining the office. Try again in a moment.");
 
   const params = new URLSearchParams({
     identity: sessionId,
+    key: voiceKey,
     name: localCharacter.displayName,
   });
   const response = await fetch(`${apiBase()}/livekit/token?${params.toString()}`);

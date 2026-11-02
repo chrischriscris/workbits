@@ -142,10 +142,11 @@ const httpServer = createServer(async (request, response) => {
       return;
     }
 
+    const key = url.searchParams.get("key") ?? "";
     const participant = presence.get(identity);
-    if (!participant) {
+    if (!participant || !key || key !== participant.voiceKey) {
       response.writeHead(403, { ...cors, "content-type": "application/json" });
-      response.end(JSON.stringify({ error: "join the office before requesting voice" }));
+      response.end(JSON.stringify({ error: "voice is not available for this session" }));
       return;
     }
 

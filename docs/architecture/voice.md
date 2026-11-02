@@ -6,12 +6,12 @@ LiveKit SFU. Dev uses `livekit-server --dev` in Docker; production uses LiveKit 
 
 ## Token flow
 
-1. Client joins the Colyseus office, then asks `GET /livekit/token?identity=<sessionId>&name=<name>`.
-2. Server looks up that session in its authoritative presence registry and derives the room from the player's current zone:
+1. Client joins the Colyseus office. The server sends a private `voiceKey` in that client's `welcome` message (never broadcast to other players), then the client asks `GET /livekit/token?identity=<sessionId>&key=<voiceKey>&name=<name>`.
+2. Server checks the per-session key, looks up that session in its authoritative presence registry, and derives the room from the player's current zone:
    - `identity = <Colyseus sessionId>` for the demo; production becomes `user:{userId}` after auth.
    - open floor → `office:workbits-loft`
    - meeting room → `office:workbits-loft:meeting`
-   - A client-supplied `room` query parameter is ignored; an identity that has not joined the office gets `403`.
+   - A client-supplied `room` query parameter is ignored. An identity without the matching key, or one that has not joined the office, gets `403`, so knowing a broadcast session id is not enough to mint a token for it.
    - `canPublish = true`, `canSubscribe = true`; TTL 10 minutes.
 3. API secret stays server-side. Tokens are scoped to one room.
 
@@ -76,6 +76,6 @@ pan  = clamp((remoteScreenX - localScreenX) / halfWidth, -1, 1) * 0.8
 - Unit test the gain/pan function (distance → gain, screen-space pan).
 - `/dev/voice-lab` with fake participants at fixed coordinates; assert gain values.
 - Playwright two-context test with fake media devices: join, mute, move near/far, switch room, assert participant counts and track states (`scripts/voice-two.mjs`, `scripts/voice-room-check.mjs`).
-- Token authorization test: outsiders get 403 and a client-requested room cannot override the authoritative zone (`scripts/token-check.mjs`).
+- Token authorization test: no key, wrong key, and outsiders get 403; a client-requested room cannot override the authoritative zone (`scripts/token-check.mjs`).
 - Manual checklist with real mics on Chrome/Safari/Firefox.
 - Load: 50 published audio tracks in one LiveKit room (bots or manual).

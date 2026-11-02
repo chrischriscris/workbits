@@ -5,6 +5,7 @@ export type PresenceEntry = {
   x: number;
   z: number;
   zone: string;
+  voiceKey: string;
 };
 
 export const floorRoom = "office:workbits-loft";

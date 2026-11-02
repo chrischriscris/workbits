@@ -37,6 +37,8 @@ type RealtimeState = {
   status: RealtimeStatus;
   room: Room | null;
   sessionId: string | null;
+  ready: boolean;
+  voiceKey: string | null;
   players: Record<string, RemotePlayer>;
   messages: RealtimeMessage[];
   localPosition: { x: number; z: number };
@@ -74,6 +76,8 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => {
   status: "offline",
   room: null,
   sessionId: null,
+  ready: false,
+  voiceKey: null,
   players: {},
   messages: [],
   localPosition: { x: -3.5, z: 6.5 },
@@ -104,6 +108,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => {
         "welcome",
         (message: {
           selfId: string;
+          voiceKey?: string;
           players: RemotePlayer[];
           messages?: RealtimeMessage[];
           layout?: OfficeLayout;
@@ -119,7 +124,13 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => {
                 merged.push({ ...item, history: true });
               }
             }
-            return { players, messages: merged, localStatus };
+            return {
+              players,
+              messages: merged,
+              localStatus,
+              ready: true,
+              voiceKey: message.voiceKey ?? null,
+            };
           });
         },
       );
@@ -162,11 +173,25 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => {
       });
 
       room.onLeave(() => {
-        set({ status: "offline", room: null, sessionId: null, players: {} });
+        set({
+          status: "offline",
+          room: null,
+          sessionId: null,
+          ready: false,
+          voiceKey: null,
+          players: {},
+        });
         scheduleReconnect();
       });
       room.onError(() => {
-        set({ status: "offline", room: null, sessionId: null, players: {} });
+        set({
+          status: "offline",
+          room: null,
+          sessionId: null,
+          ready: false,
+          voiceKey: null,
+          players: {},
+        });
         scheduleReconnect();
       });
 
@@ -185,7 +210,14 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => {
       reconnectTimer = null;
     }
     get().room?.leave();
-    set({ status: "offline", room: null, sessionId: null, players: {} });
+    set({
+      status: "offline",
+      room: null,
+      sessionId: null,
+      ready: false,
+      voiceKey: null,
+      players: {},
+    });
   },
 
   setLocalPosition: (localPosition) => set({ localPosition, hasMoved: true }),

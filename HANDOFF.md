@@ -48,7 +48,7 @@ Or the container stack: `docker compose -f infra/docker-compose.prod.yml up --bu
 - R3F isometric office with procedural furniture and the 8-character seed pack.
 - Server-authoritative movement bounds and presence messages.
 - Shared realtime chat with server-side persistence; room chat only reaches people in that room, DMs are server-routed to sender + recipient only.
-- LiveKit room token endpoint + mic publishing + distance-based volume + true separate LiveKit room for the meeting room.
+- LiveKit room token endpoint + mic publishing + distance-based volume + true separate LiveKit room for the meeting room. Voice tokens require a per-session key delivered only to that client.
 - Deterministic local Avatar Studio + Workspace Studio (no API key); customized avatars and desk layouts sync to everyone in the office.
 - Automatic reconnect with backoff: if the realtime server restarts, the tab rejoins, restores position and status, and rebinds voice.
 - Local office assistant with live presence answers and walk-to actions.

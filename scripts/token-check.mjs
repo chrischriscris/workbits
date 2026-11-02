@@ -14,10 +14,23 @@ check("token without an office session is rejected", unauth.status === 403, `sta
 const client = new Client("ws://127.0.0.1:3101");
 const room = await client.joinOrCreate("office", { characterId: "jules", name: "Token bot" });
 room.onMessage("*", () => {});
-await new Promise((resolve) => setTimeout(resolve, 200));
+const welcome = await new Promise((resolve) => {
+  room.onMessage("welcome", resolve);
+  room.send("hello");
+});
+const voiceKey = welcome.voiceKey;
+check("the server issues a private voice key", typeof voiceKey === "string" && voiceKey.length > 10);
+
+const noKey = await fetch(`${base}/livekit/token?identity=${room.sessionId}`);
+check("token without the voice key is rejected", noKey.status === 403, `status ${noKey.status}`);
+
+const wrongKey = await fetch(
+  `${base}/livekit/token?identity=${room.sessionId}&key=wrong`,
+);
+check("token with a wrong voice key is rejected", wrongKey.status === 403, `status ${wrongKey.status}`);
 
 const floor = await fetch(
-  `${base}/livekit/token?identity=${room.sessionId}&room=office:workbits-loft:meeting`,
+  `${base}/livekit/token?identity=${room.sessionId}&key=${voiceKey}&room=office:workbits-loft:meeting`,
 );
 const floorBody = await floor.json();
 check(
@@ -30,7 +43,7 @@ room.send("move", { x: 7, z: -4, rotation: 0, moving: false });
 await new Promise((resolve) => setTimeout(resolve, 250));
 
 const meeting = await fetch(
-  `${base}/livekit/token?identity=${room.sessionId}&room=office:workbits-loft`,
+  `${base}/livekit/token?identity=${room.sessionId}&key=${voiceKey}&room=office:workbits-loft`,
 );
 const meetingBody = await meeting.json();
 check(

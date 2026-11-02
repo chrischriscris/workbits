@@ -28,6 +28,7 @@
 
 - API secret server-only.
 - Short-lived JWTs (10 min), scoped to one room, `canPublish` only when allowed.
+- Demo: each Colyseus session gets a private `voiceKey` in its own welcome; the token endpoint requires it, so another player's broadcast session id cannot mint a token. The key is not a substitute for real auth; production uses the authenticated user/session.
 - Room names tenant-scoped; server checks access before minting.
 - No recording by default; no E2EE in v1 (documented).
 - Webhooks verified by signature.
