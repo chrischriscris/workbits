@@ -4,8 +4,8 @@
 
 - Repo: https://github.com/chrischriscris/workbits (private)
 - Branch: `feat/foundation`; `main` mirrors the same commits.
-- Latest render: `artifacts/art/20261102T123919Z/current.png`
-- Normal UI render: `artifacts/shots/art-normal.png` (older framing; retake after resume)
+- Latest render: `art/art-pass-latest.png` (committed) and `art/art-pass-compare.png`
+- Normal UI render: `art/ui-latest.png` (committed; retake after resume)
 - Target: `art/style-scene.png`
 - Checklist: `docs/art/overhaul-checklist.md`
 - Brief: `docs/art/overhaul-brief.md`
@@ -25,7 +25,7 @@
 2. Take a fresh `bun run art:iterate` and compare to `art/style-scene.png`.
 3. Remaining gaps: target has only 4 core zones and larger/plusher objects; ours has 6 rooms, so it reads smaller. Consider a hero crop or moving nap/garden to a second floor. Improve wall brightness, soft sunlight, plant leaf detail, and meeting-room plushness.
 4. Run `bun run typecheck && bun test`, commit, push `feat/foundation` and `main`.
-5. Do not mark the art pass finished until the image is reviewed; latest color-grade frame is `123919Z`.
+5. Do not mark the art pass finished until the image is reviewed; latest color-grade frame is committed as `art/art-pass-latest.png`.
 
 ## Git
 

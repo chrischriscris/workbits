@@ -56,6 +56,7 @@ Or the container stack: `docker compose -f infra/docker-compose.prod.yml up --bu
 - A responsive marketing page at `/welcome.html` with the real demo screenshot and a CTA into the invite picker.
 - Rooms menu, invite picker, status menu, character switcher, and room-wide emotes.
 - `bun run build` passes; `bun run verify` produces a report.
+- Diorama art overhaul: latest art frame in `art/art-pass-latest.png`; repo https://github.com/chrischriscris/workbits (private).
 - `bun run prod-check` and the built Docker image pass.
 - Single-process production mode and the Docker image both serve the app and realtime correctly (`bun run prod-check`).
 
