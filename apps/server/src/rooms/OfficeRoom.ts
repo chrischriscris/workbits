@@ -46,6 +46,7 @@ type ChatMessage = {
   id?: string;
   channel?: string;
   body?: string;
+  to?: string;
 };
 
 type StoredMessage = {
@@ -55,6 +56,7 @@ type StoredMessage = {
   channel: string;
   body: string;
   time: string;
+  to?: string;
 };
 
 export class OfficeRoom extends Room {
@@ -68,10 +70,17 @@ export class OfficeRoom extends Room {
     await this.loadHistory();
 
     this.onMessage("hello", (client) => {
+      const player = this.players.get(client.sessionId);
+      const visibleHistory = this.history.filter(
+        (message) =>
+          message.channel !== "dm" ||
+          message.authorId === player?.characterId ||
+          message.to === player?.characterId,
+      );
       client.send("welcome", {
         selfId: client.sessionId,
         players: [...this.players.values()],
-        messages: this.history.slice(-100),
+        messages: visibleHistory.slice(-100),
       });
     });
 
@@ -111,6 +120,9 @@ export class OfficeRoom extends Room {
           ? message.id.slice(0, 120)
           : `${client.sessionId}-${Date.now()}`;
 
+      const to = channel === "dm" ? String(message.to ?? "") : undefined;
+      if (channel === "dm" && !to) return;
+
       const stored: StoredMessage = {
         id,
         authorId: player.characterId,
@@ -121,13 +133,25 @@ export class OfficeRoom extends Room {
           hour: "numeric",
           minute: "2-digit",
         }),
+        ...(to ? { to } : {}),
       };
       this.history.push(stored);
       if (this.history.length > 300) this.history.shift();
       void appendFile(this.historyFile, `${JSON.stringify(stored)}\n`).catch((error) => {
         console.warn("Could not persist chat message", error);
       });
-      this.broadcast("chat", stored);
+
+      if (to) {
+        for (const client of this.clients) {
+          const participant = this.players.get(client.sessionId);
+          if (!participant) continue;
+          if (participant.characterId === player.characterId || participant.characterId === to) {
+            client.send("chat", stored);
+          }
+        }
+      } else {
+        this.broadcast("chat", stored);
+      }
     });
   }
 

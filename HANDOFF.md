@@ -33,7 +33,7 @@ bun run dev
 
 - R3F isometric office with procedural furniture and the 8-character seed pack.
 - Server-authoritative movement bounds and presence messages.
-- Shared realtime chat with server-side persistence.
+- Shared realtime chat with server-side persistence; DMs are server-routed to sender + recipient only.
 - LiveKit room token endpoint + mic publishing + distance-based volume.
 - Deterministic local Avatar Studio + Workspace Studio (no API key).
 - Rooms menu and character switcher.
@@ -44,7 +44,7 @@ bun run dev
 - **Auth, orgs, invites, billing, landing page** — not built. The app opens straight into the demo as Chus.
 - **Full office editor** — not built. Avatar Studio and the engineering-pod Workspace Studio are the customization slices.
 - **LLM room generation** — not built. Workspace Studio is the deterministic local slice.
-- **Chat authz** — Global/Office/Room/DM are UI channels; the server currently broadcasts to the room. DMs are not private yet.
+- **Chat authz** — Global/Office/Room still broadcast to the room; DMs are server-routed and history-filtered, but group/room membership is not enforced.
 - **Meeting-room privacy** — client-side volume gate, not a separate LiveKit room.
 - **Two real microphones** — the voice path is verified with a fake device and one published track; a manual two-person audio test is still needed.
 - **React console warning** — `Attempted to synchronously unmount a root...` comes from the R3F HTML name-tag portal path. It does not break the scene, but should be cleaned up.

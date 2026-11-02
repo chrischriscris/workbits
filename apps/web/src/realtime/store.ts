@@ -35,7 +35,7 @@ type RealtimeState = {
   disconnect: () => void;
   setLocalPosition: (position: { x: number; z: number }) => void;
   sendMove: (data: { x: number; z: number; rotation: number; moving: boolean }) => void;
-  sendChat: (channel: string, body: string) => void;
+  sendChat: (channel: string, body: string, to?: string) => void;
 };
 
 let client: Client | null = null;
@@ -126,7 +126,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
     get().room?.send("move", data);
   },
 
-  sendChat: (channel, body) => {
+  sendChat: (channel, body, to) => {
     const trimmed = body.trim();
     if (!trimmed) return;
     const id = `${localCharacterId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -141,7 +141,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
     set((state) => ({ messages: [...state.messages, message] }));
     const room = get().room;
     if (room) {
-      room.send("chat", { id, channel, body: trimmed });
+      room.send("chat", { id, channel, body: trimmed, ...(to ? { to } : {}) });
     }
   },
 }));

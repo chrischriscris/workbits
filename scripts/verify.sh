@@ -28,6 +28,7 @@ run "Realtime presence + chat bot" bun run shot:multi
 run "Voice token + publish" bun scripts/voice-check.mjs
 run "Avatar studio" bun scripts/forge-shot.mjs
 run "Workspace studio" bun scripts/room-studio-shot.mjs
+run "DM privacy" bun scripts/dm-check.mjs
 run "Mobile layout" bun scripts/mobile-shot.mjs
 
 printf '\nArtifacts: `%s`\n' "$OUT" | tee -a "$OUT/report.md"

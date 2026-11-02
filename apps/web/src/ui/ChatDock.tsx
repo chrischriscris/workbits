@@ -102,7 +102,8 @@ export function ChatDock() {
   const send = () => {
     const body = draft.trim();
     if (!body) return;
-    sendChat(chatTab, body);
+    const to = chatTab === "dm" ? (localCharacterId === "arlo" ? "chus" : "arlo") : undefined;
+    sendChat(chatTab, body, to);
     setDraft("");
   };
 

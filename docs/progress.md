@@ -10,7 +10,7 @@ Source of truth for what is actually done. Update at the end of every work sessi
 | 1 — The Room | 🟡 Playable style frame | `art/workbits-demo.png`, `artifacts/shots/office-18.png` | Art still being polished |
 | 2 — Presence | 🟢 Working | `bun run shot:multi`, bot welcome/chat | Message-based presence (ADR-011) |
 | 3 — Voice | 🟢 Publish + proximity | `bun scripts/voice-check.mjs`, LiveKit track | Meeting-room isolation is client-side; two-real-user audio still manual |
-| 4 — Chat | 🟡 UI + realtime + persistence | `bun run shot:multi`, `chat.jsonl` | Channels are not authz-scoped; DMs are not private |
+| 4 — Chat | 🟡 UI + realtime + persistence + private DMs | `bun run shot:multi`, `scripts/dm-check.mjs` | Room/Group membership not authz-scoped |
 | 5 — Customization | 🟡 Avatar Studio + Workspace Studio + rooms menu | `scripts/forge-shot.mjs`, `scripts/room-studio-shot.mjs` | Full office editor not built |
 | 6 — AI | 🟡 Local avatar generator | `apps/web/src/ai/avatar.ts` | No runtime LLM keys; room generator pending |
 | 7 — Product | 🔴 Not started | — | Auth, billing, landing |
@@ -43,6 +43,7 @@ Source of truth for what is actually done. Update at the end of every work sessi
 - 2026-11-02 — Added Avatar Studio (prompt → 3 local modular bases → apply/persist), rooms popover with click-to-walk, topbar character switcher, share/copy invite link, responsive camera and mobile layout, chat persistence to `apps/server/data/chat.jsonl`, and the `bun run verify` evidence pass.
 - 2026-11-02 — Production `bun run build` passes. Current demo screenshot: `art/workbits-demo.png`.
 - 2026-11-02 — Added Workspace Studio: data-driven engineering desks/chairs, deterministic prompt → 3 layouts, apply/reset/persist. Added mobile polish and share link.
+- 2026-11-02 — Added server-routed private DMs with history filtering; verified Arlo receives a DM while Jules does not. Added avatar/workspace screenshots to the docs.
 
 ## Next
 
