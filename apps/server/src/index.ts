@@ -1,4 +1,9 @@
+import { existsSync } from "node:fs";
+import { createReadStream } from "node:fs";
+import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
+import { extname, join, resolve, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 import { AccessToken } from "livekit-server-sdk";
 import { Server } from "@colyseus/core";
 import { WebSocketTransport } from "@colyseus/ws-transport";
@@ -9,6 +14,80 @@ const port = Number(process.env.PORT ?? 3101);
 const livekitUrl = process.env.LIVEKIT_URL ?? "ws://localhost:7880";
 const livekitKey = process.env.LIVEKIT_API_KEY ?? "devkey";
 const livekitSecret = process.env.LIVEKIT_API_SECRET ?? "secret";
+const webDist = resolve(
+  process.env.WEB_DIST ?? fileURLToPath(new URL("../../web/dist/", import.meta.url)),
+);
+const hasWebBuild = existsSync(join(webDist, "index.html"));
+
+const mime: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".mjs": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".map": "application/json; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".ico": "image/x-icon",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+  ".txt": "text/plain; charset=utf-8",
+};
+
+async function serveStatic(
+  request: { method?: string; headers: { accept?: string } },
+  response: import("node:http").ServerResponse,
+  pathname: string,
+) {
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    response.writeHead(405, { allow: "GET, HEAD" });
+    response.end("Method not allowed");
+    return;
+  }
+
+  let relative = decodeURIComponent(pathname).replace(/^\/+/, "");
+  if (relative === "") relative = "index.html";
+  let filePath = resolve(webDist, relative);
+  if (!filePath.startsWith(resolve(webDist) + sep) && filePath !== join(webDist, "index.html")) {
+    response.writeHead(403);
+    response.end("Forbidden");
+    return;
+  }
+
+  let info = await stat(filePath).catch(() => null);
+  if (!info?.isFile()) {
+    const wantsHtml = (request.headers.accept ?? "").includes("text/html");
+    if (wantsHtml || !extname(relative)) {
+      relative = "index.html";
+      filePath = join(webDist, "index.html");
+      info = await stat(filePath).catch(() => null);
+    }
+  }
+
+  if (!info?.isFile()) {
+    response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+    response.end("Not found");
+    return;
+  }
+
+  const hashed = /\/assets\/.+-[A-Za-z0-9_-]{6,}\.(?:js|css|woff2?)$/.test(pathname);
+  response.writeHead(200, {
+    "content-type": mime[extname(filePath)] ?? "application/octet-stream",
+    "content-length": info.size,
+    "cache-control": hashed
+      ? "public, max-age=31536000, immutable"
+      : "no-cache",
+    "x-content-type-options": "nosniff",
+  });
+  if (request.method === "HEAD") {
+    response.end();
+    return;
+  }
+  createReadStream(filePath).pipe(response);
+}
 
 const httpServer = createServer(async (request, response) => {
   const url = new URL(request.url ?? "/", `http://${request.headers.host ?? "localhost"}`);
@@ -29,7 +108,8 @@ const httpServer = createServer(async (request, response) => {
     response.end(
       JSON.stringify({
         ok: true,
-        service: "workbits-realtime",
+        service: "workbits",
+        web: hasWebBuild,
         livekit: livekitUrl,
       }),
     );
@@ -79,8 +159,13 @@ const httpServer = createServer(async (request, response) => {
     return;
   }
 
-  response.writeHead(200, { ...cors, "content-type": "text/plain" });
-  response.end("Workbits realtime\n");
+  if (hasWebBuild) {
+    await serveStatic(request, response, url.pathname);
+    return;
+  }
+
+  response.writeHead(200, { ...cors, "content-type": "text/plain; charset=utf-8" });
+  response.end("Workbits realtime. Build apps/web and restart to serve the app here.\n");
 });
 
 const gameServer = new Server({
@@ -91,7 +176,8 @@ gameServer.define("office", OfficeRoom);
 
 await gameServer.listen(port);
 
-console.log(`Workbits realtime listening on :${port}`);
+console.log(`Workbits listening on :${port}`);
+console.log(hasWebBuild ? `Serving web build from ${webDist}` : "No web build found (dev mode)");
 console.log(`LiveKit signaling: ${livekitUrl}`);
 
 process.on("SIGINT", () => {

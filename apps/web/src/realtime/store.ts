@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { Client, type Room } from "colyseus.js";
 import { zoneAt, type AvatarConfig, type OfficeLayout } from "@workbits/shared";
 import { localCharacter, localCharacterId } from "../data/team";
+import { realtimeUrl } from "../config";
 import { useAvatarStore } from "../state/avatar";
 import { useOfficeLayout } from "../state/officeLayout";
 
@@ -56,13 +57,6 @@ let client: Client | null = null;
 let reconnectTimer: number | null = null;
 let reconnectAttempts = 0;
 let manualDisconnect = false;
-
-function realtimeUrl() {
-  const explicit = import.meta.env.VITE_REALTIME_URL as string | undefined;
-  if (explicit) return explicit;
-  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-  return `${protocol}://${window.location.hostname}:3101`;
-}
 
 export const useRealtimeStore = create<RealtimeState>((set, get) => {
   const scheduleReconnect = () => {

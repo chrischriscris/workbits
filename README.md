@@ -40,6 +40,27 @@ bun run dev
 
 `bun run dev` starts the self-hosted LiveKit container (via Docker Compose), the realtime server on `:3101`, and the web app on `:3100`.
 
+### Production (single process)
+
+The same Node process serves the built web app, the Colyseus realtime endpoint, and the LiveKit token API:
+
+```bash
+bun run build
+bun run start
+# http://localhost:3101
+```
+
+`bun run prod-check` builds, boots a production server on `:3201`, and verifies static serving, SPA fallback, health, token rejection, hashed assets, same-origin realtime, and a clean browser load.
+
+### Docker
+
+```bash
+docker compose -f infra/docker-compose.prod.yml up --build
+# http://localhost:3200
+```
+
+This starts the app container plus LiveKit. Set `LIVEKIT_URL`, `LIVEKIT_API_KEY`, and `LIVEKIT_API_SECRET` for anything beyond the local dev keys.
+
 Open **http://localhost:3100**. Click the user chip in the top-right to switch demo characters, or open a second tab with:
 
 ```
@@ -67,7 +88,7 @@ This runs typecheck, proximity math checks, a desktop screenshot, a realtime bot
 | State | Zustand + server-authoritative presence messages |
 | AI | Local avatar/workspace generators + local office assistant; provider adapter pending |
 | Runtime | Bun for installs/scripts; Node for Colyseus |
-| Deploy | Docker Compose + Caddy |
+| Deploy | One Node process serving web + realtime + token API; Docker Compose for app + LiveKit |
 
 ## Docs map
 

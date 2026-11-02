@@ -7,6 +7,7 @@ import {
   type RemoteParticipant,
   type RemoteTrack,
 } from "livekit-client";
+import { apiBase } from "../config";
 import { localCharacter } from "../data/team";
 import { useRealtimeStore } from "../realtime/store";
 import { proximityGain } from "./gain";
@@ -36,13 +37,6 @@ let audioContainer: HTMLDivElement | null = null;
 let proximityTimer: number | null = null;
 let switching = false;
 const lastVolumes: Record<string, number> = {};
-
-function apiBase() {
-  return (
-    (import.meta.env.VITE_API_URL as string | undefined) ??
-    `${window.location.protocol}//${window.location.hostname}:3101`
-  );
-}
 
 function ensureAudioContainer() {
   if (audioContainer) return audioContainer;

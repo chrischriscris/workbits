@@ -17,6 +17,16 @@ bun run dev
 
 `bun run dev` starts the LiveKit Docker container, the Node/Colyseus server, and Vite. Docker must be running.
 
+To see the production shape (one process serving the built app, realtime, and token API):
+
+```bash
+bun run build
+bun run start
+# http://localhost:3101
+```
+
+Or the container stack: `docker compose -f infra/docker-compose.prod.yml up --build` → `http://localhost:3200`. Both paths were verified.
+
 ## Five-minute tour
 
 1. **The office** — the team pack is live: Jules, Mira, Felix, Fern, Arlo (frog), Theo (asleep), Chus, and Claw'd the mascot.
@@ -43,6 +53,7 @@ bun run dev
 - Local office assistant with live presence answers and walk-to actions.
 - Rooms menu, invite picker, status menu, character switcher, and room-wide emotes.
 - `bun run build` passes; `bun run verify` produces a report.
+- Single-process production mode and the Docker image both serve the app and realtime correctly (`bun run prod-check`).
 
 ## What is mocked / incomplete
 

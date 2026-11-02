@@ -26,40 +26,62 @@ bun run dev           # web + server
 
 Open `http://localhost:3100`, log in with a seeded demo user (credentials printed by the seed).
 
-## Single-node production (default)
+## Single-node production (implemented)
+
+The current demo deploys as one Node process that serves the built web app, Colyseus, and the LiveKit token endpoint. No Postgres, Redis, or reverse proxy is required.
 
 ```
-Caddy
- ├─ /            → static web (built assets)
- ├─ /api/*       → app:3101
- ├─ /rt/*        → app:3101 (WebSocket)
- └─ /livekit/*   → LiveKit Cloud or livekit:7880
-app              one Node/Bun process (Fastify + Colyseus)
-postgres
-livekit          (optional if using LiveKit Cloud)
+app (:3101)
+ ├─ /                  → apps/web/dist (SPA fallback)
+ ├─ /assets/*          → hashed assets, immutable cache
+ ├─ /health            → JSON status
+ ├─ /livekit/token     → room-scoped token, 403 for outsiders
+ └─ / (WebSocket)      → Colyseus office room
+livekit (:7880)        → self-hosted dev server or LiveKit Cloud
 ```
 
-- `docker compose -f infra/docker-compose.prod.yml up -d`
-- Migrations run on boot under a Postgres advisory lock.
-- Health: `GET /api/health` (DB, LiveKit, storage), `GET /api/ready`.
-- Caddy obtains TLS automatically.
-- One app container is enough for 50 concurrent/floor.
+```bash
+bun run build
+bun run start          # http://localhost:3101
+bun run prod-check     # evidence: static, SPA, health, token, same-origin realtime
+```
+
+Docker:
+
+```bash
+docker compose -f infra/docker-compose.prod.yml up --build
+# http://localhost:3200
+```
+
+The image is multi-stage (`oven/bun` build → `node:24-alpine` runtime with `tsx`). LiveKit is a sibling container; the token endpoint returns a browser-reachable `LIVEKIT_URL`.
+
+**Not in this mode yet:** TLS/Caddy, Postgres, auth/orgs, Redis, multi-instance, and S3. Those are the next layers, not rewrites:
+
+```
+Caddy (TLS)
+ └─ app containers (sticky WebSockets)
+     ├─ Postgres (orgs, users, layouts, chat)
+     ├─ Redis (presence + rate limits)
+     └─ LiveKit Cloud / cluster
+```
 
 ## Environment
 
 ```bash
-# app
+# app (current production mode)
 NODE_ENV=production
 PORT=3101
-APP_URL=https://workbits.example.com
+WEB_DIST=./apps/web/dist          # optional; computed from the server path by default
+
+# livekit
+LIVEKIT_URL=wss://...             # must be reachable by the browser
+LIVEKIT_API_KEY=...
+LIVEKIT_API_SECRET=...
+
+# planned, not read yet
 DATABASE_URL=postgres://...
 BETTER_AUTH_SECRET=...
 BETTER_AUTH_URL=https://workbits.example.com
-
-# livekit
-LIVEKIT_URL=wss://...
-LIVEKIT_API_KEY=...
-LIVEKIT_API_SECRET=...
 
 # optional
 REDIS_URL=redis://...

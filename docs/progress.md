@@ -14,7 +14,7 @@ Source of truth for what is actually done. Update at the end of every work sessi
 | 5 — Customization | 🟢 Generated + tuned avatars, synced layouts | `scripts/forge-shot.mjs`, `scripts/sync-check.mjs` | Full drag-and-drop office editor not built |
 | 6 — AI | 🟢 Local avatar, workspace, assistant | `scripts/assistant-check.mjs`, `apps/web/src/ai/` | No runtime LLM keys; provider adapter pending |
 | 7 — Product | 🔴 Not started | — | Auth, billing, landing |
-| 8 — Ship | 🔴 Not started | — | Deploy hardening |
+| 8 — Ship | 🟡 Single-process prod + Docker | `bun run prod-check`, container run | TLS/Caddy, Postgres, multi-instance pending |
 
 ### Verification
 
@@ -50,6 +50,7 @@ Source of truth for what is actually done. Update at the end of every work sessi
 - 2026-11-02 — Added automatic realtime reconnect with backoff. Reconnect restores the player position/zone and status, rebinds voice to the new Colyseus identity, and preserves the mic state. Added emote bubbles for wave/clap/heart. Verified with `scripts/reconnect-check.mjs` and the updated `emote-check`.
 - 2026-11-02 — Added the Workbits Assistant: a local, no-key chat panel that answers presence, room, meeting, and summary questions from live data and offers walk-to actions. Clearly labeled Local engine; provider seam documented in `docs/architecture/ai.md`.
 - 2026-11-02 — Added manual avatar tuning (skin, hair style/color, top color, glasses, beard, cap, chain) on top of generated bases, with live sync to other clients. Updated `forge-shot` to assert the edited config reaches a remote observer.
+- 2026-11-02 — Added single-process production serving (web build + Colyseus + token API), SPA fallback, cache headers, a multi-stage Dockerfile, and an app+LiveKit Compose stack. Verified locally and in the built container with `prod-check` (static, SPA, health, 403 token, hashed asset, same-origin realtime, clean console).
 
 ## Next
 

@@ -1,0 +1,9 @@
+node_modules
+dist
+artifacts
+.git
+.env
+.env.local
+apps/server/data
+seeds/team/raw
+*.log
