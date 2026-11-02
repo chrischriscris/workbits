@@ -29,11 +29,37 @@ The user's model map, and how Workbits uses it. The goal is quality per dollar, 
 
 ## Subagent policy
 
-- One child, one scope, self-contained brief.
-- Give the child the smallest model that can do the job.
-- Tiny smoke tests: low effort, one-line output.
-- Parent reviews and reruns the gate; a child's "done" is not evidence.
-- For parallel work, cap concurrency (3–4) to avoid rate-limit thrash.
+Subagents are expensive: they pay a handoff tax, lack the parent's full context, and can lose nuance. Use them deliberately.
+
+**Good reasons to delegate:**
+
+- Work that is independent and parallelizable.
+- Bulk investigation, review, or consulting where a fresh context is cheaper than loading the parent's.
+- A different model's strength: Opus for architecture, Sol for critique, Kimi for vision.
+- Blind/adversarial review — a child that did not see the parent's reasoning is good at catching assumptions.
+- A self-contained task that would otherwise block the main thread.
+
+**Bad reasons:**
+
+- Small or sequential work the parent can do faster.
+- A task that needs most of the parent's context.
+- Two children editing the same files.
+- Avoiding a decision. Art quality, security, and product scope stay with the parent.
+- A cheap local check (test, grep, screenshot) already answers it.
+
+**Briefs:** goal, files, constraints, acceptance criteria, output path; smallest capable model; read-only if possible; one child, one scope. The child verifies; the parent reruns the gate.
+
+**Limits:** cap concurrency at 3–4, keep prompts tight, avoid long Astra calls, snapshot usage before/after delegation-heavy phases. A subagent's "done" is not evidence.
+
+---
+
+## Claude weekly context (2026-11-02)
+
+- Claude weekly is at **45% used / 55% left**, resets in ~14 h (19:00 UTC). The user used 45% over six days; today is the last day of the window.
+- Treat Claude as the **workhorse for this run**: Sonnet for volume, Opus for architecture/risky diffs, Haiku for exploration.
+- The weekly reset gives a fresh window mid-run; still snapshot before/after phases.
+- Codex has ~94% weekly left; use Sol/Terra/Luna sensibly, Astra sparingly.
+- OpenCode stays on DeepSeek; Kimi only for vision/3D/design taste.
 
 ## Smoke-test results — 2026-11-02
 

@@ -118,11 +118,33 @@ Use **Bun** for installs and scripts. If a server dependency is incompatible wit
 
 ## 9. Subagents
 
-- Give a child a self-contained brief: goal, files, constraints, acceptance criteria, and output path.
-- One child, one scope. Do not let two children edit the same files.
-- Children must verify their own work and report evidence, not just "done".
+Subagents pay a **handoff tax**: they start without the parent's context, can lose nuance, and multiply cost. Use them deliberately.
+
+**Use a subagent when:**
+
+- The work is independent and can run in parallel.
+- It is bulk investigation, review, or consulting where a fresh context is cheaper than loading the parent's.
+- You need a different model's strength (Opus for architecture, Sol for critique, Kimi for vision).
+- You need blind/adversarial review — a child that did not see the parent's reasoning is good at catching assumptions.
+- A self-contained task would otherwise block the main thread.
+
+**Do not use one when:**
+
+- The task is small or sequential; the parent can do it faster.
+- The child would need most of the parent's context (the handoff tax exceeds the benefit).
+- Two children would edit the same files.
+- You are delegating to avoid thinking. Judgment on art quality, security, and product scope stays with the parent.
+- A cheap local check (test, grep, screenshot) answers the question.
+
+**Brief requirements:**
+
+- Goal, files, constraints, acceptance criteria, and output path.
+- The smallest model that can do the job.
+- Read-only if possible; one child, one scope.
+- The child verifies its own work and reports evidence, not just "done".
 - The parent reviews the diff and reruns the gate. A child's claim is not proof.
-- Never delegate the final judgment on art quality, security, or product scope.
+
+**Cost rules:** cap concurrency at 3–4, keep prompts tight, avoid long Astra calls, and snapshot usage before/after a delegation-heavy phase.
 
 ## 10. Security and privacy
 
