@@ -15,8 +15,7 @@
   },
   "dependencies": {
     "@colyseus/core": "0.16.21",
-    "@colyseus/schema": "3.0.76",
     "@colyseus/ws-transport": "0.16.5",
-    "colyseus": "0.16.5"
+    "livekit-server-sdk": "^2.19.2"
   }
 }

@@ -30,8 +30,10 @@ type RealtimeState = {
   sessionId: string | null;
   players: Record<string, RemotePlayer>;
   messages: RealtimeMessage[];
+  localPosition: { x: number; z: number };
   connect: () => Promise<void>;
   disconnect: () => void;
+  setLocalPosition: (position: { x: number; z: number }) => void;
   sendMove: (data: { x: number; z: number; rotation: number; moving: boolean }) => void;
   sendChat: (channel: string, body: string) => void;
 };
@@ -51,6 +53,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
   sessionId: null,
   players: {},
   messages: [],
+  localPosition: { x: -3.5, z: 6.5 },
 
   connect: async () => {
     if (get().status !== "offline") return;
@@ -107,6 +110,8 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
     get().room?.leave();
     set({ status: "offline", room: null, sessionId: null, players: {} });
   },
+
+  setLocalPosition: (localPosition) => set({ localPosition }),
 
   sendMove: (data) => {
     get().room?.send("move", data);

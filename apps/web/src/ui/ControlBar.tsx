@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   Headphones,
   MessageCircle,
@@ -12,26 +13,30 @@ import {
   Wand2,
 } from "lucide-react";
 import { useAppStore } from "../state/app";
+import { useVoiceStore } from "../voice/store";
 import { palette } from "../theme";
 
 function ControlButton({
   label,
   active,
   danger,
+  disabled,
   onClick,
   children,
 }: {
   label: string;
   active?: boolean;
   danger?: boolean;
+  disabled?: boolean;
   onClick: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <button
       className={`control-button${active ? " is-active" : ""}${danger ? " is-danger" : ""}`}
       type="button"
       onClick={onClick}
+      disabled={disabled}
       aria-label={label}
       title={label}
     >
@@ -41,10 +46,6 @@ function ControlButton({
 }
 
 export function ControlBar() {
-  const muted = useAppStore((state) => state.muted);
-  const toggleMuted = useAppStore((state) => state.toggleMuted);
-  const deafened = useAppStore((state) => state.deafened);
-  const toggleDeafened = useAppStore((state) => state.toggleDeafened);
   const cameraOn = useAppStore((state) => state.cameraOn);
   const toggleCamera = useAppStore((state) => state.toggleCamera);
   const screenOn = useAppStore((state) => state.screenOn);
@@ -52,20 +53,74 @@ export function ControlBar() {
   const chatOpen = useAppStore((state) => state.chatOpen);
   const setChatOpen = useAppStore((state) => state.setChatOpen);
 
+  const voiceStatus = useVoiceStore((state) => state.status);
+  const muted = useVoiceStore((state) => state.muted);
+  const deafened = useVoiceStore((state) => state.deafened);
+  const audioBlocked = useVoiceStore((state) => state.audioBlocked);
+  const toggleMute = useVoiceStore((state) => state.toggleMute);
+  const toggleDeafen = useVoiceStore((state) => state.toggleDeafen);
+  const enableAudio = useVoiceStore((state) => state.enableAudio);
+
+  const handleMic = () => {
+    if (voiceStatus === "connected") {
+      if (audioBlocked) void enableAudio();
+      void toggleMute();
+    } else if (voiceStatus === "idle" || voiceStatus === "error") {
+      void useVoiceStore
+        .getState()
+        .connect()
+        .then(() => useVoiceStore.getState().toggleMute());
+    }
+  };
+
+  const statusLabel =
+    voiceStatus === "connected"
+      ? muted
+        ? "mic off"
+        : "live"
+      : voiceStatus === "connecting"
+        ? "joining"
+        : voiceStatus === "error"
+          ? "unavailable"
+          : "off";
+  const dotColor =
+    voiceStatus === "error"
+      ? palette.red
+      : voiceStatus === "connected" && !muted
+        ? palette.green
+        : voiceStatus === "connecting"
+          ? palette.amber
+          : palette.slate;
+
   return (
     <div className="controls">
-      <div className="voice-status">
-        <span className="voice-status__dot" style={{ background: palette.green }} />
+      <button
+        className="voice-status"
+        type="button"
+        onClick={() => {
+          if (audioBlocked) void enableAudio();
+          else if (voiceStatus === "idle" || voiceStatus === "error") {
+            void useVoiceStore.getState().connect();
+          }
+        }}
+        title={audioBlocked ? "Enable audio" : "Proximity voice"}
+      >
+        <span className="voice-status__dot" style={{ background: dotColor }} />
         <span>
           <strong>Proximity</strong>
-          <small>{muted ? "mic off" : "listening"}</small>
+          <small>{audioBlocked ? "tap to enable audio" : statusLabel}</small>
         </span>
-      </div>
+      </button>
       <div className="controls__divider" />
-      <ControlButton label={muted ? "Unmute microphone" : "Mute microphone"} active={!muted} danger={muted} onClick={toggleMuted}>
+      <ControlButton
+        label={muted ? "Join / unmute microphone" : "Mute microphone"}
+        active={!muted && voiceStatus === "connected"}
+        danger={muted}
+        onClick={handleMic}
+      >
         {muted ? <MicOff size={18} /> : <Mic size={18} />}
       </ControlButton>
-      <ControlButton label={deafened ? "Undeafen" : "Deafen"} active={deafened} onClick={toggleDeafened}>
+      <ControlButton label={deafened ? "Undeafen" : "Deafen"} active={deafened} onClick={toggleDeafen}>
         {deafened ? <VolumeX size={18} /> : <Headphones size={18} />}
       </ControlButton>
       <ControlButton label={cameraOn ? "Turn camera off" : "Turn camera on"} active={cameraOn} onClick={toggleCamera}>

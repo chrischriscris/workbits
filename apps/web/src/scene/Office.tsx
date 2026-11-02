@@ -464,6 +464,10 @@ function LocalPlayer() {
     const now = Date.now();
     if (now - lastSent.current > (isMoving ? 70 : 450)) {
       lastSent.current = now;
+      useRealtimeStore.getState().setLocalPosition({
+        x: position.current.x,
+        z: position.current.z,
+      });
       useRealtimeStore.getState().sendMove({
         x: position.current.x,
         z: position.current.z,

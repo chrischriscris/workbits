@@ -35,6 +35,7 @@ Source of truth for what is actually done. Update at the end of every work sessi
 - 2026-11-02 — Added the Colyseus realtime server (0.16, Node + tsx) with authoritative movement bounds, presence messages, and shared chat. Verified with a headless bot: welcome snapshot, chat both directions, and a remote avatar in the scene.
 - 2026-11-02 — Added `bun run shot`, `bun run shot:multi`, and the bot-check script. Known issue: conditional static-avatar replacement can emit a React `removeChild` console error; the scene remains usable.
 - 2026-11-02 — Recorded ADR-011: message-based presence for the MVP, schema migration before scale.
+- 2026-11-02 — Added self-hosted LiveKit (Docker dev server), a scoped token endpoint, and proximity voice on the client. Verified one client connects and publishes a mic track; UI shows `Proximity · live`. Proximity gain is distance-based and deafen-aware.
 
 ## Next
 

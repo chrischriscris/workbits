@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRealtimeStore } from "./realtime/store";
 import { OfficeScene } from "./scene/OfficeScene";
 import { useAppStore } from "./state/app";
+import { useVoiceStore } from "./voice/store";
 import { CharacterSheet } from "./ui/CharacterSheet";
 import { ChatDock } from "./ui/ChatDock";
 import { ControlBar } from "./ui/ControlBar";
@@ -35,10 +36,20 @@ function InteractionHint() {
 }
 
 export default function App() {
+  const realtimeStatus = useRealtimeStore((state) => state.status);
+  const sessionId = useRealtimeStore((state) => state.sessionId);
+  const connectVoice = useVoiceStore((state) => state.connect);
+
   useEffect(() => {
     document.title = "Workbits — Your team's place";
     void useRealtimeStore.getState().connect();
   }, []);
+
+  useEffect(() => {
+    if (realtimeStatus === "connected" && sessionId) {
+      void connectVoice();
+    }
+  }, [realtimeStatus, sessionId, connectVoice]);
 
   return (
     <div className="app-shell">
