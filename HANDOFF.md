@@ -56,6 +56,7 @@ Or the container stack: `docker compose -f infra/docker-compose.prod.yml up --bu
 - A responsive marketing page at `/welcome.html` with the real demo screenshot and a CTA into the invite picker.
 - Rooms menu, invite picker, status menu, character switcher, and room-wide emotes.
 - `bun run build` passes; `bun run verify` produces a report.
+- `bun run prod-check` and the built Docker image pass.
 - Single-process production mode and the Docker image both serve the app and realtime correctly (`bun run prod-check`).
 
 ## What is mocked / incomplete
@@ -77,7 +78,9 @@ Or the container stack: `docker compose -f infra/docker-compose.prod.yml up --bu
 bun run verify
 ```
 
-Latest run is under `artifacts/verify/<timestamp>/report.md`. It covers typecheck, proximity math, desktop screenshot, realtime bot + chat, LiveKit publish, and Avatar Studio.
+Latest run is under `artifacts/verify/<timestamp>/report.md`. It covers typecheck, 22 unit tests, desktop/mobile screenshots, realtime presence/chat, voice publish and private-room isolation, reconnect, DMs, both studios, invite occupancy, status/emotes, assistant, welcome page, and unread chat.
+
+The most recent production check: `bun run prod-check` (single-process build) and the built Docker image both pass static/SPA/health/token/same-origin realtime/clean-console checks.
 
 ## Where to continue
 

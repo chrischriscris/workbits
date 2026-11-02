@@ -18,7 +18,7 @@ Source of truth for what is actually done. Update at the end of every work sessi
 
 ### Verification
 
-`bun run verify` runs the current evidence pass. Latest report: `artifacts/verify/20261102T063859Z/report.md` (local, gitignored).
+`bun run verify` runs the current evidence pass. Latest report after the final pass: `artifacts/verify/<timestamp>/report.md` (local, gitignored).
 
 ## Done
 
