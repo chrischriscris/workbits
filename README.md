@@ -75,7 +75,7 @@ Click the mic to publish your microphone. Voice volume follows avatar distance; 
 bun run verify
 ```
 
-This runs typecheck, proximity math checks, a desktop screenshot, a realtime bot + chat test, a LiveKit publish check, and the Avatar Studio flow. The report and screenshots land in `artifacts/verify/<timestamp>/`. Artifacts are gitignored.
+This runs typecheck, 22 unit tests, proximity math checks, a desktop screenshot, realtime presence/chat tests, voice and private-room isolation checks, reconnect, DM privacy, the assistant, both studios, and mobile. The production mode has a separate `bun run prod-check`. The report and screenshots land in `artifacts/verify/<timestamp>/`. Artifacts are gitignored.
 
 ## Stack
 

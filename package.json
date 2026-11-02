@@ -19,6 +19,7 @@
     "start": "cd apps/server && bun run start",
     "prod": "bun run build && bun run start",
     "prod-check": "bash scripts/prod-check.sh",
+    "test": "bun test",
     "typecheck": "cd apps/web && bun run typecheck && cd ../server && bun run typecheck",
     "shot": "bun scripts/shot.mjs",
     "shot:multi": "bun scripts/multi-shot.mjs",

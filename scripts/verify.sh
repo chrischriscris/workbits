@@ -22,6 +22,7 @@ run() {
 printf '# Workbits verification — %s\n' "$STAMP" >>"$OUT/report.md"
 
 run "Typecheck" bun run typecheck
+run "Unit tests" bun test
 run "Proximity gain math" bun scripts/gain-check.mjs
 run "Single-client office screenshot" bun run shot http://127.0.0.1:3100/ "artifacts/shots/verify-office.png"
 run "Realtime presence + chat bot" bun run shot:multi

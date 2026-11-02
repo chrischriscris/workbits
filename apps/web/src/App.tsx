@@ -47,14 +47,17 @@ export default function App() {
   const syncVoiceZone = useVoiceStore((state) => state.syncZone);
   const localPosition = useRealtimeStore((state) => state.localPosition);
   const localZone = zoneAt(localPosition.x, localPosition.z);
+  const isJoinScreen =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("join") === "1";
 
   useEffect(() => {
     document.title = "Workbits — Your team's place";
-    void useRealtimeStore.getState().connect();
-  }, []);
+    if (!isJoinScreen) void useRealtimeStore.getState().connect();
+  }, [isJoinScreen]);
 
   useEffect(() => {
-    if (realtimeStatus !== "connected" || !sessionId) return;
+    if (isJoinScreen || realtimeStatus !== "connected" || !sessionId) return;
     const voice = useVoiceStore.getState();
     if (voice.status === "connected" && voice.identity && voice.identity !== sessionId) {
       const wasUnmuted = !voice.muted;
@@ -65,7 +68,7 @@ export default function App() {
       return;
     }
     void connectVoice();
-  }, [realtimeStatus, sessionId, connectVoice]);
+  }, [isJoinScreen, realtimeStatus, sessionId, connectVoice]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {

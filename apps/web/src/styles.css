@@ -2938,3 +2938,25 @@ button:focus-visible {
     height: 170px;
   }
 }
+
+.join-card__count {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 8.5px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.join-person:disabled {
+  cursor: default;
+}
+
+.join-person.is-taken {
+  opacity: 0.55;
+}
+
+.join-person__tag--taken {
+  background: rgba(224, 164, 88, 0.16);
+  color: #a66d2b;
+}

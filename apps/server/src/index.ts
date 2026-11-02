@@ -116,6 +116,23 @@ const httpServer = createServer(async (request, response) => {
     return;
   }
 
+  if (url.pathname === "/occupancy") {
+    const characters = [...new Set([...presence.values()].map((entry) => entry.characterId))];
+    const zones: Record<string, number> = {};
+    for (const entry of presence.values()) {
+      zones[entry.zone] = (zones[entry.zone] ?? 0) + 1;
+    }
+    response.writeHead(200, { ...cors, "content-type": "application/json" });
+    response.end(
+      JSON.stringify({
+        count: presence.size,
+        characters,
+        zones,
+      }),
+    );
+    return;
+  }
+
   if (url.pathname === "/livekit/token") {
     const identity = url.searchParams.get("identity")?.slice(0, 80);
     const name = url.searchParams.get("name")?.slice(0, 40) ?? identity ?? "Guest";

@@ -1,5 +1,6 @@
-import { ArrowRight, Sparkles, X } from "lucide-react";
-import { useState } from "react";
+import { ArrowRight, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
+import { apiBase } from "../config";
 import { teamCharacters } from "../data/team";
 import { palette, statusColor } from "../theme";
 
@@ -7,10 +8,38 @@ export function JoinOverlay() {
   const params = new URLSearchParams(window.location.search);
   const hostId = params.get("host");
   const [open, setOpen] = useState(params.get("join") === "1");
+  const [taken, setTaken] = useState<string[]>([]);
+  const [count, setCount] = useState(0);
   const [selected, setSelected] = useState(() => {
     if (!hostId) return "chus";
     return teamCharacters.find((character) => character.id !== hostId)?.id ?? "chus";
   });
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    fetch(`${apiBase()}/occupancy`)
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: { characters?: string[]; count?: number } | null) => {
+        if (cancelled || !data) return;
+        setTaken(data.characters ?? []);
+        setCount(data.count ?? 0);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !selected) return;
+    if (taken.includes(selected) && selected !== hostId) {
+      const free = teamCharacters.find(
+        (character) => character.id !== hostId && !taken.includes(character.id),
+      );
+      if (free) setSelected(free.id);
+    }
+  }, [taken, hostId, open, selected]);
 
   if (!open) return null;
 
@@ -26,9 +55,6 @@ export function JoinOverlay() {
   return (
     <div className="forge-overlay">
       <div className="join-card" role="dialog" aria-modal="true" aria-label="Join Workbits">
-        <button className="icon-button join-card__close" type="button" onClick={() => setOpen(false)} aria-label="Close">
-          <X size={16} />
-        </button>
         <div className="brand">
           <div className="brand__mark" aria-hidden="true">
             <span />
@@ -45,6 +71,9 @@ export function JoinOverlay() {
         <div className="join-card__eyebrow">
           <Sparkles size={13} />
           You're invited to the loft
+          <span className="join-card__count">
+            {count > 0 ? `${count} live now` : "Be the first in"}
+          </span>
         </div>
         <h2>Pick your seat.</h2>
         <p>
@@ -53,11 +82,15 @@ export function JoinOverlay() {
         </p>
 
         <div className="join-grid">
-          {teamCharacters.map((item) => (
+          {teamCharacters.map((item) => {
+            const isTaken = taken.includes(item.id) && item.id !== hostId;
+            const isHost = item.id === hostId;
+            return (
             <button
               key={item.id}
-              className={`join-person${selected === item.id ? " is-selected" : ""}`}
+              className={`join-person${selected === item.id ? " is-selected" : ""}${isTaken ? " is-taken" : ""}`}
               type="button"
+              disabled={isTaken || isHost}
               onClick={() => setSelected(item.id)}
             >
               <span className="join-person__avatar" style={{ background: item.avatar.palette.primary }}>
@@ -71,12 +104,14 @@ export function JoinOverlay() {
               <span>
                 <strong>
                   {item.shortName}
-                  {item.id === hostId && <span className="join-person__tag">host</span>}
+                  {isHost && <span className="join-person__tag">host</span>}
+                  {isTaken && <span className="join-person__tag join-person__tag--taken">here</span>}
                 </strong>
-                <small>{item.role}</small>
+                <small>{isTaken ? "Already in the loft" : item.role}</small>
               </span>
             </button>
-          ))}
+            );
+          })}
         </div>
 
         <div className="join-card__footer">

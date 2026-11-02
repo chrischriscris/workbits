@@ -51,6 +51,7 @@ Source of truth for what is actually done. Update at the end of every work sessi
 - 2026-11-02 — Added the Workbits Assistant: a local, no-key chat panel that answers presence, room, meeting, and summary questions from live data and offers walk-to actions. Clearly labeled Local engine; provider seam documented in `docs/architecture/ai.md`.
 - 2026-11-02 — Added manual avatar tuning (skin, hair style/color, top color, glasses, beard, cap, chain) on top of generated bases, with live sync to other clients. Updated `forge-shot` to assert the edited config reaches a remote observer.
 - 2026-11-02 — Added single-process production serving (web build + Colyseus + token API), SPA fallback, cache headers, a multi-stage Dockerfile, and an app+LiveKit Compose stack. Verified locally and in the built container with `prod-check` (static, SPA, health, 403 token, hashed asset, same-origin realtime, clean console).
+- 2026-11-02 — Added unit tests for proximity gain, zones, avatar/workspace generators, and assistant answers (22 passing), wired into `bun run verify`. Added occupancy-aware invites: the join screen waits offline, marks live seats, avoids the host, and only connects after a seat is chosen.
 
 ## Next
 
