@@ -2,6 +2,7 @@ import { appendFile, mkdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { Client, Room } from "@colyseus/core";
 import { zoneAt, type AvatarConfig, type OfficeLayout } from "@workbits/shared";
+import { presence } from "../presence";
 
 type PlayerData = {
   id: string;
@@ -236,6 +237,12 @@ export class OfficeRoom extends Room {
       player.rotation = Number.isFinite(Number(message.rotation)) ? Number(message.rotation) : 0;
       player.moving = Boolean(message.moving);
       player.zone = zoneAt(player.x, player.z);
+      const entry = presence.get(client.sessionId);
+      if (entry) {
+        entry.x = player.x;
+        entry.z = player.z;
+        entry.zone = player.zone;
+      }
 
       this.broadcast("player_moved", player, { except: client });
     });
@@ -387,6 +394,14 @@ export class OfficeRoom extends Room {
 
     this.players.set(client.sessionId, player);
     this.lastMove.set(client.sessionId, 0);
+    presence.set(client.sessionId, {
+      sessionId: client.sessionId,
+      characterId,
+      name: player.name,
+      x: player.x,
+      z: player.z,
+      zone: player.zone,
+    });
     this.broadcast("player_added", player, { except: client });
   }
 
@@ -394,6 +409,7 @@ export class OfficeRoom extends Room {
     this.players.delete(client.sessionId);
     this.lastMove.delete(client.sessionId);
     this.lastMeta.delete(client.sessionId);
+    presence.delete(client.sessionId);
     this.broadcast("player_left", { id: client.sessionId });
   }
 }

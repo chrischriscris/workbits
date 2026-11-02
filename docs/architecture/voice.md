@@ -6,19 +6,23 @@ LiveKit SFU. Dev uses `livekit-server --dev` in Docker; production uses LiveKit 
 
 ## Token flow
 
-1. Client asks `GET /api/livekit/token?officeId=...&zoneId=...`.
-2. Server authenticates, checks org membership and zone access, then mints a JWT:
-   - `identity = user:{userId}`
-   - `room = office:{officeId}:floor:{floor}` or `office:{officeId}:room:{roomId}`
-   - `canPublish = true`, `canSubscribe = true`
-   - TTL 10 minutes; client refreshes before expiry.
-3. API secret stays server-side.
+1. Client joins the Colyseus office, then asks `GET /livekit/token?identity=<sessionId>&name=<name>`.
+2. Server looks up that session in its authoritative presence registry and derives the room from the player's current zone:
+   - `identity = <Colyseus sessionId>` for the demo; production becomes `user:{userId}` after auth.
+   - open floor → `office:workbits-loft`
+   - meeting room → `office:workbits-loft:meeting`
+   - A client-supplied `room` query parameter is ignored; an identity that has not joined the office gets `403`.
+   - `canPublish = true`, `canSubscribe = true`; TTL 10 minutes.
+3. API secret stays server-side. Tokens are scoped to one room.
+
+**Production gap:** identity is still the demo session, not an authenticated user, and the presence registry is in-process. Auth/org membership plus a shared presence store (Redis) are required before multi-instance or public deployment.
 
 ## Audio topology
 
 - **Open floor:** one LiveKit room per floor. Everyone on the floor publishes/subscribes.
-- **Private room (meeting/phone):** the production design is one LiveKit room per private room. **Current demo:** one floor room plus a client-side zone gate (meeting room bounds) that sets non-matching participants to volume 0. This is a UX demo, not cryptographic privacy; the track is still delivered. Swap to room-per-zone before claiming privacy.
-- **Zone switch:** unpublish from the old room, publish to the new one. Brief reconnect (~0.5–1 s); UI shows "connecting audio".
+- **Private room (meeting):** a separate LiveKit room, `office:workbits-loft:meeting`. Outsiders never receive the track. This is implemented and verified with two browser clients.
+- **Nap room:** still shares floor audio; it is a quiet zone, not a voice-isolated one. Add a private room if needed.
+- **Zone switch:** the client watches its own authoritative zone, waits 450 ms for the move message to reach the server, leaves the old room, requests a fresh token, joins the new room, and restores the mic state. Brief reconnect; the control bar shows `Meeting room · private`.
 - **Meeting rooms:** camera + screen share enabled; floor audio is off.
 - **Knock (later):** request to join a locked room; owner admits.
 
@@ -71,6 +75,7 @@ pan  = clamp((remoteScreenX - localScreenX) / halfWidth, -1, 1) * 0.8
 
 - Unit test the gain/pan function (distance → gain, screen-space pan).
 - `/dev/voice-lab` with fake participants at fixed coordinates; assert gain values.
-- Playwright two-context test with fake media devices: join, mute, move near/far, switch room, assert participant counts and track states.
+- Playwright two-context test with fake media devices: join, mute, move near/far, switch room, assert participant counts and track states (`scripts/voice-two.mjs`, `scripts/voice-room-check.mjs`).
+- Token authorization test: outsiders get 403 and a client-requested room cannot override the authoritative zone (`scripts/token-check.mjs`).
 - Manual checklist with real mics on Chrome/Safari/Firefox.
 - Load: 50 published audio tracks in one LiveKit room (bots or manual).

@@ -62,6 +62,7 @@ export function ControlBar() {
   const [emoteOpen, setEmoteOpen] = useState(false);
 
   const voiceStatus = useVoiceStore((state) => state.status);
+  const voiceChannel = useVoiceStore((state) => state.channel);
   const muted = useVoiceStore((state) => state.muted);
   const deafened = useVoiceStore((state) => state.deafened);
   const audioBlocked = useVoiceStore((state) => state.audioBlocked);
@@ -83,9 +84,13 @@ export function ControlBar() {
 
   const statusLabel =
     voiceStatus === "connected"
-      ? muted
-        ? "mic off"
-        : "live"
+      ? voiceChannel === "meeting"
+        ? muted
+          ? "private · mic off"
+          : "private · live"
+        : muted
+          ? "mic off"
+          : "live"
       : voiceStatus === "connecting"
         ? "joining"
         : voiceStatus === "error"
@@ -111,11 +116,11 @@ export function ControlBar() {
             void useVoiceStore.getState().connect();
           }
         }}
-        title={audioBlocked ? "Enable audio" : "Proximity voice"}
+        title={audioBlocked ? "Enable audio" : voiceChannel === "meeting" ? "Private meeting-room voice" : "Proximity voice"}
       >
         <span className="voice-status__dot" style={{ background: dotColor }} />
         <span>
-          <strong>Proximity</strong>
+          <strong>{voiceChannel === "meeting" ? "Meeting room" : "Proximity"}</strong>
           <small>{audioBlocked ? "tap to enable audio" : statusLabel}</small>
         </span>
       </button>

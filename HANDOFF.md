@@ -23,7 +23,7 @@ bun run dev
 2. **Walk** — click the floor or use WASD. Scroll to zoom, drag to pan.
 3. **Second user** — click the user chip (top-right) → **Demo as Jules**, or open `http://localhost:3100/?character=jules` in another tab. You should see each other move.
 4. **Chat** — click the bottom composer, send a message, then open the other tab. Both messages appear. Room chat follows the room you are standing in. History is persisted to `apps/server/data/chat.jsonl` (gitignored).
-5. **Voice** — click the mic in the bottom-right control bar. Allow microphone access. The "Proximity" pill should say `live`. Walking away lowers the other person's volume; deafen mutes output. Meeting-room isolation is currently a client-side zone gate.
+5. **Voice** — click the mic in the bottom-right control bar. Allow microphone access. The "Proximity" pill should say `live`, and walking away lowers the other person's volume. Walk into the glass meeting room and the pill becomes `Meeting room · private`; you leave the floor audio room and can only hear others inside the meeting room.
 6. **Avatar Studio** — click the wand (bottom-right). Type a prompt, generate three bases, apply one. The avatar updates in-scene and persists in localStorage.
 7. **Workspace Studio** — click the layout icon next to the wand. Generate three desk configurations and apply one; the engineering pod rebuilds. Persists in localStorage.
 8. **Rooms** — click the office name (top-left) to open the room list; click a room to walk there.
@@ -36,7 +36,7 @@ bun run dev
 - R3F isometric office with procedural furniture and the 8-character seed pack.
 - Server-authoritative movement bounds and presence messages.
 - Shared realtime chat with server-side persistence; room chat only reaches people in that room, DMs are server-routed to sender + recipient only.
-- LiveKit room token endpoint + mic publishing + distance-based volume.
+- LiveKit room token endpoint + mic publishing + distance-based volume + true separate LiveKit room for the meeting room.
 - Deterministic local Avatar Studio + Workspace Studio (no API key); customized avatars and desk layouts sync to everyone in the office.
 - Rooms menu, invite picker, status menu, character switcher, and room-wide emotes.
 - `bun run build` passes; `bun run verify` produces a report.
@@ -47,8 +47,8 @@ bun run dev
 - **Full office editor** — not built. Avatar Studio and the engineering-pod Workspace Studio are the customization slices.
 - **LLM room generation** — not built. Workspace Studio is the deterministic local slice.
 - **Chat authz** — Room chat is zone-scoped, DMs are server-routed; Office/Global are intentionally open, and group membership is not built.
-- **Meeting-room privacy** — client-side volume gate, not a separate LiveKit room.
-- **Two real microphones** — verified with two browser clients and fake devices, both publishing and reading the same proximity gain. A manual real-mic conversation is still worth doing.
+- **Meeting-room privacy** — enforced by separate LiveKit rooms, with tokens derived from the server-authoritative zone. Identity is still a demo session, not an authenticated user, so production auth/orgs remain to be wired.
+- **Two real microphones** — verified with two browser clients and fake devices, including cross-room isolation. A manual real-mic conversation is still worth doing.
 - **React console warning** — `Attempted to synchronously unmount a root...` comes from the R3F HTML name-tag portal path. It does not break the scene, but should be cleaned up.
 - **Scale** — single realtime instance; the Redis/horizontal path is designed but not exercised.
 

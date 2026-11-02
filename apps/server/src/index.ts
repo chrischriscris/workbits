@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import { AccessToken } from "livekit-server-sdk";
 import { Server } from "@colyseus/core";
 import { WebSocketTransport } from "@colyseus/ws-transport";
+import { presence, voiceRoomFor } from "./presence";
 import { OfficeRoom } from "./rooms/OfficeRoom";
 
 const port = Number(process.env.PORT ?? 3101);
@@ -37,13 +38,22 @@ const httpServer = createServer(async (request, response) => {
 
   if (url.pathname === "/livekit/token") {
     const identity = url.searchParams.get("identity")?.slice(0, 80);
-    const room = url.searchParams.get("room")?.slice(0, 80) ?? "office:workbits-loft";
     const name = url.searchParams.get("name")?.slice(0, 40) ?? identity ?? "Guest";
     if (!identity) {
       response.writeHead(400, { ...cors, "content-type": "application/json" });
       response.end(JSON.stringify({ error: "identity is required" }));
       return;
     }
+
+    const participant = presence.get(identity);
+    if (!participant) {
+      response.writeHead(403, { ...cors, "content-type": "application/json" });
+      response.end(JSON.stringify({ error: "join the office before requesting voice" }));
+      return;
+    }
+
+    // The room is derived from the server-authoritative zone, never the client.
+    const room = voiceRoomFor(participant.zone);
 
     try {
       const token = new AccessToken(livekitKey, livekitSecret, {
@@ -59,7 +69,7 @@ const httpServer = createServer(async (request, response) => {
       });
       const jwt = await token.toJwt();
       response.writeHead(200, { ...cors, "content-type": "application/json" });
-      response.end(JSON.stringify({ token: jwt, url: livekitUrl }));
+      response.end(JSON.stringify({ token: jwt, url: livekitUrl, room }));
     } catch (error) {
       response.writeHead(500, { ...cors, "content-type": "application/json" });
       response.end(JSON.stringify({ error: "could not mint LiveKit token" }));

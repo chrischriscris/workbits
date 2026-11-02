@@ -1,5 +1,6 @@
 import { Keyboard, MousePointer2, ZoomIn } from "lucide-react";
 import { useEffect, useState } from "react";
+import { zoneAt } from "@workbits/shared";
 import { useRealtimeStore } from "./realtime/store";
 import { OfficeScene } from "./scene/OfficeScene";
 import { useAppStore } from "./state/app";
@@ -42,6 +43,9 @@ export default function App() {
   const realtimeStatus = useRealtimeStore((state) => state.status);
   const sessionId = useRealtimeStore((state) => state.sessionId);
   const connectVoice = useVoiceStore((state) => state.connect);
+  const syncVoiceZone = useVoiceStore((state) => state.syncZone);
+  const localPosition = useRealtimeStore((state) => state.localPosition);
+  const localZone = zoneAt(localPosition.x, localPosition.z);
 
   useEffect(() => {
     document.title = "Workbits — Your team's place";
@@ -53,6 +57,13 @@ export default function App() {
       void connectVoice();
     }
   }, [realtimeStatus, sessionId, connectVoice]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void syncVoiceZone(localZone);
+    }, 450);
+    return () => window.clearTimeout(timer);
+  }, [localZone, syncVoiceZone]);
 
   return (
     <div className="app-shell">
