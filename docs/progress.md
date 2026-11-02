@@ -73,6 +73,8 @@ Source of truth for what is actually done. Update at the end of every work sessi
 
 - 2026-11-02 — Two diagonal 2×2 desk pods (8 desks at 1.8 × 1.0) replace the single bench, with a long planter on the open front edge; Felix moves to the second pod; engineering anchor moves to `(-1.3, 3.8)`; server desk validation widened to x -3..4, z -0.4..4.9. Soft additive sun pools on the floor. `bun run verify` passes.
 
+- 2026-11-02 — Furniture to the desk standard (RESUME step 1). Kitchen: pale slab-front oak with dark pulls, thick white counter, espresso station, floating shelves with an LED wall wash, bigger mugs, pothos with long vines (replaces the `trailing` plant everywhere), two-door stainless fridge, matching pantry; tiled backsplash and most counter clutter removed. Lounge: corner `Sectional` replaces the GLB sofa and armchair, round 3-leg coffee table, plump tufted pouf, narrower bird-of-paradise leaves. Meeting room: smooth tub-shell chairs on slim splayed legs, bare table with tapered legs, cream bell pendant. Added `?noCast` (hide characters) and `scripts/art-triptych.sh`. Typecheck and 23 tests pass. `bun run verify` passes (about 17 min) after fixing a low-frame-rate walk overshoot that broke private room isolation on SwiftShader, and giving the office screenshot a 120s budget. Evidence: `docs/art/progress/{kitchen,lounge,meeting,full}-reference-before-after.jpg`.
+
 ## Next
 
 1. **Auth, orgs, invites, Postgres.** Replace demo identities with better-auth sessions; scope every row by `org_id`; make invite links single-use; add cross-tenant denial tests.

@@ -59,20 +59,18 @@ real-time vs Cycles, cast lineup, generated head).
 
 ## Next, in order
 
-1. **Rebuild the remaining furniture to the desk standard** (chunky toy
-   proportions, real rounded radii, the small objects the reference has):
-   kitchen (open shelves with mugs, coffee machine, stainless fridge, oak
-   cabinets with handles), lounge (L-sectional sofa, round 3-leg coffee table,
-   pouf, big bird-of-paradise), meeting room (cone pendant, upholstered
-   chairs on slim black legs). Procedural kit in `scene/props.tsx`
-   (`rbox` with radius, `baked()` merges per prop). Check each at
-   `?art&artWidth=7.5&artTarget=<zone>` against a crop of the reference.
-2. **Frog (Arlo) and crab (Claw'd)** are still the old primitive builds
-   (`avatars.tsx` FrogAvatar/CrabAvatar); bring them to the Cozy surface
-   (soft, chunky, blush) or build them from Cozy parts.
-3. **Faces**: the kit heads have no ears/nose/brows; the reference does.
-   Either modify the kit head GLBs in Blender (CC0 allows it) or decide on
-   generated heads (below).
+1. ~~Rebuild the remaining furniture to the desk standard~~ (done: kitchen,
+   lounge, meeting room; see `docs/art/progress/*-reference-before-after.jpg`).
+   Left over: the meeting-room credenza and the nap nook are still old builds,
+   and the whole frame still has more empty floor than the reference.
+2. ~~Frog (Arlo) and crab (Claw'd)~~ (done: matte Cozy surface, frog on a
+   beanbag in sneakers, crab as a chunky soft box; see
+   `docs/art/progress/frog-crab-reference-before-after.jpg`).
+3. **Faces**: ears and a button nose are added on the head bone (`addFace` in
+   `scene/people.tsx`); the kit already paints thin brows. The bigger gap is
+   the eyes: the reference has large eyes with highlights, the kit has small
+   dots and lines. Next would be custom eye textures/decals per head, or the
+   generated-heads decision below.
 4. **Lighting**: real-time is close in grade; Cycles shows what soft bounce
    adds. Options if needed: bake lightmaps for the static room in Blender, or
    pre-render the room (camera never rotates) with live characters on top.
@@ -95,6 +93,10 @@ real-time vs Cycles, cast lineup, generated head).
   - `?art` hides the UI; `&artWidth=8&artTarget=1.3,0.6,1.6` zooms/aims.
   - `?lineup` is a dev-only cast bench (`&zoom=200&focus=x,y,z`).
   - `&heads=gen` swaps in generated heads.
+  - `&noCast` hides every character (compare props without avatars in the way).
+- Reference / before / after strip: `bash scripts/art-triptych.sh ref.png before.png after.png out.jpg`.
+  Reference zone crops: `magick art/style-scene.png -crop 760x560+1020+60 +repage ref-kitchen.png`
+  (lounge `820x560+0+300`, meeting `760x560+330+0`).
 - Score vs reference: `bash scripts/art-score.sh out.png` after
   `uv venv .venv-art && uv pip install --python .venv-art/bin/python dreamsim pillow`.
   DreamSim tracks framing/light, is nearly blind to characters and props;
