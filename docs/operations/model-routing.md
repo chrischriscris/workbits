@@ -57,6 +57,8 @@ Subagents are expensive: they pay a handoff tax, lack the parent's full context,
 
 Codex is scarce ($20 Plus plan, ~94% weekly left at baseline). Use it deliberately, not per phase.
 
+The call counts below are a **soft planning estimate, not a hard cap**. They exist to avoid spending the week on low-value calls. Adjust upward when a task genuinely benefits, downward when usage gets tight; the real signal is the weekly percentage from `codexbar`, not the call count.
+
 | Model | Use in this run | Budget |
 |---|---|---|
 | **Luna 6** | Bulk reads: summarize long docs, scan license pages, triage test/log output, compare options | 2–4 calls |

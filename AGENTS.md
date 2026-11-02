@@ -90,7 +90,7 @@ Use **Bun** for installs and scripts. If a server dependency is incompatible wit
 - **Architecture / risky diffs / security:** Claude Opus 5.5.
 - **Bulk exploration:** Claude Haiku 5.5, under ~100k context.
 - **Planning / critique:** Codex Sol 6.1. **Text/copy:** Terra 6.1. **Cheap bulk reads:** Luna 6.
-- **Codex budget:** roughly 6–10 calls for the whole run, not per phase. Sol 2–3, Terra 1–2, Luna 2–4, Astra 0–1.
+- **Codex budget:** a soft planning estimate of roughly 6–10 calls for the whole run, not a hard cap. Sol 2–3, Terra 1–2, Luna 2–4, Astra 0–1. Adjust to need and remaining weekly usage.
 - **Astra 6:** only 1–2 irreversible calls per phase, low effort, short prompt. Never `xhigh` unless the user asks.
 - **Codex image generation via Sol:** 2–4 concept/portrait/decor images for the demo; no runtime key required, but still budgeted.
 - **Kimi K3.1 Pro:** vision/3D/design taste only; too costly for bulk code.
