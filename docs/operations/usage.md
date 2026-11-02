@@ -43,7 +43,7 @@ Smoke-testing all 9 models did not move the Claude/Codex percentages at the disp
 
 1. **Snapshot before and after every phase.** Append the delta to `docs/progress.md`.
 2. **Prefer Claude Code for heavy implementation.** It is employer-paid and has the most headroom; still watch the weekly window.
-3. **Codex is scarce.** Sol/Terra/Luna are the sensible defaults. Astra only for 1–2 calls that cannot be wrong; never `xhigh` unless the user asks.
+3. **Watch Codex usage, not call counts.** Sol/Terra/Luna are the sensible defaults. Astra only when a call cannot be settled otherwise; never `xhigh` unless the user asks.
 4. **OpenCode Kimi is expensive.** Use it for vision/3D/design taste, not bulk coding. DeepSeek is the main-thread workhorse.
 5. **No long prompts on scarce models.** Give them a tight brief and a small output.
 6. **Record model + purpose** in the phase report when a non-default model is used.

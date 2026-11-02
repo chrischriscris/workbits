@@ -91,8 +91,8 @@ Use **Bun** for installs and scripts. If a server dependency is incompatible wit
 - **Bulk exploration:** Claude Haiku 5.5, under ~100k context.
 - **Planning / critique:** Codex Sol 6.1. **Text/copy:** Terra 6.1. **Cheap bulk reads:** Luna 6.
 - **Codex usage:** no fixed call budget. Check remaining weekly usage with `codexbar` / `bun run usage`; prefer Sol/Terra/Luna, keep Astra rare and short, and never use `xhigh` unless the user asks.
-- **Astra 6:** only 1–2 irreversible calls per phase, low effort, short prompt. Never `xhigh` unless the user asks.
-- **Codex image generation via Sol:** 2–4 concept/portrait/decor images for the demo; no runtime key required, but still budgeted.
+- **Astra 6:** expensive; use only when a decision cannot be settled with tests, Opus, or Sol. Low effort, short prompt. Never `xhigh` unless the user asks.
+- **Codex image generation via Sol:** use when an image genuinely adds value (demo portraits/decor/concepts); no runtime key required, but check usage first.
 - **Kimi K3.1 Pro:** vision/3D/design taste only; too costly for bulk code.
 - Snapshot usage at phase boundaries with `bun run usage`; record deltas in `docs/progress.md`.
 - See [`docs/operations/model-routing.md`](docs/operations/model-routing.md) and [`docs/operations/usage.md`](docs/operations/usage.md).
