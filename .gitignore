@@ -1,0 +1,40 @@
+# dependencies
+node_modules/
+.bun/
+
+# build output
+dist/
+build/
+.output/
+.vite/
+.turbo/
+*.tsbuildinfo
+
+# env & secrets
+.env
+.env.*
+!.env.example
+
+# test/verification artifacts
+artifacts/
+coverage/
+playwright-report/
+test-results/
+blob-report/
+
+# logs & caches
+*.log
+.cache/
+.tmp/
+
+# editor / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# local databases / media
+*.sqlite
+*.sqlite3
+uploads/
