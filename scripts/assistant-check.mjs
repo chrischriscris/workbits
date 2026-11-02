@@ -28,27 +28,46 @@ await page.waitForTimeout(400);
 const greeting = await page.locator(".assistant-bubble").first().innerText();
 console.log("greeting:", greeting.split("\n")[0]);
 
-await page.getByRole("button", { name: "Where is everyone?" }).click();
-await page.waitForTimeout(700);
-const presence = await page.locator(".assistant-bubble").last().innerText();
+const answers = page.locator(
+  ".assistant-row--assistant .assistant-bubble:not(.assistant-bubble--thinking)",
+);
+
+async function ask(trigger) {
+  const before = await answers.count();
+  await trigger();
+  await page.waitForFunction(
+    (count) =>
+      document.querySelectorAll(
+        ".assistant-row--assistant .assistant-bubble:not(.assistant-bubble--thinking)",
+      ).length > count,
+    before,
+    { timeout: 15000 },
+  );
+  await page.waitForTimeout(150);
+  return answers.last().innerText();
+}
+
+const presence = await ask(() =>
+  page.getByRole("button", { name: "Where is everyone?" }).click(),
+);
 console.log("presence:", presence.replace(/\n/g, " | "));
 
-await page.locator('input[aria-label="Ask the Workbits assistant"]').fill("Who's in the meeting room?");
-await page.locator('input[aria-label="Ask the Workbits assistant"]').press("Enter");
-await page.waitForTimeout(700);
-const meeting = await page.locator(".assistant-bubble").last().innerText();
+const meeting = await ask(async () => {
+  await page.locator('input[aria-label="Ask the Workbits assistant"]').fill("Who's in the meeting room?");
+  await page.locator('input[aria-label="Ask the Workbits assistant"]').press("Enter");
+});
 console.log("meeting:", meeting.replace(/\n/g, " | "));
 
-await page.locator('input[aria-label="Ask the Workbits assistant"]').fill("Where is Fern?");
-await page.locator('input[aria-label="Ask the Workbits assistant"]').press("Enter");
-await page.waitForTimeout(700);
-const fern = await page.locator(".assistant-bubble").last().innerText();
+const fern = await ask(async () => {
+  await page.locator('input[aria-label="Ask the Workbits assistant"]').fill("Where is Fern?");
+  await page.locator('input[aria-label="Ask the Workbits assistant"]').press("Enter");
+});
 console.log("fern:", fern.replace(/\n/g, " | "));
 
 const walkButton = page.locator(".assistant-action").last();
 const walkLabel = await walkButton.innerText();
 console.log("action:", walkLabel.replace(/\n/g, " "));
-await page.screenshot({ path: "artifacts/shots/assistant.png", timeout: 120000, animations: "disabled" });
+await page.screenshot({ path: "artifacts/shots/assistant.png", timeout: 120000 });
 
 const ok =
   greeting.includes("Hi.") &&
