@@ -1,3 +1,5 @@
+import { appendFile, mkdir, readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { Client, Room } from "@colyseus/core";
 
 type PlayerData = {
@@ -46,16 +48,30 @@ type ChatMessage = {
   body?: string;
 };
 
+type StoredMessage = {
+  id: string;
+  authorId: string;
+  authorName: string;
+  channel: string;
+  body: string;
+  time: string;
+};
+
 export class OfficeRoom extends Room {
   override maxClients = 32;
   private players = new Map<string, PlayerData>();
   private lastMove = new Map<string, number>();
+  private history: StoredMessage[] = [];
+  private historyFile = join(process.cwd(), "data", "chat.jsonl");
 
-  override onCreate() {
+  override async onCreate() {
+    await this.loadHistory();
+
     this.onMessage("hello", (client) => {
       client.send("welcome", {
         selfId: client.sessionId,
         players: [...this.players.values()],
+        messages: this.history.slice(-100),
       });
     });
 
@@ -95,7 +111,7 @@ export class OfficeRoom extends Room {
           ? message.id.slice(0, 120)
           : `${client.sessionId}-${Date.now()}`;
 
-      this.broadcast("chat", {
+      const stored: StoredMessage = {
         id,
         authorId: player.characterId,
         authorName: player.name,
@@ -105,8 +121,29 @@ export class OfficeRoom extends Room {
           hour: "numeric",
           minute: "2-digit",
         }),
+      };
+      this.history.push(stored);
+      if (this.history.length > 300) this.history.shift();
+      void appendFile(this.historyFile, `${JSON.stringify(stored)}\n`).catch((error) => {
+        console.warn("Could not persist chat message", error);
       });
+      this.broadcast("chat", stored);
     });
+  }
+
+  private async loadHistory() {
+    try {
+      await mkdir(join(process.cwd(), "data"), { recursive: true });
+      const raw = await readFile(this.historyFile, "utf8");
+      this.history = raw
+        .split("\n")
+        .filter(Boolean)
+        .slice(-300)
+        .map((line) => JSON.parse(line) as StoredMessage)
+        .filter((message) => message && message.body);
+    } catch {
+      this.history = [];
+    }
   }
 
   override onJoin(client: Client, options: Record<string, unknown>) {

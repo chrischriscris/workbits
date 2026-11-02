@@ -6,15 +6,19 @@ Source of truth for what is actually done. Update at the end of every work sessi
 
 | Phase | Status | Evidence | Notes |
 |---|---|---|---|
-| 0 — Foundation | 🟡 Planning complete | `PLAN.md`, `docs/`, `art/` | Product code not started |
-| 1 — The Room | ⚪ Not started | — | Style frame first |
-| 2 — Presence | ⚪ Not started | — | — |
-| 3 — Voice | ⚪ Not started | — | — |
-| 4 — Chat | ⚪ Not started | — | — |
-| 5 — Customization | ⚪ Not started | — | — |
-| 6 — AI | ⚪ Not started | — | — |
-| 7 — Product | ⚪ Not started | — | — |
-| 8 — Ship | ⚪ Not started | — | — |
+| 0 — Foundation | 🟢 Local foundation | `bun run dev`, `bun run typecheck` | Vite, Node/Colyseus, Docker LiveKit, seed data |
+| 1 — The Room | 🟡 Playable style frame | `art/workbits-demo.png`, `artifacts/shots/office-18.png` | Art still being polished |
+| 2 — Presence | 🟢 Working | `bun run shot:multi`, bot welcome/chat | Message-based presence (ADR-011) |
+| 3 — Voice | 🟢 Publish + proximity | `bun scripts/voice-check.mjs`, LiveKit track | Meeting-room isolation is client-side; two-real-user audio still manual |
+| 4 — Chat | 🟡 UI + realtime + persistence | `bun run shot:multi`, `chat.jsonl` | Channels are not authz-scoped; DMs are not private |
+| 5 — Customization | 🟡 Avatar Studio + rooms menu | `scripts/forge-shot.mjs`, `scripts/ui-check.mjs` | Office editor not built |
+| 6 — AI | 🟡 Local avatar generator | `apps/web/src/ai/avatar.ts` | No runtime LLM keys; room generator pending |
+| 7 — Product | 🔴 Not started | — | Auth, billing, landing |
+| 8 — Ship | 🔴 Not started | — | Deploy hardening |
+
+### Verification
+
+`bun run verify` runs the current evidence pass. Latest report: `artifacts/verify/20261102T063859Z/report.md` (local, gitignored).
 
 ## Done
 
@@ -36,6 +40,8 @@ Source of truth for what is actually done. Update at the end of every work sessi
 - 2026-11-02 — Added `bun run shot`, `bun run shot:multi`, and the bot-check script. Known issue: conditional static-avatar replacement can emit a React `removeChild` console error; the scene remains usable.
 - 2026-11-02 — Recorded ADR-011: message-based presence for the MVP, schema migration before scale.
 - 2026-11-02 — Added self-hosted LiveKit (Docker dev server), a scoped token endpoint, and proximity voice on the client. Verified one client connects and publishes a mic track; UI shows `Proximity · live`. Proximity gain is distance-based and deafen-aware.
+- 2026-11-02 — Added Avatar Studio (prompt → 3 local modular bases → apply/persist), rooms popover with click-to-walk, topbar character switcher, share/copy invite link, responsive camera and mobile layout, chat persistence to `apps/server/data/chat.jsonl`, and the `bun run verify` evidence pass.
+- 2026-11-02 — Production `bun run build` passes. Current demo screenshot: `art/workbits-demo.png`.
 
 ## Next
 

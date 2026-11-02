@@ -1,14 +1,25 @@
 import { MapControls } from "@react-three/drei";
 import { Canvas, useThree } from "@react-three/fiber";
-import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
+import { Bloom, EffectComposer, SSAO, Vignette } from "@react-three/postprocessing";
 import { Suspense, useEffect } from "react";
 import * as THREE from "three";
 import { Office } from "./Office";
 
 function CameraRig() {
+  const camera = useThree((state) => state.camera);
+  const size = useThree((state) => state.size);
   const controls = useThree((state) => state.controls) as
     | { target: THREE.Vector3; update: () => void }
     | null;
+
+  useEffect(() => {
+    const orthographic = camera as THREE.OrthographicCamera;
+    if (!orthographic.isOrthographicCamera) return;
+    const targetWidth = size.width < 900 ? 12 : 21;
+    orthographic.zoom = size.width / targetWidth;
+    orthographic.updateProjectionMatrix();
+  }, [camera, size.width]);
+
   useEffect(() => {
     if (!controls) return;
     controls.target.set(-2.4, 0, 0.6);
@@ -20,8 +31,8 @@ function CameraRig() {
       enableRotate={false}
       enablePan
       enableZoom
-      minZoom={38}
-      maxZoom={82}
+      minZoom={18}
+      maxZoom={90}
       target={[-2.4, 0, 0.6]}
       panSpeed={0.85}
       zoomSpeed={0.85}
@@ -74,7 +85,8 @@ export function OfficeScene() {
         <Office />
         <CameraRig />
         {!e2e && (
-          <EffectComposer multisampling={0}>
+          <EffectComposer multisampling={0} enableNormalPass>
+            <SSAO samples={12} radius={4} intensity={14} luminanceInfluence={0.35} color="#000000" />
             <Bloom
               intensity={0.14}
               luminanceThreshold={0.86}

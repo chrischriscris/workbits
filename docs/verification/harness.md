@@ -12,22 +12,20 @@ A passing build is not proof. The harness exists so every phase can answer:
 - Can a tenant access another tenant's data?
 - What does it look like? (screenshots/video)
 
-## CLI
+## Implemented now
 
 ```
-bun run harness up                 # infra + migrate + seed + dev servers
-bun run harness down
-bun run harness seed --reset
-bun run harness shot <route>       # deterministic screenshot
-bun run harness gallery            # asset/avatar/theme contact sheet
-bun run harness flow <name>        # E2E scenario with video + trace
-bun run harness bots --n 30        # headless Colyseus clients
-bun run harness voice              # two-context LiveKit test
-bun run harness perf               # FPS, frame p95, draw calls, memory
-bun run harness audit              # axe + console/network errors
-bun run harness visual-diff        # baseline comparison
-bun run harness report             # artifacts/<run>/report.md
+bun run shot <url> <path>     # deterministic desktop screenshot
+bun run shot:multi            # browser + headless Colyseus bot: presence, chat
+bun scripts/voice-check.mjs   # fake mic, LiveKit token, publish, participant check
+bun scripts/forge-shot.mjs    # Avatar Studio open/generate/apply screenshots
+bun scripts/mobile-shot.mjs   # 390×844 mobile screenshot
+bun scripts/ui-check.mjs      # rooms menu + character switcher
+bun scripts/gain-check.mjs    # proximity gain math assertions
+bun run verify                # all of the above + typecheck -> artifacts/verify/<run>/report.md
 ```
+
+The fuller harness (gallery, recorded flows, bots at scale, perf, axe, visual diff) is planned; see the command table below.
 
 ### Commands
 

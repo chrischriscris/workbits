@@ -2,47 +2,69 @@
 
 **A browser-based isometric virtual office where remote teams can see each other, walk over, talk by proximity, chat, and work.**
 
-Workbits is built to be a product, not an internal tool: multi-tenant from day one, customizable offices, AI-assisted world-building, and a deployment story that starts with one Node process and scales without a rewrite.
+Workbits is built to be a product, not an internal tool: multi-tenant architecture, customizable offices, AI-assisted world-building, and a deployment story that starts with one Node process and scales without a rewrite.
 
-![Workbits art direction](art/style-scene.png)
+![Workbits demo](art/workbits-demo.png)
 
-## Status
+## Status — first playable demo
 
-**Planning + art direction approved. Product code has not started.**
+**Working locally now:**
 
-- ✅ Vision, scope, architecture, phases, and verification plan
-- ✅ Art direction locked: warm stylized 3D diorama, chibi modular characters
-- ✅ Concept references generated in `art/`
-- ✅ Decisions and open questions recorded
-- ⏸️ Waiting for the user's **go** and the model/seed references
+- Isometric 3D office with lounge, engineering pod, glass meeting room, kitchen, nap room, and garden.
+- The Workbits team seed pack: 8 characters (human, frog, crab mascot), name tags, statuses, roles, and desks.
+- Click-to-walk and WASD movement with a floating move marker.
+- Colyseus realtime presence: two tabs see each other; movement is server-validated.
+- Shared text chat: Global, Office, Room, and DM UI, wired to the realtime room.
+- Proximity voice via LiveKit: room token endpoint, mic publish, distance-based volume, deafen.
+- Avatar Studio: prompt → three modular base avatars → apply and persist locally. No API key required.
+- Rooms popover with click-to-walk navigation.
+- Verification scripts: screenshots, headless bot, voice check, avatar studio, proximity math.
 
-## What it does
+**Not done yet:** auth/orgs/invites, office editor, real AI room generation, chat persistence, billing, landing page, mobile polish, and multi-instance scale.
 
-- **Isometric office** — orthographic diorama, cutaway walls, soft shadows, 60 fps target.
-- **Multiple offices, floors, rooms, and workspaces** — assignable desks, meeting rooms, phone booths, lounges.
-- **Proximity voice** — LiveKit SFU, distance-based gain/pan, private-room isolation, mute/deafen/PTT, screen share in meetings.
-- **Text chat** — Global, Office, Room, Group, and DM channels; history, unread, replies, reactions, files, search.
-- **Customization** — office editor (furniture, floors, walls, themes), modular avatar creator, templates, permissions.
-- **AI** — prompt-to-office layouts, avatar/decor generation, NPC teammates, chat assistant; constrained and schema-validated.
-- **Product shell** — orgs, invites, roles, guest links, onboarding, pricing, Stripe test billing, admin.
+## Quick start
+
+See [`HANDOFF.md`](HANDOFF.md) for the five-minute tour, what is real, and known gaps.
+
+```bash
+bun install
+bun run dev
+```
+
+`bun run dev` starts the self-hosted LiveKit container (via Docker Compose), the realtime server on `:3101`, and the web app on `:3100`.
+
+Open **http://localhost:3100**. Click the user chip in the top-right to switch demo characters, or open a second tab with:
+
+```
+http://localhost:3100/?character=jules
+```
+
+Click the mic to publish your microphone. Voice volume follows avatar distance; the meeting-room privacy switch is not wired yet.
+
+## Verification
+
+```bash
+bun run verify
+```
+
+This runs typecheck, proximity math checks, a desktop screenshot, a realtime bot + chat test, a LiveKit publish check, and the Avatar Studio flow. The report and screenshots land in `artifacts/verify/<timestamp>/`. Artifacts are gitignored.
 
 ## Stack
 
 | Layer | Choice |
 |---|---|
 | Client | React 19 + Vite + TypeScript + React Three Fiber + drei |
-| Realtime | Colyseus + Redis (optional) |
-| API | Fastify + Zod + Drizzle + Postgres |
-| Auth | better-auth (orgs, invites, roles, OAuth) |
-| Voice | LiveKit |
-| Chat | Colyseus events + Postgres history |
-| AI | Vercel AI SDK, provider-agnostic |
-| Runtime | Bun for install/scripts; Node 24 validated for server where needed |
-| Deploy | Docker Compose + Caddy; LiveKit Cloud in prod |
+| Realtime | Colyseus 0.16 (Node + tsx) |
+| API | Node HTTP + LiveKit token endpoint |
+| Voice | LiveKit (self-hosted dev server; LiveKit Cloud for prod) |
+| State | Zustand + server-authoritative presence messages |
+| AI | Local modular avatar generator; provider adapter pending |
+| Runtime | Bun for installs/scripts; Node for Colyseus |
+| Deploy | Docker Compose + Caddy |
 
 ## Docs map
 
-- [`PLAN.md`](PLAN.md) — the master plan: product, architecture, phases, risks.
+- [`PLAN.md`](PLAN.md) — product, architecture, phases, risks.
 - [`AGENTS.md`](AGENTS.md) — how an agent works in this repo.
 - [`docs/brief.md`](docs/brief.md) — the original directives, distilled.
 - [`docs/decisions.md`](docs/decisions.md) — ADR log.
@@ -50,35 +72,31 @@ Workbits is built to be a product, not an internal tool: multi-tenant from day o
 - [`docs/progress.md`](docs/progress.md) — phase status and changelog.
 - [`docs/backlog.md`](docs/backlog.md) — deliberately deferred ideas.
 - [`docs/research/`](docs/research/) — technology, assets, models, pstack.
-- [`docs/art/`](docs/art/) — style bible and reference analysis.
+- [`docs/art/`](docs/art/) — style bible and team cast.
 - [`docs/architecture/`](docs/architecture/) — system, data, realtime, voice, chat, AI, security, deployment.
 - [`docs/verification/`](docs/verification/) — the harness and phase gates.
+- [`docs/operations/`](docs/operations/) — model routing and usage.
 
 ## Repo layout
 
 ```
-apps/          web client, API/realtime server
-packages/      shared schemas, db, ui, harness, asset catalog
-infra/         docker-compose, Caddy, LiveKit, deploy scripts
-art/           concept references and style frames
-docs/          product, architecture, research, verification, progress
+apps/web          React + Vite + R3F client
+apps/server       Colyseus realtime + LiveKit token endpoint
+packages/shared   shared types/schemas
+infra             Docker Compose, Caddy, LiveKit, deploy scripts
+art               concept references, demo screenshots, exports
+seeds/team        optional, data-driven team demo pack
+docs              product, architecture, research, verification, progress
 ```
 
 ## Non-negotiables
 
 1. **Place first.** Presence and proximity are the product.
 2. **One coherent art direction.** No pixel art, no mixed packs, no AI core geometry.
-3. **Evidence, not assertions.** Every phase ships with screenshots, video, metrics, and a written gate.
-4. **Simple deployment by default.** One Node process, Postgres, LiveKit, Caddy. Redis and S3 are optional.
+3. **Evidence, not assertions.** Screenshots, flows, metrics, and a report for every phase.
+4. **Simple deployment by default.** One app process, Postgres, LiveKit, Caddy. Redis/S3 optional.
 5. **Tenant isolation and authz from day one.**
-6. **No copying.** The references are direction, not assets, branding, or code.
-
-## Next
-
-1. User sends the model/seed references.
-2. User says **go**.
-3. Phase 0: monorepo, infra, auth, orgs/offices, seed data, harness skeleton.
-4. Phase 1: the real style frame — a playable, beautiful room.
+6. **No copying.** References are direction, not assets, branding, or code.
 
 ---
 

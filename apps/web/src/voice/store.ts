@@ -9,7 +9,7 @@ import {
 } from "livekit-client";
 import { localCharacter } from "../data/team";
 import { useRealtimeStore } from "../realtime/store";
-import { proximityGain } from "./gain";
+import { inMeetingRoom, proximityGain } from "./gain";
 
 type VoiceStatus = "idle" | "connecting" | "connected" | "error";
 
@@ -69,7 +69,10 @@ function updateProximity() {
       return;
     }
     const distance = Math.hypot(player.x - localPosition.x, player.z - localPosition.z);
-    participant.setVolume(deafened ? 0 : proximityGain(distance));
+    const localInMeeting = inMeetingRoom(localPosition.x, localPosition.z);
+    const remoteInMeeting = inMeetingRoom(player.x, player.z);
+    const isolated = localInMeeting !== remoteInMeeting;
+    participant.setVolume(deafened || isolated ? 0 : proximityGain(distance));
   });
 }
 

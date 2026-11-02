@@ -182,6 +182,7 @@ function MeetingRoom() {
       <Mug position={[7.55, 0.84, -4.1]} />
       <Shelf position={[9.7, 0, -7.2]} rotation={[0, -Math.PI / 2, 0]} width={1.6} height={1.15} />
       <Whiteboard position={[3.55, 0, -4.8]} rotation={[0, Math.PI / 2, 0]} />
+      <Plant position={[9.9, 0, -1.85]} scale={0.8} />
       <RoundedBox args={[3.2, 0.8, 0.45]} radius={0.08} position={[7, 0.4, -8.35]} castShadow>
         <meshStandardMaterial color={palette.oak} roughness={0.75} />
       </RoundedBox>
@@ -259,6 +260,14 @@ function NapRoom() {
       <FloorLamp position={[7.65, 0, 6.5]} />
       <Plant position={[11.35, 0, 6.8]} scale={0.95} pot={palette.paper} />
       <Plant position={[7.35, 0, 3.2]} scale={0.55} />
+      <RoundedBox args={[0.04, 2.1, 1.35]} radius={0.015} position={[6.78, 1.12, 2.82]} castShadow>
+        <meshStandardMaterial color={palette.terracotta} roughness={1} />
+      </RoundedBox>
+      <RoundedBox args={[0.62, 0.52, 0.5]} radius={0.07} position={[10.75, 0.26, 4.75]} castShadow>
+        <meshStandardMaterial color={palette.oak} roughness={0.8} />
+      </RoundedBox>
+      <Books position={[10.65, 0.55, 4.7]} count={2} />
+      <Mug position={[10.9, 0.55, 4.9]} />
     </group>
   );
 }
@@ -355,7 +364,7 @@ function Team() {
               rotation={placement.rotation}
               pose={placement.pose}
               motion={placement.motion}
-              speaking={character.id === "jules"}
+              speaking={false}
               hidden={occupied.has(character.id)}
             />
           );

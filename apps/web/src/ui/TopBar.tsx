@@ -1,4 +1,4 @@
-import { Bell, ChevronDown, LayoutGrid, Lock, MapPin, Search, Settings2, Sparkles } from "lucide-react";
+import { Bell, ChevronDown, Check, LayoutGrid, Lock, MapPin, Search, Settings2, Share2, Sparkles } from "lucide-react";
 import { useState } from "react";
 import {
   localCharacter,
@@ -22,8 +22,19 @@ export function TopBar() {
   const realtimeStatus = useRealtimeStore((state) => state.status);
   const players = useRealtimeStore((state) => state.players);
   const [openMenu, setOpenMenu] = useState<OpenMenu>(null);
+  const [copied, setCopied] = useState(false);
   const customAvatar = useAvatarStore((state) => state.config);
   const avatarColor = customAvatar?.palette.primary ?? localCharacter.avatar.palette.primary;
+
+  const copyInvite = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2200);
+    } catch {
+      setCopied(false);
+    }
+  };
 
   const switchCharacter = (characterId: string) => {
     const url = new URL(window.location.href);
@@ -119,7 +130,16 @@ export function TopBar() {
 
       <div className="topbar__right">
         <button
-          className="icon-button"
+          className={`icon-button${copied ? " icon-button--copied" : ""}`}
+          type="button"
+          aria-label="Copy invite link"
+          title={copied ? "Link copied" : "Copy invite link"}
+          onClick={copyInvite}
+        >
+          {copied ? <Check size={17} /> : <Share2 size={17} />}
+        </button>
+        <button
+          className="icon-button topbar-hide-mobile"
           type="button"
           aria-label="Ask Workbits AI"
           title="Ask Workbits AI"
@@ -130,10 +150,10 @@ export function TopBar() {
         >
           <Sparkles size={17} />
         </button>
-        <button className="icon-button" type="button" aria-label="Search" title="Search">
+        <button className="icon-button topbar-hide-mobile" type="button" aria-label="Search" title="Search">
           <Search size={17} />
         </button>
-        <button className="icon-button icon-button--badge" type="button" aria-label="Notifications" title="Notifications">
+        <button className="icon-button icon-button--badge topbar-hide-mobile" type="button" aria-label="Notifications" title="Notifications">
           <Bell size={17} />
           <span className="icon-button__badge" />
         </button>
@@ -195,6 +215,7 @@ export function TopBar() {
         </div>
         <span className="demo-badge">Demo</span>
       </div>
+      {copied && <span className="share-toast" role="status">Invite link copied</span>}
     </header>
   );
 }

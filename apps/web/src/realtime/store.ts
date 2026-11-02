@@ -68,10 +68,19 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
 
       set({ status: "connected", room, sessionId: room.sessionId });
 
-      room.onMessage("welcome", (message: { players: RemotePlayer[] }) => {
-        const players = Object.fromEntries(message.players.map((player) => [player.id, player]));
-        set({ players });
-      });
+      room.onMessage(
+        "welcome",
+        (message: { players: RemotePlayer[]; messages?: RealtimeMessage[] }) => {
+          const players = Object.fromEntries(message.players.map((player) => [player.id, player]));
+          set((state) => {
+            const merged = [...state.messages];
+            for (const item of message.messages ?? []) {
+              if (!merged.some((existing) => existing.id === item.id)) merged.push(item);
+            }
+            return { players, messages: merged };
+          });
+        },
+      );
       room.onMessage("player_added", (player: RemotePlayer) => {
         set((state) => ({ players: { ...state.players, [player.id]: player } }));
       });

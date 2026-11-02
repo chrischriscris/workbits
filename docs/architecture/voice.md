@@ -17,7 +17,7 @@ LiveKit SFU. Dev uses `livekit-server --dev` in Docker; production uses LiveKit 
 ## Audio topology
 
 - **Open floor:** one LiveKit room per floor. Everyone on the floor publishes/subscribes.
-- **Private room (meeting/phone):** the user leaves the floor room and joins the private room. This is real privacy, not a client-side mute.
+- **Private room (meeting/phone):** the production design is one LiveKit room per private room. **Current demo:** one floor room plus a client-side zone gate (meeting room bounds) that sets non-matching participants to volume 0. This is a UX demo, not cryptographic privacy; the track is still delivered. Swap to room-per-zone before claiming privacy.
 - **Zone switch:** unpublish from the old room, publish to the new one. Brief reconnect (~0.5–1 s); UI shows "connecting audio".
 - **Meeting rooms:** camera + screen share enabled; floor audio is off.
 - **Knock (later):** request to join a locked room; owner admits.

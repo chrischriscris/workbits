@@ -42,3 +42,6 @@ uploads/
 # personal reference photos (local only; never shipped)
 seeds/team/photos/
 seeds/team/portraits/
+
+# local chat persistence
+apps/server/data/

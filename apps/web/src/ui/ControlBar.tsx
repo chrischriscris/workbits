@@ -21,6 +21,7 @@ function ControlButton({
   active,
   danger,
   disabled,
+  hideMobile,
   onClick,
   children,
 }: {
@@ -28,12 +29,13 @@ function ControlButton({
   active?: boolean;
   danger?: boolean;
   disabled?: boolean;
+  hideMobile?: boolean;
   onClick: () => void;
   children: ReactNode;
 }) {
   return (
     <button
-      className={`control-button${active ? " is-active" : ""}${danger ? " is-danger" : ""}`}
+      className={`control-button${active ? " is-active" : ""}${danger ? " is-danger" : ""}${hideMobile ? " control-button--hide-mobile" : ""}`}
       type="button"
       onClick={onClick}
       disabled={disabled}
@@ -124,13 +126,13 @@ export function ControlBar() {
       <ControlButton label={deafened ? "Undeafen" : "Deafen"} active={deafened} onClick={toggleDeafen}>
         {deafened ? <VolumeX size={18} /> : <Headphones size={18} />}
       </ControlButton>
-      <ControlButton label={cameraOn ? "Turn camera off" : "Turn camera on"} active={cameraOn} onClick={toggleCamera}>
+      <ControlButton label={cameraOn ? "Turn camera off" : "Turn camera on"} active={cameraOn} onClick={toggleCamera} hideMobile>
         {cameraOn ? <Video size={18} /> : <VideoOff size={18} />}
       </ControlButton>
-      <ControlButton label={screenOn ? "Stop sharing" : "Share screen"} active={screenOn} onClick={toggleScreen}>
+      <ControlButton label={screenOn ? "Stop sharing" : "Share screen"} active={screenOn} onClick={toggleScreen} hideMobile>
         <MonitorUp size={18} />
       </ControlButton>
-      <ControlButton label="Emotes" onClick={() => undefined}>
+      <ControlButton label="Emotes" onClick={() => undefined} hideMobile>
         <Smile size={18} />
       </ControlButton>
       <div className="controls__divider" />
@@ -141,10 +143,10 @@ export function ControlBar() {
       >
         <MessageCircle size={18} />
       </ControlButton>
-      <ControlButton label="Avatar studio" onClick={() => setAvatarStudioOpen(true)}>
+      <ControlButton label="Avatar studio" onClick={() => setAvatarStudioOpen(true)} hideMobile>
         <Wand2 size={18} />
       </ControlButton>
-      <ControlButton label="Settings" onClick={() => undefined}>
+      <ControlButton label="Settings" onClick={() => undefined} hideMobile>
         <Settings2 size={18} />
       </ControlButton>
     </div>
