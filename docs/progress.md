@@ -25,6 +25,8 @@ Source of truth for what is actually done. Update at the end of every work sessi
 - 2026-11-02 — Generated three art-direction references with Sol via T3 Code; user approved the direction.
 - 2026-11-02 — Created docs/agent structure: `AGENTS.md`, `CLAUDE.md`, `docs/`, ADRs, open questions, brief.
 - 2026-11-02 — Named the project **Workbits**. Chose Bun for installs/scripts.
+- 2026-11-02 — Verified usage telemetry: `codexbar` for Claude/Codex, `opencode stats` for OpenCode tokens. Added `bun run usage` and `docs/operations/`.
+- 2026-11-02 — Smoke-tested all nine models through T3 Code: Luna, Astra, Sol, Terra, Opus 5.5, Sonnet 5.5, Haiku 5.5, DeepSeek V4.1 Flash, Kimi K3.1 Pro. All green; no provider failures.
 
 ## Next
 

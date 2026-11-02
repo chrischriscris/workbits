@@ -50,8 +50,13 @@ The documentation is split by purpose. Keep it current; stale docs are worse tha
 
 - [`research/technology.md`](research/technology.md) — stack evaluation and links.
 - [`research/assets.md`](research/assets.md) — asset sources, licenses, pipeline.
-- [`research/models.md`](research/models.md) — the user's model/seed references and our verdicts.
+- [`research/models.md`](research/models.md) — the model matrix, verified results, and pending seed references.
 - [`research/pstack.md`](research/pstack.md) — what we borrow from pstack.
+
+### Operations
+
+- [`operations/model-routing.md`](operations/model-routing.md) — which model to use for what.
+- [`operations/usage.md`](operations/usage.md) — how to read Claude/Codex/OpenCode usage.
 
 ### Templates
 

@@ -17,11 +17,26 @@ The user has model/seed references to send. Record them here, evaluate them, and
 | Integration | Can it plug into the asset pipeline or runtime? |
 | Fallback | What happens if it fails or is unavailable? |
 
-## Verdicts
+## Model matrix — verified 2026-11-02
 
-| Model / seed | Type | Access | License | Quality | Integration | Verdict |
-|---|---|---|---|---|---|---|
-| _Pending user input_ | — | — | — | — | — | — |
+All nine models fired successfully through T3 Code as subagents with a one-line prompt. See [`../operations/model-routing.md`](../operations/model-routing.md) for routing and [`../operations/usage.md`](../operations/usage.md) for telemetry.
+
+| Model | Provider | Best at | Routing |
+|---|---|---|---|
+| gpt-6-luna | Codex | Summaries, cheap bulk reads | Default for cheap bulk |
+| gpt-6-astra | Codex | Hardest 1–2 calls, token-efficient | Rare; low effort |
+| gpt-6.1-sol | Codex | Planning, critique | Plan reviews / second opinions |
+| gpt-6.1-terra | Codex | Communication, text | Copy, docs, UX writing |
+| claude-opus-5-5 | Claude Code | Hard reasoning, architecture | Architecture / risky diffs |
+| claude-sonnet-5-5 | Claude Code | Workhorse execution | Bulk implementation |
+| claude-haiku-5-5 | Claude Code | Bulk exploration | Search/summaries, <100k ctx |
+| opencode-go/deepseek-v4.1-flash | OpenCode Go | Cheap real coding | Main thread / mechanical edits |
+| opencode-go/kimi-k3.1-pro | OpenCode Go | Vision, 3D, design taste | Visual/art checks only |
+
+### Pending
+
+- The user's **seed/reference assets** (specific models, LoRAs, asset packs, prompts) are still to be sent. Add them here with license, quality, and integration verdicts.
+- Runtime AI provider key for in-app generation is still open.
 
 ## Concept generation (design workflow)
 

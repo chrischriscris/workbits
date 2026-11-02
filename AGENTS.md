@@ -83,6 +83,18 @@ bun run lint
 
 Use **Bun** for installs and scripts. If a server dependency is incompatible with Bun's runtime, run that process on Node 24 and document the deviation. Do not commit two lockfiles.
 
+## Model routing and usage
+
+- **Default main thread:** DeepSeek V4.1 Flash (OpenCode Go) — near-free, good for mechanical work.
+- **Bulk implementation:** Claude Sonnet 5.5 (employer-paid, plentiful).
+- **Architecture / risky diffs / security:** Claude Opus 5.5.
+- **Bulk exploration:** Claude Haiku 5.5, under ~100k context.
+- **Planning / critique:** Codex Sol 6.1. **Text/copy:** Terra 6.1. **Cheap bulk reads:** Luna 6.
+- **Astra 6:** only 1–2 irreversible calls per phase, low effort, short prompt. Never `xhigh` unless the user asks.
+- **Kimi K3.1 Pro:** vision/3D/design taste only; too costly for bulk code.
+- Snapshot usage at phase boundaries with `bun run usage`; record deltas in `docs/progress.md`.
+- See [`docs/operations/model-routing.md`](docs/operations/model-routing.md) and [`docs/operations/usage.md`](docs/operations/usage.md).
+
 ## 7. Code conventions
 
 - TypeScript strict everywhere. No `any` unless isolated and justified.
