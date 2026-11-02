@@ -1,5 +1,7 @@
 # Workbits — overnight handoff
 
+> Continuing the art work? Start with [`RESUME.md`](RESUME.md) on branch `art/diorama-pass`.
+
 ## Open it
 
 The local stack should already be running:
