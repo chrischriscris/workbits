@@ -5,11 +5,7 @@ import {
   MessageCircle,
   Mic,
   MicOff,
-  MonitorUp,
-  Settings2,
   Smile,
-  Video,
-  VideoOff,
   VolumeX,
   Wand2,
 } from "lucide-react";
@@ -50,10 +46,6 @@ function ControlButton({
 }
 
 export function ControlBar() {
-  const cameraOn = useAppStore((state) => state.cameraOn);
-  const toggleCamera = useAppStore((state) => state.toggleCamera);
-  const screenOn = useAppStore((state) => state.screenOn);
-  const toggleScreen = useAppStore((state) => state.toggleScreen);
   const chatOpen = useAppStore((state) => state.chatOpen);
   const setChatOpen = useAppStore((state) => state.setChatOpen);
   const setAvatarStudioOpen = useAppStore((state) => state.setAvatarStudioOpen);
@@ -136,12 +128,6 @@ export function ControlBar() {
       <ControlButton label={deafened ? "Undeafen" : "Deafen"} active={deafened} onClick={toggleDeafen}>
         {deafened ? <VolumeX size={18} /> : <Headphones size={18} />}
       </ControlButton>
-      <ControlButton label={cameraOn ? "Turn camera off" : "Turn camera on"} active={cameraOn} onClick={toggleCamera} hideMobile>
-        {cameraOn ? <Video size={18} /> : <VideoOff size={18} />}
-      </ControlButton>
-      <ControlButton label={screenOn ? "Stop sharing" : "Share screen"} active={screenOn} onClick={toggleScreen} hideMobile>
-        <MonitorUp size={18} />
-      </ControlButton>
       <ControlButton label="Emotes" active={emoteOpen} onClick={() => setEmoteOpen((open) => !open)} hideMobile>
         <Smile size={18} />
       </ControlButton>
@@ -159,10 +145,6 @@ export function ControlBar() {
       <ControlButton label="Avatar studio" onClick={() => setAvatarStudioOpen(true)} hideMobile>
         <Wand2 size={18} />
       </ControlButton>
-      <ControlButton label="Settings" onClick={() => undefined} hideMobile>
-        <Settings2 size={18} />
-      </ControlButton>
-
       {emoteOpen && (
         <div className="emote-menu" role="menu" aria-label="Emotes">
           {([

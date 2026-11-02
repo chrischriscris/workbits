@@ -1,8 +1,9 @@
-import { UserPlus } from "lucide-react";
+import { Check, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { zoneAt, zoneName } from "@workbits/shared";
 import { localCharacterId, roomLabel, teamCharacters } from "../data/team";
 import { useRealtimeStore } from "../realtime/store";
+import { copyInviteLink } from "../lib/invite";
 import { useAppStore } from "../state/app";
 import { palette, statusColor } from "../theme";
 
@@ -22,6 +23,7 @@ export function Roster() {
   const toggleRoster = useAppStore((state) => state.toggleRoster);
   const livePlayers = useRealtimeStore((state) => state.players);
   const [filter, setFilter] = useState<Filter>("all");
+  const [invited, setInvited] = useState(false);
 
   const liveByCharacter = useMemo(() => {
     const map = new Map<string, (typeof livePlayers)[string]>();
@@ -128,9 +130,21 @@ export function Roster() {
       </div>
 
       <div className="roster__footer">
-        <button className="ghost-button ghost-button--full" type="button" title="Invite teammate">
-          <UserPlus size={15} />
-          Invite teammate
+        <button
+          className="ghost-button ghost-button--full"
+          type="button"
+          title="Copy invite link"
+          onClick={() => {
+            void copyInviteLink()
+              .then(() => {
+                setInvited(true);
+                window.setTimeout(() => setInvited(false), 2200);
+              })
+              .catch(() => setInvited(false));
+          }}
+        >
+          {invited ? <Check size={15} /> : <UserPlus size={15} />}
+          {invited ? "Link copied" : "Invite teammate"}
         </button>
         <span className="roster__hint">
           {liveCount > 0 ? `${liveCount} connected to this office` : "Demo team pack · local"}

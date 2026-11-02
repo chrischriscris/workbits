@@ -28,6 +28,7 @@ export type RealtimeMessage = {
   time: string;
   zone?: string;
   to?: string;
+  history?: boolean;
 };
 
 type RealtimeStatus = "offline" | "connecting" | "connected";
@@ -114,7 +115,9 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => {
           set((state) => {
             const merged = [...state.messages];
             for (const item of message.messages ?? []) {
-              if (!merged.some((existing) => existing.id === item.id)) merged.push(item);
+              if (!merged.some((existing) => existing.id === item.id)) {
+                merged.push({ ...item, history: true });
+              }
             }
             return { players, messages: merged, localStatus };
           });

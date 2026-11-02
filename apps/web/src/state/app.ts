@@ -18,10 +18,6 @@ type AppState = {
   toggleMuted: () => void;
   deafened: boolean;
   toggleDeafened: () => void;
-  cameraOn: boolean;
-  toggleCamera: () => void;
-  screenOn: boolean;
-  toggleScreen: () => void;
   rosterOpen: boolean;
   toggleRoster: () => void;
   avatarStudioOpen: boolean;
@@ -47,10 +43,6 @@ export const useAppStore = create<AppState>((set) => ({
   toggleMuted: () => set((state) => ({ muted: !state.muted })),
   deafened: false,
   toggleDeafened: () => set((state) => ({ deafened: !state.deafened })),
-  cameraOn: false,
-  toggleCamera: () => set((state) => ({ cameraOn: !state.cameraOn })),
-  screenOn: false,
-  toggleScreen: () => set((state) => ({ screenOn: !state.screenOn })),
   rosterOpen: false,
   toggleRoster: () => set((state) => ({ rosterOpen: !state.rosterOpen })),
   avatarStudioOpen: false,

@@ -359,8 +359,8 @@ type Placement = {
 const placements: Record<string, Placement> = {
   jules: { position: [-5.9, 0, 3.8], rotation: [0, 0.55, 0], motion: "wave" },
   mira: { position: [-4.5, 0.08, 1.2], rotation: [0, 0.4, 0], pose: "sitting" },
-  felix: { position: [2.5, 0, 3.3], rotation: [0, -0.6, 0], pose: "standing", motion: "idle" },
-  fern: { position: [-2.4, 0, 3.0], rotation: [0, 0.7, 0], pose: "standing", motion: "idle" },
+  felix: { position: [1.65, 0.08, 3.75], rotation: [0, 0, 0], pose: "sitting", motion: "type" },
+  fern: { position: [-1.2, 0.08, 3.75], rotation: [0, 0, 0], pose: "sitting", motion: "type" },
   arlo: { position: [-2.6, 0.28, 5.2], rotation: [0, 0.5, 0], pose: "sitting" },
   theo: { position: [9.2, 0.68, 3.95], rotation: [0, 0, 0], pose: "sleeping" },
   clawd: { position: [-5.7, 0, 2.6], rotation: [0, 0.2, 0] },

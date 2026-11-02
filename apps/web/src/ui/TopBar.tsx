@@ -1,4 +1,4 @@
-import { Bell, ChevronDown, Check, LayoutGrid, Lock, MapPin, Search, Settings2, Share2, Sparkles } from "lucide-react";
+import { ChevronDown, Check, LayoutGrid, Lock, MapPin, Settings2, Share2, Sparkles } from "lucide-react";
 import { useState } from "react";
 import {
   localCharacter,
@@ -11,6 +11,7 @@ import {
 import { useRealtimeStore } from "../realtime/store";
 import { useAppStore } from "../state/app";
 import { useAvatarStore } from "../state/avatar";
+import { copyInviteLink } from "../lib/invite";
 import { palette, statusColor } from "../theme";
 
 type OpenMenu = "user" | "office" | null;
@@ -29,11 +30,7 @@ export function TopBar() {
 
   const copyInvite = async () => {
     try {
-      const url = new URL(window.location.href);
-      url.searchParams.delete("character");
-      url.searchParams.set("join", "1");
-      url.searchParams.set("host", localCharacterId);
-      await navigator.clipboard.writeText(url.toString());
+      await copyInviteLink();
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2200);
     } catch {
@@ -151,13 +148,6 @@ export function TopBar() {
           onClick={() => setAssistantOpen(true)}
         >
           <Sparkles size={17} />
-        </button>
-        <button className="icon-button topbar-hide-mobile" type="button" aria-label="Search" title="Search">
-          <Search size={17} />
-        </button>
-        <button className="icon-button icon-button--badge topbar-hide-mobile" type="button" aria-label="Notifications" title="Notifications">
-          <Bell size={17} />
-          <span className="icon-button__badge" />
         </button>
         <span className="topbar__divider" />
         <div className="user-wrap">

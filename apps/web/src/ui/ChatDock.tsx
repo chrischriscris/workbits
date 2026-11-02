@@ -1,4 +1,4 @@
-import { MessageCircle, Plus, SendHorizontal, Smile, X } from "lucide-react";
+import { MessageCircle, SendHorizontal, Smile, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { zoneAt, zoneName } from "@workbits/shared";
 import { localCharacterId, teamById } from "../data/team";
@@ -15,6 +15,7 @@ type ChatMessage = {
   time: string;
   zone?: string;
   to?: string;
+  history?: boolean;
 };
 
 const initialMessages: ChatMessage[] = [
@@ -98,7 +99,42 @@ export function ChatDock() {
   const dmTargetId = useAppStore((state) => state.dmTargetId);
   const dmTarget = teamById[dmTargetId];
   const [draft, setDraft] = useState("");
+  const [emojiOpen, setEmojiOpen] = useState(false);
+  const [unread, setUnread] = useState<Record<ChatTab, number>>({
+    global: 0,
+    office: 0,
+    room: 0,
+    dm: 0,
+  });
+  const seenRealtime = useRef(realtimeMessages.length);
   const listRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const added = realtimeMessages.slice(seenRealtime.current);
+    seenRealtime.current = realtimeMessages.length;
+    if (added.length === 0) return;
+    setUnread((current) => {
+      const next = { ...current };
+      for (const message of added) {
+        if (message.authorId === localCharacterId || message.history) continue;
+        const channel = message.channel as ChatTab;
+        if (!(channel in next)) continue;
+        if (chatOpen && chatTab === channel) continue;
+        next[channel] = Math.min(99, next[channel] + 1);
+      }
+      return next;
+    });
+  }, [realtimeMessages, chatOpen, chatTab]);
+
+  useEffect(() => {
+    if (!chatOpen) return;
+    setUnread((current) =>
+      current[chatTab] === 0 ? current : { ...current, [chatTab]: 0 },
+    );
+  }, [chatOpen, chatTab]);
+
+  const totalUnread = Object.values(unread).reduce((sum, count) => sum + count, 0);
 
   const localZone = zoneAt(localPosition.x, localPosition.z);
   const roomName = zoneName(localZone);
@@ -136,7 +172,11 @@ export function ChatDock() {
           <MessageCircle size={17} />
         </span>
         <span className="chat-bar__placeholder">Message the team…</span>
-        <span className="chat-bar__hint">Enter</span>
+        {totalUnread > 0 ? (
+          <span className="chat-bar__unread">{totalUnread > 9 ? "9+" : totalUnread}</span>
+        ) : (
+          <span className="chat-bar__hint">Enter</span>
+        )}
       </button>
     );
   }
@@ -169,6 +209,7 @@ export function ChatDock() {
             onClick={() => setChatTab(tab.key)}
           >
             {tab.key === "room" ? roomName : tab.key === "dm" ? `DM · ${dmTarget?.shortName ?? "Team"}` : tab.label}
+            {unread[tab.key] > 0 && <span className="chat__tab-badge">{unread[tab.key]}</span>}
           </button>
         ))}
       </div>
@@ -205,10 +246,8 @@ export function ChatDock() {
       </div>
 
       <div className="chat__composer">
-        <button className="icon-button icon-button--small" type="button" aria-label="Add attachment" title="Add attachment">
-          <Plus size={16} />
-        </button>
         <input
+          ref={inputRef}
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={(event) => {
@@ -220,12 +259,39 @@ export function ChatDock() {
           }…`}
           aria-label="Message"
         />
-        <button className="icon-button icon-button--small" type="button" aria-label="Emoji" title="Emoji">
+        <button
+          className={`icon-button icon-button--small${emojiOpen ? " is-active" : ""}`}
+          type="button"
+          aria-label="Emoji"
+          title="Emoji"
+          aria-expanded={emojiOpen}
+          onClick={() => setEmojiOpen((open) => !open)}
+        >
           <Smile size={16} />
         </button>
         <button className="send-button" type="button" onClick={send} aria-label="Send message">
           <SendHorizontal size={16} />
         </button>
+
+        {emojiOpen && (
+          <div className="emoji-pop" role="menu" aria-label="Insert emoji">
+            {["👍", "🎉", "☕", "🐸", "🙌", "😅"].map((emoji) => (
+              <button
+                key={emoji}
+                className="emoji-pop__item"
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setDraft((current) => `${current}${emoji}`);
+                  setEmojiOpen(false);
+                  inputRef.current?.focus();
+                }}
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
