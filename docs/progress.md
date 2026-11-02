@@ -18,7 +18,7 @@ Source of truth for what is actually done. Update at the end of every work sessi
 
 ### Verification
 
-`bun run verify` runs the current evidence pass. Latest report: `artifacts/verify/20261102T093721Z/report.md` (local, gitignored). Production: `bun run prod-check` plus the built Docker image.
+`bun run verify` runs the current evidence pass. Latest report: `artifacts/verify/20261102T100004Z/report.md` (local, gitignored). Production: `bun run prod-check` plus the built Docker image.
 
 ## Done
 

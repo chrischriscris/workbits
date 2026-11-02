@@ -78,9 +78,9 @@ Or the container stack: `docker compose -f infra/docker-compose.prod.yml up --bu
 bun run verify
 ```
 
-Latest run: `artifacts/verify/20261102T093721Z/report.md` (local, gitignored). It covers typecheck, 22 unit tests, desktop/mobile screenshots, realtime presence/chat, voice publish and private-room isolation, reconnect, DMs, both studios, invite occupancy, status/emotes, assistant, welcome page, and unread chat.
+Latest run: `artifacts/verify/20261102T100004Z/report.md` (local, gitignored). It covers typecheck, 22 unit tests, desktop/mobile screenshots, realtime presence/chat, voice publish and private-room isolation, reconnect, DMs, both studios, invite occupancy, status/emotes, assistant, welcome page, and unread chat.
 
-The most recent production check: `bun run prod-check` (single-process build) and the built Docker image both pass static/SPA/health/token/same-origin realtime/clean-console checks. The final image was rebuilt after the welcome page and portraits landed.
+The most recent production check: `bun run prod-check` (single-process build) and the built Docker image both pass static/SPA/health/token/same-origin realtime/clean-console checks. The final image was rebuilt after the welcome page, portraits, and per-session voice-key hardening landed.
 
 ## Where to continue
 
