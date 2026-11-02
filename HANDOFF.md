@@ -25,8 +25,9 @@ bun run dev
 4. **Chat** — click the bottom composer, send a message, then open the other tab. Both messages appear. History is persisted to `apps/server/data/chat.jsonl` (gitignored).
 5. **Voice** — click the mic in the bottom-right control bar. Allow microphone access. The "Proximity" pill should say `live`. Walking away lowers the other person's volume; deafen mutes output. Meeting-room isolation is currently a client-side zone gate.
 6. **Avatar Studio** — click the wand (bottom-right). Type a prompt, generate three bases, apply one. The avatar updates in-scene and persists in localStorage.
-7. **Rooms** — click the office name (top-left) to open the room list; click a room to walk there.
-8. **Mobile** — open the same URL at 390×844; the top bar and controls collapse.
+7. **Workspace Studio** — click the layout icon next to the wand. Generate three desk configurations and apply one; the engineering pod rebuilds. Persists in localStorage.
+8. **Rooms** — click the office name (top-left) to open the room list; click a room to walk there.
+9. **Mobile** — open the same URL at 390×844; the top bar and controls collapse.
 
 ## What is real
 
@@ -34,15 +35,15 @@ bun run dev
 - Server-authoritative movement bounds and presence messages.
 - Shared realtime chat with server-side persistence.
 - LiveKit room token endpoint + mic publishing + distance-based volume.
-- Deterministic local Avatar Studio (no API key).
+- Deterministic local Avatar Studio + Workspace Studio (no API key).
 - Rooms menu and character switcher.
 - `bun run build` passes; `bun run verify` produces a report.
 
 ## What is mocked / incomplete
 
 - **Auth, orgs, invites, billing, landing page** — not built. The app opens straight into the demo as Chus.
-- **Office editor** — not built. Avatar Studio is the customization slice.
-- **AI room generation** — not built. Avatar Studio is the local AI slice.
+- **Full office editor** — not built. Avatar Studio and the engineering-pod Workspace Studio are the customization slices.
+- **LLM room generation** — not built. Workspace Studio is the deterministic local slice.
 - **Chat authz** — Global/Office/Room/DM are UI channels; the server currently broadcasts to the room. DMs are not private yet.
 - **Meeting-room privacy** — client-side volume gate, not a separate LiveKit room.
 - **Two real microphones** — the voice path is verified with a fake device and one published track; a manual two-person audio test is still needed.

@@ -17,8 +17,8 @@ If a document conflicts with the user's latest message, **the user wins**. Updat
 ## 2. Current state
 
 - The user said **go** and the first playable demo is running locally.
-- Built: R3F office + team seed pack, click/WASD movement, Colyseus presence/chat, LiveKit proximity voice, Avatar Studio, rooms popover, verification scripts.
-- Not built: auth/orgs/invites, office editor, real AI room generation, chat persistence, billing, landing page, multi-instance scale.
+- Built: R3F office + team seed pack, click/WASD movement, Colyseus presence/chat, LiveKit proximity voice, Avatar Studio, Workspace Studio, rooms popover, verification scripts.
+- Not built: auth/orgs/invites, full office editor, real LLM room generation, billing, landing page, multi-instance scale.
 - Art direction: warm stylized 3D diorama, 80% flat color / 20% render polish, chibi modular characters.
 - Runtime AI keys are not available; the Avatar Studio uses a deterministic local generator.
 - Known issue: React logs `Attempted to synchronously unmount a root` from the R3F HTML name-tag/portal path; it is a console warning, not a visual failure. Track it.

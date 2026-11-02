@@ -17,10 +17,11 @@ Workbits is built to be a product, not an internal tool: multi-tenant architectu
 - Shared text chat: Global, Office, Room, and DM UI, wired to the realtime room.
 - Proximity voice via LiveKit: room token endpoint, mic publish, distance-based volume, deafen.
 - Avatar Studio: prompt → three modular base avatars → apply and persist locally. No API key required.
+- Workspace Studio: prompt → three desk layouts → apply to the engineering pod and persist.
 - Rooms popover with click-to-walk navigation.
 - Verification scripts: screenshots, headless bot, voice check, avatar studio, proximity math.
 
-**Not done yet:** auth/orgs/invites, office editor, real AI room generation, chat persistence, billing, landing page, mobile polish, and multi-instance scale.
+**Not done yet:** auth/orgs/invites, a full office editor, a real LLM room generator, billing, landing page, and multi-instance scale. Chat persistence, mobile layout, and a local workspace generator are in.
 
 ## Quick start
 

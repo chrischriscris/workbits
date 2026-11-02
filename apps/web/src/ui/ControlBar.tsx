@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import {
   Headphones,
+  LayoutTemplate,
   MessageCircle,
   Mic,
   MicOff,
@@ -55,6 +56,7 @@ export function ControlBar() {
   const chatOpen = useAppStore((state) => state.chatOpen);
   const setChatOpen = useAppStore((state) => state.setChatOpen);
   const setAvatarStudioOpen = useAppStore((state) => state.setAvatarStudioOpen);
+  const setRoomStudioOpen = useAppStore((state) => state.setRoomStudioOpen);
 
   const voiceStatus = useVoiceStore((state) => state.status);
   const muted = useVoiceStore((state) => state.muted);
@@ -142,6 +144,9 @@ export function ControlBar() {
         onClick={() => setChatOpen(!chatOpen)}
       >
         <MessageCircle size={18} />
+      </ControlButton>
+      <ControlButton label="Workspace studio" onClick={() => setRoomStudioOpen(true)} hideMobile>
+        <LayoutTemplate size={18} />
       </ControlButton>
       <ControlButton label="Avatar studio" onClick={() => setAvatarStudioOpen(true)} hideMobile>
         <Wand2 size={18} />

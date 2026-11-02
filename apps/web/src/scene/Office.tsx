@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { localCharacter, localCharacterId, teamCharacters } from "../data/team";
 import { useRealtimeStore } from "../realtime/store";
 import { useAvatarStore } from "../state/avatar";
+import { chairFor, useOfficeLayout } from "../state/officeLayout";
 import { useAppStore } from "../state/app";
 import { palette } from "../theme";
 import { TeamAvatar, type AvatarMotion, type AvatarPose } from "./avatars";
@@ -137,24 +138,47 @@ function Lounge() {
   );
 }
 
+const chairPalette = [
+  { color: palette.slate, accent: palette.sage },
+  { color: palette.terracotta, accent: palette.sand },
+  { color: palette.slate, accent: palette.terracotta },
+  { color: palette.slate, accent: palette.sage },
+];
+
 function Engineering() {
+  const layout = useOfficeLayout((state) => state.layout);
   return (
     <group>
-      <Rug position={[-0.1, 0.095, 3.0]} width={8.2} depth={6.4} variant="cream" />
-      <Desk position={[-1.2, 0, 1.45]} />
-      <Desk position={[1.65, 0, 1.45]} variant={1} />
-      <Desk position={[-1.2, 0, 4.7]} rotation={[0, Math.PI, 0]} variant={2} />
-      <Desk position={[1.65, 0, 4.7]} rotation={[0, Math.PI, 0]} variant={3} />
-      <OfficeChair position={[-1.2, 0, 2.4]} rotation={[0, Math.PI, 0]} color={palette.slate} accent={palette.sage} />
-      <OfficeChair position={[1.65, 0, 2.4]} rotation={[0, Math.PI, 0]} color={palette.terracotta} accent={palette.sand} />
-      <OfficeChair position={[-1.2, 0.0, 3.75]} rotation={[0, 0, 0]} color={palette.slate} accent={palette.terracotta} />
-      <OfficeChair position={[1.65, 0.0, 3.75]} rotation={[0, 0, 0]} color={palette.slate} accent={palette.sage} />
-      <RoundedBox args={[5.7, 0.5, 0.36]} radius={0.08} position={[0.2, 0.25, 3.1]} castShadow>
-        <meshStandardMaterial color={palette.oakLight} roughness={0.8} />
-      </RoundedBox>
-      {[-1.5, 0.2, 1.9].map((x) => (
-        <Plant key={x} position={[x, 0.5, 3.1]} scale={0.35} pot={palette.paper} />
-      ))}
+      <Rug position={[-0.1, 0.095, 3.0]} width={8.2} depth={6.4} variant={layout.rug} />
+      {layout.desks.map((desk) => {
+        const chair = chairFor(desk);
+        const colors = chairPalette[desk.variant % chairPalette.length] ?? chairPalette[0]!;
+        return (
+          <group key={desk.id}>
+            <Desk
+              position={[desk.x, 0, desk.z]}
+              rotation={[0, desk.rotation, 0]}
+              variant={desk.variant}
+            />
+            <OfficeChair
+              position={[chair.x, 0, chair.z]}
+              rotation={[0, chair.rotation, 0]}
+              color={colors.color}
+              accent={colors.accent}
+            />
+          </group>
+        );
+      })}
+      {layout.id === "default" && (
+        <>
+          <RoundedBox args={[5.7, 0.5, 0.36]} radius={0.08} position={[0.2, 0.25, 3.1]} castShadow>
+            <meshStandardMaterial color={palette.oakLight} roughness={0.8} />
+          </RoundedBox>
+          {[-1.5, 0.2, 1.9].map((x) => (
+            <Plant key={x} position={[x, 0.5, 3.1]} scale={0.35} pot={palette.paper} />
+          ))}
+        </>
+      )}
       <Whiteboard position={[4.75, 0, 2.4]} rotation={[0, -Math.PI / 2, 0]} />
       <Shelf position={[4.75, 0, 6.1]} rotation={[0, -Math.PI / 2, 0]} width={1.5} height={1.6} />
       <Plant position={[4.55, 0, 0.0]} scale={1.15} />

@@ -2061,3 +2061,118 @@ button:focus-visible {
     padding: 5px 7px;
   }
 }
+
+/* Workspace studio */
+
+.room-studio {
+  width: min(820px, 100%);
+}
+
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 11px;
+}
+
+.plan-card {
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  border: 1px solid rgba(46, 52, 64, 0.07);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.plan {
+  position: relative;
+  height: 158px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  background:
+    linear-gradient(rgba(46, 52, 64, 0.045) 1px, transparent 1px) 0 0 / 100% 25%,
+    linear-gradient(90deg, rgba(46, 52, 64, 0.045) 1px, transparent 1px) 0 0 / 25% 100%,
+    linear-gradient(160deg, #e8f1ec, #f3e8da);
+}
+
+.plan__label {
+  position: absolute;
+  right: 8px;
+  bottom: 7px;
+  color: rgba(46, 52, 64, 0.38);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.plan__desk {
+  position: absolute;
+  z-index: 2;
+  width: 21%;
+  height: 13%;
+  border-radius: 3px;
+  background: #d9b98c;
+  box-shadow: 0 2px 5px rgba(46, 52, 64, 0.16);
+}
+
+.plan__desk > span {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  width: 35%;
+  height: 22%;
+  transform: translateX(-50%);
+  border-radius: 2px;
+  background: #4a5260;
+}
+
+.plan__chair {
+  position: absolute;
+  z-index: 1;
+  width: 8px;
+  height: 8px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #6c8cff;
+  box-shadow: 0 0 0 3px rgba(108, 140, 255, 0.12);
+}
+
+.plan-card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  padding: 9px 2px 2px;
+}
+
+.plan-card__title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 5px;
+}
+
+.plan-card__title strong {
+  font-size: 11.5px;
+  font-weight: 750;
+}
+
+.plan-card__title span {
+  color: var(--muted);
+  font-size: 8.5px;
+}
+
+.plan-card__body p {
+  flex: 1;
+  margin: 0;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+@media (max-width: 720px) {
+  .plan-grid {
+    grid-template-columns: 1fr;
+  }
+}

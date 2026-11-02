@@ -5,6 +5,7 @@ import { OfficeScene } from "./scene/OfficeScene";
 import { useAppStore } from "./state/app";
 import { useVoiceStore } from "./voice/store";
 import { AvatarStudio } from "./ui/AvatarStudio";
+import { RoomStudio } from "./ui/RoomStudio";
 import { CharacterSheet } from "./ui/CharacterSheet";
 import { ChatDock } from "./ui/ChatDock";
 import { ControlBar } from "./ui/ControlBar";
@@ -64,6 +65,7 @@ export default function App() {
       <ChatDock />
       <ControlBar />
       <AvatarStudio />
+      <RoomStudio />
       <InteractionHint />
     </div>
   );

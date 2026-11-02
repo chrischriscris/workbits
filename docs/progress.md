@@ -11,7 +11,7 @@ Source of truth for what is actually done. Update at the end of every work sessi
 | 2 — Presence | 🟢 Working | `bun run shot:multi`, bot welcome/chat | Message-based presence (ADR-011) |
 | 3 — Voice | 🟢 Publish + proximity | `bun scripts/voice-check.mjs`, LiveKit track | Meeting-room isolation is client-side; two-real-user audio still manual |
 | 4 — Chat | 🟡 UI + realtime + persistence | `bun run shot:multi`, `chat.jsonl` | Channels are not authz-scoped; DMs are not private |
-| 5 — Customization | 🟡 Avatar Studio + rooms menu | `scripts/forge-shot.mjs`, `scripts/ui-check.mjs` | Office editor not built |
+| 5 — Customization | 🟡 Avatar Studio + Workspace Studio + rooms menu | `scripts/forge-shot.mjs`, `scripts/room-studio-shot.mjs` | Full office editor not built |
 | 6 — AI | 🟡 Local avatar generator | `apps/web/src/ai/avatar.ts` | No runtime LLM keys; room generator pending |
 | 7 — Product | 🔴 Not started | — | Auth, billing, landing |
 | 8 — Ship | 🔴 Not started | — | Deploy hardening |
@@ -42,6 +42,7 @@ Source of truth for what is actually done. Update at the end of every work sessi
 - 2026-11-02 — Added self-hosted LiveKit (Docker dev server), a scoped token endpoint, and proximity voice on the client. Verified one client connects and publishes a mic track; UI shows `Proximity · live`. Proximity gain is distance-based and deafen-aware.
 - 2026-11-02 — Added Avatar Studio (prompt → 3 local modular bases → apply/persist), rooms popover with click-to-walk, topbar character switcher, share/copy invite link, responsive camera and mobile layout, chat persistence to `apps/server/data/chat.jsonl`, and the `bun run verify` evidence pass.
 - 2026-11-02 — Production `bun run build` passes. Current demo screenshot: `art/workbits-demo.png`.
+- 2026-11-02 — Added Workspace Studio: data-driven engineering desks/chairs, deterministic prompt → 3 layouts, apply/reset/persist. Added mobile polish and share link.
 
 ## Next
 
