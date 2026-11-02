@@ -118,7 +118,7 @@ export function createTextures() {
   // Light honey oak planks: long boards, staggered butt joints, soft grain.
   // Seams are a few texels wide so they survive mipmapping at diorama distance.
   const wood = makeTexture(512, (ctx, size) => {
-    ctx.fillStyle = "#ebc994";
+    ctx.fillStyle = "#e0b77f";
     ctx.fillRect(0, 0, size, size);
     const rows = 10;
     const rowHeight = size / rows;
@@ -161,7 +161,7 @@ export function createTextures() {
 
   // Pale warm porcelain tile.
   const tile = makeTexture(512, (ctx, size) => {
-    ctx.fillStyle = "#d9d0c3";
+    ctx.fillStyle = "#ded5c8";
     ctx.fillRect(0, 0, size, size);
     const cells = 4;
     const cell = size / cells;

@@ -1,6 +1,6 @@
-import { MapControls, SoftShadows } from "@react-three/drei";
+import { ContactShadows, MapControls, SoftShadows } from "@react-three/drei";
 import { Canvas, useThree } from "@react-three/fiber";
-import { Bloom, EffectComposer, SSAO, Vignette } from "@react-three/postprocessing";
+import { Bloom, BrightnessContrast, EffectComposer, HueSaturation, SSAO, Vignette } from "@react-three/postprocessing";
 import { Suspense, useEffect } from "react";
 import * as THREE from "three";
 import { localCharacterId } from "../data/team";
@@ -22,7 +22,7 @@ function CameraRig() {
   useEffect(() => {
     const orthographic = camera as THREE.OrthographicCamera;
     if (!orthographic.isOrthographicCamera) return;
-    const targetWidth = artMode ? 27.5 : mobile ? 15 : 28.5;
+    const targetWidth = artMode ? 27.5 : mobile ? 15 : 29.5;
     orthographic.zoom = size.width / targetWidth;
     orthographic.updateProjectionMatrix();
   }, [artMode, camera, mobile, size.width]);
@@ -61,23 +61,23 @@ export function OfficeScene() {
     <Canvas
       shadows={!e2e}
       orthographic
-      camera={{ position: [20, 16, 20], zoom: 46, near: -100, far: 200 }}
+      camera={{ position: [20, 22, 20], zoom: 46, near: -100, far: 200 }}
       dpr={e2e ? 1 : [1, 1.75]}
       gl={{ antialias: !e2e, alpha: true, powerPreference: e2e ? "low-power" : "high-performance" }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.08;
+        gl.toneMappingExposure = 1.1;
       }}
     >
       <Suspense fallback={null}>
         <SoftShadows size={22} samples={10} focus={0.7} />
-        <ambientLight intensity={0.2} color="#fff6ea" />
-        <hemisphereLight args={["#fff8ec", "#becad2", 0.68]} />
+        <ambientLight intensity={0.18} color="#fff6ea" />
+        <hemisphereLight args={["#fff8ec", "#d8cbb8", 0.64]} />
         <directionalLight
           castShadow
-          position={[-6, 20, 14]}
-          intensity={2.15}
-          color="#fff0d2"
+          position={[-10, 18, 8]}
+          intensity={2.55}
+          color="#ffe9c5"
           shadow-mapSize={[2048, 2048]}
           shadow-camera-left={-17}
           shadow-camera-right={17}
@@ -88,13 +88,25 @@ export function OfficeScene() {
           shadow-bias={-0.00015}
           shadow-normalBias={0.03}
         />
-        <directionalLight position={[10, 8, -8]} intensity={0.32} color="#dbe8ff" />
-        <directionalLight position={[4, 8, 16]} intensity={0.42} color="#fff7e8" />
+        <directionalLight position={[10, 8, -8]} intensity={0.35} color="#dbe8ff" />
+        <directionalLight position={[12, 9, 2]} intensity={0.5} color="#fff1dd" />
+        <directionalLight position={[4, 8, 16]} intensity={0.55} color="#fff7e8" />
         <Office />
+        <ContactShadows
+          position={[0, 0.055, 0]}
+          opacity={0.3}
+          scale={34}
+          blur={2.6}
+          far={4.5}
+          resolution={1024}
+          color="#6b5844"
+        />
         <CameraRig />
         {!e2e && (
           <EffectComposer multisampling={0} enableNormalPass>
             <SSAO samples={16} radius={4} intensity={14} luminanceInfluence={0.26} color="#1b1b1b" />
+            <HueSaturation saturation={0.09} />
+            <BrightnessContrast brightness={0.02} contrast={0.06} />
             <Bloom
               intensity={0.07}
               luminanceThreshold={0.95}

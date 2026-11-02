@@ -1,34 +1,37 @@
-# Resume — art overhaul checkpoint
+# Resume — Workbits diorama overhaul
 
-Latest committed checkpoint: `405d2db` (`feat: diorama art overhaul checkpoint (scene, cast, zones, camera)`).
+**SUSPEND WARNING:** this PC is set to suspend at 50% battery. The work below is pushed to GitHub before that threshold.
 
-If the machine slept or the power dropped:
+- Repo: https://github.com/chrischriscris/workbits (private)
+- Branch: `feat/foundation`; `main` mirrors the same commits.
+- Latest render: `artifacts/art/20261102T123919Z/current.png`
+- Normal UI render: `artifacts/shots/art-normal.png` (older framing; retake after resume)
+- Target: `art/style-scene.png`
+- Checklist: `docs/art/overhaul-checklist.md`
+- Brief: `docs/art/overhaul-brief.md`
+
+## State at suspend
+
+- Compact 20×14 cutaway rebuilt by Opus: stone plinth, glass meeting room, kitchen, lounge, engineering bench, garden and nap nooks.
+- Dense set dressing: reading nook, communal kitchen table, planting, wall art, warm oak floor.
+- Sonnet rebuilt the chibi cast; parent scaled it 1.35× and recolored four hero outfits.
+- Camera: high isometric angle, art-mode framing; SoftShadows + ContactShadows + SSAO + subtle saturation/contrast.
+- `bun run typecheck` and `bun test` pass at the last checkpoint.
+- Art mode: `http://localhost:3100/?art=1`; screenshot loop `bun run art:iterate`.
+
+## Continue
+
+1. Start: `bun run dev` → web :3100, server :3101, LiveKit :7880.
+2. Take a fresh `bun run art:iterate` and compare to `art/style-scene.png`.
+3. Remaining gaps: target has only 4 core zones and larger/plusher objects; ours has 6 rooms, so it reads smaller. Consider a hero crop or moving nap/garden to a second floor. Improve wall brightness, soft sunlight, plant leaf detail, and meeting-room plushness.
+4. Run `bun run typecheck && bun test`, commit, push `feat/foundation` and `main`.
+5. Do not mark the art pass finished until the image is reviewed; latest color-grade frame is `123919Z`.
+
+## Git
 
 ```bash
 cd /home/chus/.t3/scratch/2026-11-02-need-u-to-work-all-5130e69d
+git pull --ff-only
 bun install
 bun run dev
 ```
-
-- App: http://localhost:3100
-- Realtime: :3101
-- LiveKit: :7880
-- Clean art screenshot: `bun run art:iterate` → `artifacts/art/<stamp>/current.png` + `compare.png`
-- Target: `art/style-scene.png`; brief: `docs/art/overhaul-brief.md`; checklist: `docs/art/overhaul-checklist.md`
-
-## State
-
-- Compact 20×14 cutaway scene, new stone plinth, camera/lighting, recolored cast, enlarged bench, meeting room, kitchen, lounge, garden/nap nooks.
-- Character pass by Sonnet; scene passes 1–2 by Opus; camera/light/scale by parent.
-- Latest render before this note: `artifacts/art/20261102T121941Z/current.png` (plus normal UI `artifacts/shots/art-normal.png`).
-- Opus pass 3 may be in flight when the machine stopped. Check `git status` and `artifacts/art/` newest; if pass 3 is incomplete, review/revert only the relevant scene files, or continue from the checkpoint.
-- Do not run `bun run build`/screenshots while a scene agent is editing the same files.
-
-## Next visual pass
-
-1. Take the next art screenshot and compare to `art/style-scene.png`.
-2. Biggest remaining gaps: right-center dead floor, meeting-room density, floor/wall warmth, softer light/shadows, plant fullness.
-3. Use `bun run art:iterate`; keep camera `artMode` ~27.5 width and cast scale 1.35.
-4. Run `bun run typecheck && bun test`, then commit. Keep the stack running.
-
-Battery at note time: 73% (1.8 h), discharging.
