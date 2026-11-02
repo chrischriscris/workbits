@@ -31,13 +31,13 @@ const characterIds = new Set([
 
 const spawns: Record<string, { x: number; z: number }> = {
   chus: { x: -5.4, z: 5.9 },
-  jules: { x: 3.0, z: -4.4 },
+  jules: { x: 2.75, z: -4.15 },
   mira: { x: 0.15, z: 4.75 },
   felix: { x: 2.65, z: 1.65 },
   fern: { x: 0.15, z: 1.65 },
   arlo: { x: -5.5, z: 4.55 },
   theo: { x: 8.75, z: 4.05 },
-  clawd: { x: 4.1, z: -4.15 },
+  clawd: { x: 3.35, z: -3.0 },
 };
 
 type MoveMessage = {

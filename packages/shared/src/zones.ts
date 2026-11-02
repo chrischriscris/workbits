@@ -11,7 +11,7 @@ export const zones: Zone[] = [
   { id: "lounge", name: "Lounge", private: false, anchor: { x: -5.7, z: 2.6 } },
   { id: "engineering", name: "Engineering", private: false, anchor: { x: 1.4, z: 5.6 } },
   { id: "meeting", name: "Meeting Room", private: true, anchor: { x: -6.15, z: -2.2 } },
-  { id: "kitchen", name: "Kitchen", private: false, anchor: { x: 5.0, z: -4.8 } },
+  { id: "kitchen", name: "Kitchen", private: false, anchor: { x: 6.4, z: -5.1 } },
   { id: "nap", name: "Nap Room", private: true, anchor: { x: 7.7, z: 5.1 } },
   { id: "garden", name: "Garden", private: false, anchor: { x: 8.2, z: 1.6 } },
 ];

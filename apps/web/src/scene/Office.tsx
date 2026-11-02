@@ -18,6 +18,7 @@ import {
   Books,
   Cat,
   CoffeeTable,
+  CommunalTable,
   Credenza,
   Daybed,
   Desk,
@@ -185,22 +186,28 @@ function MeetingRoom() {
       <GlassWall position={[-3.9, 2.2, -1.2]} length={1.0} height={0.4} />
       <GlassWall position={[-2.4, 0, -4.08]} rotation={[0, HALF_PI, 0]} length={5.76} height={2.6} />
 
-      <Rug position={[-6.15, 0.035, -4.0]} width={6.2} depth={4.6} variant="cream" />
-      <MeetingTable position={[-6.15, 0, -4.0]} length={4.3} width={1.5} chairScale={1.25} />
-      <Pendant position={[-6.15, 1.72, -4.0]} kind="dome" drop={0.7} size={1.6} light />
+      <Rug position={[-6.05, 0.035, -4.0]} width={6.3} depth={4.7} variant="cream" />
+      <MeetingTable position={[-5.95, 0, -4.0]} length={4.8} width={1.7} chairScale={1.25} />
+      <Pendant position={[-5.95, 1.72, -4.0]} kind="dome" drop={0.7} size={1.6} light />
 
-      {/* One large calm print on each wall instead of screen + credenza clutter. */}
-      <WallArt position={[LEFT_FACE + 0.03, 1.6, -4.0]} rotation={[0, HALF_PI, 0]} variant={0} width={2.0} height={1.45} />
+      {/* Big print over a low credenza on the side wall, a tall one on the back. */}
+      <WallArt position={[LEFT_FACE + 0.03, 1.62, -4.0]} rotation={[0, HALF_PI, 0]} variant={0} width={2.0} height={1.45} />
+      <Credenza position={[LEFT_FACE + 0.25, 0, -4.0]} rotation={[0, HALF_PI, 0]} length={2.3} height={0.62} depth={0.42} />
+      <Vase position={[LEFT_FACE + 0.25, 0.62, -4.75]} color="#e8dccb" />
+      <Books position={[LEFT_FACE + 0.25, 0.62, -3.9]} count={3} rotation={[0, 1.4, 0]} />
+      <Plant position={[LEFT_FACE + 0.25, 0.62, -3.2]} scale={0.5} pot={palette.terracotta} kind="trailing" />
       <WallArt position={[-3.95, 1.55, REAR_FACE + 0.03]} variant={1} width={1.1} height={1.4} />
 
-      <Plant position={[-9.35, 0, -6.4]} scale={1.5} pot={tone.cream} kind="tall" />
-      <Plant position={[-2.95, 0, -6.4]} scale={1.35} pot={tone.cream} kind="leafy" />
-      <Plant position={[-9.4, 0, -1.75]} scale={1.2} pot={palette.terracotta} kind="leafy" />
+      <Plant position={[-9.2, 0, -6.2]} scale={1.2} pot={tone.cream} kind="tall" />
+      <Plant position={[-3.05, 0, -6.3]} scale={1.2} pot={tone.cream} kind="leafy" />
+      <Plant position={[-9.35, 0, -1.8]} scale={1.15} pot={palette.terracotta} kind="leafy" />
+      {/* Large plant in the front glass corner, inside the room. */}
+      <Plant position={[-3.0, 0, -1.8]} scale={1.2} pot={tone.cream} kind="leafy" />
     </group>
   );
 }
 
-/** Back-right: long rear run, fridge, pantry, a bistro perch and a bookcase. */
+/** Back-right: long rear run, fridge, pantry, communal table, bistro perch. */
 function KitchenArea() {
   return (
     <group>
@@ -208,10 +215,16 @@ function KitchenArea() {
       <Fridge position={[6.05, 0, REAR_FACE + 0.35]} />
       <TallCabinet position={[7.0, 0, REAR_FACE + 0.32]} height={2.25} />
       <Plant position={[7.0, 2.25, REAR_FACE + 0.3]} scale={0.62} pot={tone.cream} kind="trailing" />
-      <Plant position={[8.1, 0, -6.4]} scale={1.3} pot={tone.cream} kind="tall" />
+      <Plant position={[8.1, 0, -6.3]} scale={1.2} pot={tone.cream} kind="leafy" />
+      <WallArt position={[8.12, 1.72, REAR_FACE + 0.03]} variant={0} width={1.0} height={1.25} />
       {/* Big floor plant beside the slats, framing the coffee station. */}
-      <Plant position={[-1.45, 0, -4.95]} scale={1.45} pot={tone.cream} kind="tall" />
+      <Plant position={[-1.3, 0, -4.75]} scale={1.3} pot={tone.cream} kind="tall" />
       <Rug position={[2.6, 0.035, -5.85]} width={2.6} depth={0.75} variant="lines" />
+
+      {/* Communal oak table on the tile, aisle kept along the counter. */}
+      <Rug position={[4.3, 0.035, -4.12]} width={3.5} depth={2.5} variant="sage" />
+      <CommunalTable position={[4.3, 0, -4.15]} />
+      <Pendant position={[4.3, 1.78, -4.15]} kind="dome" drop={0.55} size={1.15} />
 
       <SideTable position={[7.7, 0, -4.3]} height={1.02} />
       <Mug position={[7.62, 1.02, -4.25]} color={palette.sage} />
@@ -219,25 +232,31 @@ function KitchenArea() {
       <Stool position={[7.15, 0, -4.0]} color={palette.sage} />
       <Stool position={[8.25, 0, -4.6]} color={palette.terracotta} />
 
-      <Shelf position={[9.68, 0, -1.6]} rotation={[0, -HALF_PI, 0]} width={1.2} height={1.25} seed={4} />
-      <Plant position={[9.45, 0, -2.75]} scale={1.25} pot={palette.terracotta} kind="leafy" />
+      {/* Right strip: tall bookcase facing the room, plants either side. */}
+      <Shelf position={[9.45, 0, -2.2]} width={1.5} height={1.95} depth={0.38} seed={6} />
+      <Plant position={[8.2, 0, -2.4]} scale={1.15} pot={palette.terracotta} kind="leafy" />
+      <Plant position={[9.85, 0, -1.25]} scale={1.0} pot={tone.cream} kind="bush" />
+      <Plant position={[9.05, 0, -1.4]} scale={0.6} pot={palette.paper} kind="trailing" />
     </group>
   );
 }
 
-/** Right-center: a small soft meeting/reading corner, filling the open middle. */
+/** Centre-right: soft reading corner on a round jute rug, between kitchen and planter. */
 function ReadingNook() {
   return (
     <group>
-      <Rug position={[6.35, 0.035, -1.35]} width={4.0} depth={3.1} variant="cream" />
-      <CoffeeTable position={[6.35, 0, -1.35]} />
-      <Armchair position={[5.25, 0, -1.35]} rotation={[0, -HALF_PI, 0]} color={palette.sage} />
-      <Armchair position={[7.45, 0, -1.35]} rotation={[0, HALF_PI, 0]} color={palette.terracotta} />
-      <SideTable position={[6.35, 0, -0.35]} height={0.5} />
-      <Mug position={[6.35, 0.5, -0.35]} color={palette.paper} />
-      <Books position={[6.65, 0.5, -0.35]} count={2} rotation={[0, 0.25, 0]} />
-      <Plant position={[8.05, 0, -0.55]} scale={1.0} pot={tone.cream} kind="leafy" />
-      <Pendant position={[6.35, 2.0, -1.35]} kind="cone" drop={0.55} />
+      <Rug position={[5.0, 0.035, -1.1]} width={3.1} depth={3.1} variant="jute" shape="round" />
+      <CoffeeTable position={[5.0, 0, -1.0]} scale={1.1} radius={0.6} />
+      <Armchair position={[3.95, 0, -1.85]} rotation={[0, 0.88, 0]} color={palette.sage} />
+      <Armchair position={[6.05, 0, -1.85]} rotation={[0, -0.88, 0]} color={palette.terracotta} />
+      <Pouf position={[5.4, 0, 0.1]} scale={0.9} color="#e9dcc6" />
+      <SideTable position={[3.45, 0, -0.8]} height={0.55} />
+      <TableLamp position={[3.42, 0.55, -0.86]} />
+      <Mug position={[3.55, 0.55, -0.7]} color={palette.paper} />
+      <FloorLamp position={[6.75, 0, -2.35]} light={false} />
+      <Plant position={[3.05, 0, -2.2]} scale={1.05} pot={tone.cream} kind="tall" />
+      <Plant position={[6.6, 0, -0.15]} scale={0.95} pot={palette.terracotta} kind="leafy" />
+      <Pendant position={[5.0, 1.95, -1.0]} kind="cone" drop={0.45} size={1.3} />
     </group>
   );
 }
@@ -258,11 +277,12 @@ function Lounge() {
       <Mug position={[-9.35, 0.55, 0.58]} color={palette.terracotta} />
       <FloorLamp position={[-9.5, 0, 4.75]} />
 
-      <WallArt position={[LEFT_FACE + 0.03, 1.88, 2.6]} rotation={[0, HALF_PI, 0]} variant={1} width={1.6} height={1.05} />
+      <WallArt position={[LEFT_FACE + 0.03, 1.92, 2.6]} rotation={[0, HALF_PI, 0]} variant={1} width={2.1} height={1.3} />
       <WallArt position={[LEFT_FACE + 0.03, 1.75, -0.2]} rotation={[0, HALF_PI, 0]} variant={2} width={0.5} height={0.65} />
+      <WallArt position={[LEFT_FACE + 0.03, 1.72, 5.45]} rotation={[0, HALF_PI, 0]} variant={2} width={0.75} height={0.95} />
 
       <Shelf position={[-7.3, 0, 6.45]} width={2.6} height={0.85} depth={0.36} seed={2} />
-      <Plant position={[-9.35, 0, 5.65]} scale={1.4} pot={tone.cream} kind="tall" />
+      <Plant position={[-9.12, 0, 6.15]} scale={1.2} pot={tone.cream} kind="tall" />
       <Plant position={[-9.4, 0, -0.45]} scale={0.9} pot={palette.terracotta} kind="bush" />
       <Plant position={[-4.75, 0, 0.35]} scale={1.1} pot={tone.cream} kind="leafy" />
       <Plant position={[-5.15, 0, 6.4]} scale={1.0} pot={palette.terracotta} kind="leafy" />
@@ -322,24 +342,27 @@ function Engineering() {
       <Planter position={[5.85, 0, 3.0]} rotation={[0, HALF_PI, 0]} length={4.0} width={0.5} height={0.5} />
       {/* Dense low planter along the front-right edge, foliage spilling over. */}
       <Planter position={[4.75, 0, 6.6]} length={3.0} width={0.55} height={0.42} />
-      <Plant position={[5.6, 0, -0.4]} scale={1.2} pot={palette.terracotta} kind="leafy" />
     </group>
   );
 }
 
-/** Right strip, back half: a small indoor green corner. */
+/** Right strip, back half: an L of planters around a bench under a ficus. */
 function GardenNook() {
   return (
     <group>
-      <Tree position={[9.2, 0, 0.6]} scale={1.15} />
-      <Bench position={[9.5, 0, 1.95]} rotation={[0, -HALF_PI, 0]} length={1.5} />
-      <SideTable position={[8.75, 0, 1.9]} height={0.45} />
-      <Mug position={[8.7, 0.45, 1.82]} color={palette.paper} />
-      <Books position={[8.8, 0.45, 2.0]} count={2} rotation={[0, 0.4, 0]} />
-      <Plant position={[7.2, 0, 0.35]} scale={1.05} pot={tone.cream} kind="bush" />
-      <Plant position={[8.2, 0, 0.0]} scale={0.95} pot={palette.terracotta} kind="leafy" />
-      <Plant position={[7.15, 0, 2.7]} scale={1.1} pot={palette.terracotta} kind="tall" />
-      <Plant position={[7.8, 0, 2.85]} scale={0.6} pot={tone.cream} kind="succulent" />
+      <Tree position={[9.3, 0, 0.3]} scale={1.15} />
+      <Planter position={[9.95, 0, 1.75]} rotation={[0, HALF_PI, 0]} length={2.0} width={0.4} height={0.4} />
+      <Planter position={[8.75, 0, 2.85]} length={1.9} width={0.4} height={0.4} />
+      <Bench position={[9.32, 0, 1.75]} rotation={[0, -HALF_PI, 0]} length={1.5} />
+      <SideTable position={[8.72, 0, 1.85]} height={0.45} />
+      <Mug position={[8.67, 0.45, 1.77]} color={palette.paper} />
+      <Books position={[8.77, 0.45, 1.95]} count={2} rotation={[0, 0.4, 0]} />
+      {/* Pot cluster at the back-left, layered small to large. */}
+      <Plant position={[7.45, 0, 0.15]} scale={1.1} pot={tone.cream} kind="leafy" />
+      <Plant position={[8.15, 0, -0.05]} scale={0.85} pot={palette.terracotta} kind="bush" />
+      <Plant position={[7.85, 0, 0.6]} scale={0.7} pot={palette.paper} kind="succulent" />
+      <Plant position={[7.05, 0, 2.45]} scale={1.05} pot={palette.terracotta} kind="tall" />
+      <Plant position={[7.5, 0, 2.7]} scale={0.6} pot={tone.cream} kind="trailing" />
     </group>
   );
 }
@@ -355,7 +378,9 @@ function NapNook() {
       <SideTable position={[7.78, 0, 3.85]} />
       <TableLamp position={[7.76, 0.55, 3.8]} light />
       <Books position={[7.86, 0.55, 3.97]} count={2} rotation={[0, -0.4, 0]} />
-      <Plant position={[9.55, 0, 6.35]} scale={1.0} pot={tone.cream} kind="leafy" />
+      <Plant position={[9.8, 0, 3.95]} scale={0.95} pot={palette.terracotta} kind="leafy" />
+      <Planter position={[8.75, 0, 6.7]} length={1.7} width={0.4} height={0.38} />
+      <Plant position={[9.85, 0, 6.2]} scale={0.95} pot={tone.cream} kind="leafy" />
       <FoldingScreen position={[7.55, 0, 6.3]} rotation={[0, 0.5, 0]} />
     </group>
   );
@@ -380,8 +405,8 @@ const seated: Record<string, { seat: number; motion?: AvatarMotion }> = {
 };
 
 const placements: Record<string, Placement> = {
-  jules: { position: [3.0, 0, -4.4], rotation: [0, 1.25, 0], motion: "wave" },
-  clawd: { position: [4.1, 0, -4.15], rotation: [0, -1.6, 0] },
+  jules: { position: [2.75, 0, -4.15], rotation: [0, 0.55, 0], motion: "wave" },
+  clawd: { position: [3.35, 0, -3.0], rotation: [0, -2.6, 0] },
   arlo: { position: [-5.5, 0, 4.55], rotation: [0, -1.2, 0] },
   theo: { position: [8.75, 0.68, 4.05], rotation: [0, 0, 0], pose: "sleeping" },
 };

@@ -115,9 +115,10 @@ function rugTexture(
 export function createTextures() {
   const random = seeded(4217);
 
-  // Pale honey oak planks: long boards, staggered butt joints, soft grain.
+  // Light honey oak planks: long boards, staggered butt joints, soft grain.
+  // Seams are a few texels wide so they survive mipmapping at diorama distance.
   const wood = makeTexture(512, (ctx, size) => {
-    ctx.fillStyle = "#e9cfa3";
+    ctx.fillStyle = "#ebc994";
     ctx.fillRect(0, 0, size, size);
     const rows = 10;
     const rowHeight = size / rows;
@@ -128,19 +129,19 @@ export function createTextures() {
         const tone = random();
         ctx.fillStyle =
           tone > 0.62
-            ? `rgba(255, 240, 214, ${0.14 + random() * 0.12})`
+            ? `rgba(255, 236, 200, ${0.16 + random() * 0.14})`
             : tone > 0.3
-              ? `rgba(226, 186, 134, ${0.1 + random() * 0.12})`
-              : `rgba(206, 164, 112, ${0.08 + random() * 0.1})`;
+              ? `rgba(228, 182, 120, ${0.12 + random() * 0.14})`
+              : `rgba(210, 160, 98, ${0.1 + random() * 0.12})`;
         ctx.fillRect(x, row * rowHeight, length, rowHeight);
         // Butt joint: a dark seam with a pale bevel next to it.
-        ctx.fillStyle = "rgba(138, 98, 60, 0.42)";
-        ctx.fillRect(x, row * rowHeight, 2, rowHeight);
-        ctx.fillStyle = "rgba(255, 246, 228, 0.35)";
-        ctx.fillRect(x + 2, row * rowHeight, 1.5, rowHeight);
+        ctx.fillStyle = "rgba(128, 86, 46, 0.5)";
+        ctx.fillRect(x, row * rowHeight, 3, rowHeight);
+        ctx.fillStyle = "rgba(255, 244, 222, 0.4)";
+        ctx.fillRect(x + 3, row * rowHeight, 2, rowHeight);
         for (let grain = 0; grain < 4; grain += 1) {
-          ctx.strokeStyle = `rgba(176, 134, 88, ${0.07 + random() * 0.06})`;
-          ctx.lineWidth = 1;
+          ctx.strokeStyle = `rgba(170, 124, 72, ${0.08 + random() * 0.07})`;
+          ctx.lineWidth = 1.2;
           ctx.beginPath();
           const y = row * rowHeight + 5 + random() * (rowHeight - 10);
           ctx.moveTo(x + 4, y);
@@ -150,10 +151,10 @@ export function createTextures() {
         x += length;
       }
       // Long seam between rows, with a highlight on the lower board's edge.
-      ctx.fillStyle = "rgba(132, 94, 58, 0.45)";
-      ctx.fillRect(0, row * rowHeight, size, 2);
-      ctx.fillStyle = "rgba(255, 246, 228, 0.4)";
-      ctx.fillRect(0, row * rowHeight + 2, size, 1.5);
+      ctx.fillStyle = "rgba(122, 82, 44, 0.55)";
+      ctx.fillRect(0, row * rowHeight, size, 3.5);
+      ctx.fillStyle = "rgba(255, 244, 222, 0.45)";
+      ctx.fillRect(0, row * rowHeight + 3.5, size, 2);
     }
   });
   repeat(wood, 5, 3.6);
