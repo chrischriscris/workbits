@@ -44,7 +44,7 @@ Source of truth for what is actually done. Update at the end of every work sessi
 - 2026-11-02 — Production `bun run build` passes. Current demo screenshot: `art/workbits-demo.png`.
 - 2026-11-02 — Added Workspace Studio: data-driven engineering desks/chairs, deterministic prompt → 3 layouts, apply/reset/persist. Added mobile polish and share link.
 - 2026-11-02 — Added server-routed private DMs with history filtering; verified Arlo receives a DM while Jules does not. Added avatar/workspace screenshots to the docs.
-- 2026-11-02 — Verified two simultaneous browser voice clients; both publish a track and see the same 0.617 proximity gain at spawn distance. Added emote broadcast (wave/clap/heart).
+- 2026-11-02 — Verified two simultaneous browser voice clients; both publish a track and see the same 0.617 proximity gain at spawn distance. Added emote broadcast (wave/clap/heart), status broadcast, invite picker, and share-link onboarding.
 
 ## Next
 

@@ -27,7 +27,9 @@ bun run dev
 6. **Avatar Studio** — click the wand (bottom-right). Type a prompt, generate three bases, apply one. The avatar updates in-scene and persists in localStorage.
 7. **Workspace Studio** — click the layout icon next to the wand. Generate three desk configurations and apply one; the engineering pod rebuilds. Persists in localStorage.
 8. **Rooms** — click the office name (top-left) to open the room list; click a room to walk there.
-9. **Mobile** — open the same URL at 390×844; the top bar and controls collapse.
+9. **Invite** — click the share icon. The copied link opens a pick-your-seat screen (Jules, Mira, Felix, Fern, Arlo, Theo, Chus, Claw'd).
+10. **Status + emotes** — open the user chip to set Available / Focus / Away. Use the smile button for a room-wide wave, clap, or heart.
+11. **Mobile** — open the same URL at 390×844; the top bar and controls collapse.
 
 ## What is real
 
@@ -36,7 +38,7 @@ bun run dev
 - Shared realtime chat with server-side persistence; DMs are server-routed to sender + recipient only.
 - LiveKit room token endpoint + mic publishing + distance-based volume.
 - Deterministic local Avatar Studio + Workspace Studio (no API key).
-- Rooms menu and character switcher.
+- Rooms menu, invite picker, status menu, character switcher, and room-wide emotes.
 - `bun run build` passes; `bun run verify` produces a report.
 
 ## What is mocked / incomplete

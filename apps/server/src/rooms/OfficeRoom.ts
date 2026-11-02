@@ -105,6 +105,16 @@ export class OfficeRoom extends Room {
       this.broadcast("player_moved", player, { except: client });
     });
 
+    this.onMessage("status", (client, message: { status?: string }) => {
+      const player = this.players.get(client.sessionId);
+      if (!player) return;
+      const allowed = new Set(["available", "focus", "away", "meeting"]);
+      const status = String(message?.status ?? "");
+      if (!allowed.has(status)) return;
+      player.status = status;
+      this.broadcast("player_updated", player);
+    });
+
     this.onMessage("emote", (client, message: { kind?: string }) => {
       const player = this.players.get(client.sessionId);
       if (!player) return;

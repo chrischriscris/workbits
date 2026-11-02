@@ -22,7 +22,7 @@ function CameraRig() {
 
   useEffect(() => {
     if (!controls) return;
-    controls.target.set(-2.4, 0, 0.6);
+    controls.target.set(-1.4, 0, 0.6);
     controls.update();
   }, [controls]);
   return (
@@ -33,7 +33,7 @@ function CameraRig() {
       enableZoom
       minZoom={18}
       maxZoom={90}
-      target={[-2.4, 0, 0.6]}
+      target={[-1.4, 0, 0.6]}
       panSpeed={0.85}
       zoomSpeed={0.85}
     />

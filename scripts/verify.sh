@@ -30,6 +30,9 @@ run "Two-client proximity voice" bun scripts/voice-two.mjs
 run "Avatar studio" bun scripts/forge-shot.mjs
 run "Workspace studio" bun scripts/room-studio-shot.mjs
 run "DM privacy" bun scripts/dm-check.mjs
+run "Invite picker" bun scripts/join-shot.mjs
+run "Status broadcast" bun scripts/status-check.mjs
+run "Emote broadcast" bun scripts/emote-check.mjs
 run "Mobile layout" bun scripts/mobile-shot.mjs
 
 printf '\nArtifacts: `%s`\n' "$OUT" | tee -a "$OUT/report.md"

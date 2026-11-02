@@ -21,6 +21,8 @@ export function TopBar() {
   const setTarget = useAppStore((state) => state.setTarget);
   const realtimeStatus = useRealtimeStore((state) => state.status);
   const players = useRealtimeStore((state) => state.players);
+  const localStatus = useRealtimeStore((state) => state.localStatus);
+  const setStatus = useRealtimeStore((state) => state.setStatus);
   const [openMenu, setOpenMenu] = useState<OpenMenu>(null);
   const [copied, setCopied] = useState(false);
   const customAvatar = useAvatarStore((state) => state.config);
@@ -28,7 +30,10 @@ export function TopBar() {
 
   const copyInvite = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      const url = new URL(window.location.href);
+      url.searchParams.delete("character");
+      url.searchParams.set("join", "1");
+      await navigator.clipboard.writeText(url.toString());
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2200);
     } catch {
@@ -168,7 +173,7 @@ export function TopBar() {
           >
             <span className="avatar avatar--sm" style={{ background: avatarColor }}>
               {localCharacter.shortName.slice(0, 1)}
-              <span className="avatar__status" style={{ background: statusColor.available }} />
+              <span className="avatar__status" style={{ background: statusColor[localStatus] ?? statusColor.available }} />
             </span>
             <span className="user-chip__text">
               <strong>{localCharacter.shortName}</strong>
@@ -181,6 +186,29 @@ export function TopBar() {
             <>
               <button className="menu-scrim" type="button" onClick={() => setOpenMenu(null)} aria-label="Close menu" />
               <div className="user-menu">
+                <div className="user-menu__label">Status</div>
+                <div className="status-options">
+                  {(
+                    [
+                      ["available", "Available", palette.green],
+                      ["focus", "Focus", palette.red],
+                      ["away", "Away", palette.amber],
+                    ] as Array<[string, string, string]>
+                  ).map(([key, label, color]) => (
+                    <button
+                      key={key}
+                      className={`status-option${localStatus === key ? " is-active" : ""}`}
+                      type="button"
+                      onClick={() => {
+                        setStatus(key);
+                        setOpenMenu(null);
+                      }}
+                    >
+                      <span style={{ background: color }} />
+                      {label}
+                    </button>
+                  ))}
+                </div>
                 <div className="user-menu__label">Demo as</div>
                 {teamCharacters.map((character) => (
                   <button

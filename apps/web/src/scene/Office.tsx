@@ -2,6 +2,7 @@ import { RoundedBox } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import type { Status } from "@workbits/shared";
 import { localCharacter, localCharacterId, teamCharacters } from "../data/team";
 import { useRealtimeStore } from "../realtime/store";
 import { useAvatarStore } from "../state/avatar";
@@ -415,12 +416,17 @@ const START = SPAWNS[localCharacterId] ?? SPAWNS.chus!;
 
 function LocalPlayer() {
   const customAvatar = useAvatarStore((state) => state.config);
+  const localStatus = useRealtimeStore((state) => state.localStatus);
   const localEmote = useRealtimeStore((state) =>
     state.sessionId ? state.emotes[state.sessionId]?.kind : undefined,
   );
   const character = useMemo(
-    () => (customAvatar ? { ...localCharacter, avatar: customAvatar } : localCharacter),
-    [customAvatar],
+    () => ({
+      ...localCharacter,
+      ...(customAvatar ? { avatar: customAvatar } : {}),
+      status: localStatus as Status,
+    }),
+    [customAvatar, localStatus],
   );
   const target = useAppStore((state) => state.target);
   const setTarget = useAppStore((state) => state.setTarget);

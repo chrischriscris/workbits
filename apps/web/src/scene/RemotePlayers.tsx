@@ -2,12 +2,14 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { TeamAvatar } from "./avatars";
+import type { Status } from "@workbits/shared";
 import { localCharacter, teamById } from "../data/team";
 import { useRealtimeStore, type RemotePlayer as RemotePlayerState } from "../realtime/store";
 import { useVoiceStore } from "../voice/store";
 
 function RemoteAvatar({ player, speaking }: { player: RemotePlayerState; speaking: boolean }) {
-  const character = teamById[player.characterId] ?? localCharacter;
+  const base = teamById[player.characterId] ?? localCharacter;
+  const character = { ...base, status: player.status as Status };
   const emotes = useRealtimeStore((state) => state.emotes);
   const group = useRef<THREE.Group>(null);
   const target = useRef(new THREE.Vector3(player.x, 0, player.z));

@@ -32,12 +32,14 @@ type RealtimeState = {
   messages: RealtimeMessage[];
   localPosition: { x: number; z: number };
   emotes: Record<string, { kind: string; until: number }>;
+  localStatus: string;
   connect: () => Promise<void>;
   disconnect: () => void;
   setLocalPosition: (position: { x: number; z: number }) => void;
   sendMove: (data: { x: number; z: number; rotation: number; moving: boolean }) => void;
   sendChat: (channel: string, body: string, to?: string) => void;
   sendEmote: (kind: string) => void;
+  setStatus: (status: string) => void;
 };
 
 let client: Client | null = null;
@@ -57,6 +59,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
   messages: [],
   localPosition: { x: -3.5, z: 6.5 },
   emotes: {},
+  localStatus: "available",
 
   connect: async () => {
     if (get().status !== "offline") return;
@@ -73,14 +76,15 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
 
       room.onMessage(
         "welcome",
-        (message: { players: RemotePlayer[]; messages?: RealtimeMessage[] }) => {
+        (message: { selfId: string; players: RemotePlayer[]; messages?: RealtimeMessage[] }) => {
           const players = Object.fromEntries(message.players.map((player) => [player.id, player]));
+          const localStatus = message.players.find((player) => player.id === message.selfId)?.status ?? "available";
           set((state) => {
             const merged = [...state.messages];
             for (const item of message.messages ?? []) {
               if (!merged.some((existing) => existing.id === item.id)) merged.push(item);
             }
-            return { players, messages: merged };
+            return { players, messages: merged, localStatus };
           });
         },
       );
@@ -96,6 +100,9 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
           delete next[id];
           return { players: next };
         });
+      });
+      room.onMessage("player_updated", (player: RemotePlayer) => {
+        set((state) => ({ players: { ...state.players, [player.id]: player } }));
       });
       room.onMessage("emote", (event: { id: string; kind: string }) => {
         const until = Date.now() + 2200;
@@ -139,6 +146,11 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
 
   sendMove: (data) => {
     get().room?.send("move", data);
+  },
+
+  setStatus: (status) => {
+    set({ localStatus: status });
+    get().room?.send("status", { status });
   },
 
   sendEmote: (kind) => {

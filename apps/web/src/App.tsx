@@ -5,6 +5,7 @@ import { OfficeScene } from "./scene/OfficeScene";
 import { useAppStore } from "./state/app";
 import { useVoiceStore } from "./voice/store";
 import { AvatarStudio } from "./ui/AvatarStudio";
+import { JoinOverlay } from "./ui/JoinOverlay";
 import { RoomStudio } from "./ui/RoomStudio";
 import { CharacterSheet } from "./ui/CharacterSheet";
 import { ChatDock } from "./ui/ChatDock";
@@ -66,6 +67,7 @@ export default function App() {
       <ControlBar />
       <AvatarStudio />
       <RoomStudio />
+      <JoinOverlay />
       <InteractionHint />
     </div>
   );
