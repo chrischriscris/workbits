@@ -132,6 +132,9 @@ const G = {
   torus: new THREE.TorusGeometry(1, 0.22, 6, 14),
   halfTorus: new THREE.TorusGeometry(1, 0.12, 6, 12, Math.PI),
   plane: new THREE.PlaneGeometry(1, 1),
+  /** Smooth versions for big round furniture, where 18 sides read as facets. */
+  round: new THREE.CylinderGeometry(1, 1, 1, 48),
+  round3: new THREE.SphereGeometry(1, 40, 20),
 };
 
 const roundedCache = new Map<string, THREE.BufferGeometry>();
@@ -513,7 +516,7 @@ function plantParts(kind: PlantKind, pot: string, leaf: string): Part[] {
       const dir = leafDirection(angle, tilt);
       parts.push(
         cyl(0.014, length, [dir[0] * length * 0.5, h + dir[1] * length * 0.5, dir[2] * length * 0.5], palette.olive, [0, angle, tilt], G.cylLow),
-        ...bladeParts([dir[0] * length, h + dir[1] * length, dir[2] * length], angle, tilt + 0.18, 0.7, 0.33, pick(shades, index), 0.38),
+        ...bladeParts([dir[0] * length, h + dir[1] * length, dir[2] * length], angle, tilt + 0.22, 0.88, 0.25, pick(shades, index), 0.32),
       );
     }
     // A low skirt of shorter leaves hides the bare stems above the pot.
@@ -989,13 +992,97 @@ export function Armchair({
   return <BakedMesh geometry={geometry} position={position} rotation={rotation} />;
 }
 
+/**
+ * Corner sectional like the reference: boxy square arms, tight seat and back
+ * cushions, short tapered legs. Main run along local x facing +z; the return
+ * sits at the +x end and comes forward `returnDepth`, seats facing -x.
+ */
+export function Sectional({
+  position = [0, 0, 0],
+  rotation = [0, 0, 0],
+  scale = 1,
+  color = "#a9bc9c",
+  length = 2.7,
+  returnDepth = 1.05,
+  pillows = [palette.terracotta, "#f1e7d6", "#e9d9bd"],
+}: Placement & { color?: string; length?: number; returnDepth?: number; pillows?: string[] }) {
+  const geometry = baked(`sectional|${color}|${length}|${returnDepth}|${pillows.join(",")}`, () => {
+    const light = tint(color, 0.06);
+    const deep = tint(color, -0.08);
+    const D = 0.95;
+    const W = 0.95;
+    const half = length / 2;
+    const arm = 0.2;
+    const back = 0.22;
+    const seatTop = 0.47;
+    const front = D / 2 + returnDepth;
+    const rx = half - W / 2;
+    const parts: Part[] = [
+      // Plinths.
+      rbox([length, 0.26, D], [0, 0.23, 0], deep, 0.06),
+      rbox([W, 0.26, returnDepth + 0.02], [rx, 0.23, D / 2 + returnDepth / 2 - 0.01], deep, 0.06),
+      // Back along the main run and down the return's outer side.
+      rbox([length - back, 0.46, back], [-back / 2, 0.62, -D / 2 + back / 2], color, 0.08),
+      rbox([back, 0.46, D + returnDepth], [half - back / 2, 0.62, (front - D / 2) / 2], color, 0.08),
+      // Square arms: left end of the main run, front end of the return.
+      rbox([arm, 0.6, D], [-half + arm / 2, 0.4, 0], color, 0.07),
+      rbox([W, 0.6, arm], [rx, 0.4, front - arm / 2], color, 0.07),
+    ];
+    // Seat cushions: two on the main run, corner + chaise on the return.
+    const seatStart = -half + arm;
+    const seatEnd = half - back;
+    const corner = rx - W / 2;
+    const seatWidth = (corner - seatStart) / 2;
+    const rear = -D / 2 + back;
+    const cushion = (x0: number, x1: number, z0: number, z1: number) =>
+      rbox([x1 - x0 - 0.03, 0.15, z1 - z0 - 0.03], [(x0 + x1) / 2, seatTop - 0.075, (z0 + z1) / 2], light, 0.06);
+    parts.push(cushion(seatStart, seatStart + seatWidth, rear, D / 2));
+    parts.push(cushion(seatStart + seatWidth, corner, rear, D / 2));
+    parts.push(cushion(corner, seatEnd, rear, D / 2));
+    parts.push(cushion(corner, seatEnd, D / 2, front - arm));
+    // Back cushions, leaning back.
+    for (let index = 0; index < 3; index += 1) {
+      const x0 = index < 2 ? seatStart + index * seatWidth : corner;
+      const x1 = index < 2 ? x0 + seatWidth : seatEnd - 0.14;
+      parts.push(rbox([x1 - x0 - 0.05, 0.4, 0.17], [(x0 + x1) / 2, 0.68, rear + 0.07], light, 0.08, [-0.14, 0, 0]));
+    }
+    parts.push(rbox([0.17, 0.4, D / 2 - rear - 0.05], [seatEnd - 0.07, 0.68, (rear + 0.14 + D / 2) / 2], light, 0.08, [0, 0, -0.14]));
+    parts.push(rbox([0.17, 0.4, front - arm - D / 2 - 0.05], [seatEnd - 0.07, 0.68, (D / 2 + front - arm) / 2], light, 0.08, [0, 0, -0.14]));
+    // Legs.
+    for (const [x, z] of [
+      [-half + 0.08, -D / 2 + 0.08],
+      [-half + 0.08, D / 2 - 0.08],
+      [half - 0.08, -D / 2 + 0.08],
+      [half - 0.08, front - 0.08],
+      [rx - W / 2 + 0.08, front - 0.08],
+    ] as Array<[number, number]>) {
+      parts.push(cyl(0.032, 0.11, [x, 0.055, z], ink.oakDeep, undefined, G.pot));
+    }
+    // Pillows: one by the left arm, a pair in the corner.
+    const pillow = (p: V3, r: V3, c: string) => rbox([0.52, 0.48, 0.16], p, c, 0.1, r);
+    parts.push(pillow([-half + arm + 0.28, 0.7, -D / 2 + back + 0.2], [0.2, 0.25, 0.08], pick(pillows, 2)));
+    parts.push(pillow([seatEnd - 0.52, 0.72, -D / 2 + back + 0.18], [0.2, -0.2, -0.06], pick(pillows, 0)));
+    parts.push(pillow([seatEnd - 1.02, 0.7, -D / 2 + back + 0.17], [0.18, 0.1, 0.06], pick(pillows, 1)));
+    return parts;
+  });
+  return <BakedMesh geometry={geometry} position={position} rotation={rotation} scale={scale} />;
+}
+
 export function Pouf({ position = [0, 0, 0], scale = 1, color = palette.terracottaDeep }: Placement & { color?: string }) {
-  const geometry = baked(`pouf|${color}`, () => [
-    cyl(0.4, 0.3, [0, 0.19, 0], color),
-    ball([0.4, 0.09, 0.4], [0, 0.34, 0], color),
-    ball([0.4, 0.06, 0.4], [0, 0.05, 0], tint(color, -0.06)),
-    ball([0.035, 0.02, 0.035], [0, 0.43, 0], tint(color, -0.2), undefined, G.leaf),
-  ]);
+  // Plump tufted drum: a squashed ball over a round core, button in a dimple.
+  const geometry = baked(`pouf|${color}`, () => {
+    const parts: Part[] = [
+      cyl(0.38, 0.3, [0, 0.2, 0], tint(color, -0.04), undefined, G.round),
+      ball([0.42, 0.22, 0.42], [0, 0.24, 0], color, undefined, G.round3),
+      ball([0.39, 0.1, 0.39], [0, 0.36, 0], tint(color, 0.04), undefined, G.round3),
+      ball([0.04, 0.015, 0.04], [0, 0.455, 0], tint(color, -0.25)),
+    ];
+    for (let index = 0; index < 8; index += 1) {
+      const angle = (index / 8) * Math.PI * 2;
+      parts.push(box([0.3, 0.006, 0.012], [Math.cos(angle) * 0.17, 0.452, -Math.sin(angle) * 0.17], tint(color, -0.12), [0, angle, 0.12]));
+    }
+    return parts;
+  });
   return <BakedMesh geometry={geometry} position={position} scale={scale} />;
 }
 
@@ -1010,31 +1097,32 @@ export function Beanbag({
   return <BakedMesh geometry={geometry} position={position} />;
 }
 
-export function CoffeeTable({ position = [0, 0, 0], scale = 1, radius = 0.72 }: Placement & { radius?: number }) {
+/** Round oak coffee table on three slim splayed legs, styled with a plant, books and a mug. */
+export function CoffeeTable({ position = [0, 0, 0], scale = 1, radius = 0.5 }: Placement & { radius?: number }) {
   const geometry = baked(`coffeetable|${radius}`, () => {
+    const top = 0.44;
     const parts: Part[] = [
-      cyl(radius, 0.06, [0, 0.42, 0], ink.oak),
-      cyl(radius * 0.97, 0.012, [0, 0.455, 0], tint(ink.oak, 0.08)),
-      cyl(radius * 0.7, 0.03, [0, 0.14, 0], ink.oakDeep),
+      cyl(radius, 0.05, [0, top - 0.025, 0], palette.oakLight, undefined, G.round),
+      cyl(radius - 0.012, 0.012, [0, top - 0.054, 0], ink.oakDeep, undefined, G.round),
     ];
-    for (let index = 0; index < 4; index += 1) {
-      const angle = (index / 4) * Math.PI * 2 + Math.PI / 4;
+    for (let index = 0; index < 3; index += 1) {
+      const angle = (index / 3) * Math.PI * 2 + 0.5;
+      const reach = radius * 0.62;
+      const splay = 0.16;
       parts.push(
-        cyl(0.03, 0.42, [Math.cos(angle) * radius * 0.62, 0.2, Math.sin(angle) * radius * 0.62], ink.oakDeep, [Math.sin(angle) * 0.1, 0, -Math.cos(angle) * 0.1], G.cylLow),
+        cyl(0.026, top - 0.03, [Math.cos(angle) * (reach + 0.035), (top - 0.03) / 2, -Math.sin(angle) * (reach + 0.035)], ink.oakDeep, [
+          -Math.sin(angle) * splay,
+          0,
+          -Math.cos(angle) * splay,
+        ], G.pot),
       );
     }
-    parts.push(...bookStackParts(2, [-radius * 0.35, 0.46, 0.05], 2));
-    parts.push(...mugParts([radius * 0.25, 0.46, radius * 0.32], "#a8bfa3"));
-    parts.push(rbox([0.34, 0.02, 0.22], [radius * 0.15, 0.47, -radius * 0.35], ink.oakDeep, 0.01));
-    parts.push(...bookStackParts(1, [0, 0.14, 0], 4));
+    parts.push(...grow(bookStackParts(2, [radius * 0.25, top, radius * 0.25], 2), 1.3, [radius * 0.25, top, radius * 0.25]));
+    parts.push(...grow(mugParts([-radius * 0.15, top, radius * 0.45], palette.paper), 1.25, [-radius * 0.15, top, radius * 0.45]));
+    parts.push(...placed(plantParts("leafy", palette.paper, palette.sageDeep), [-radius * 0.25, top, -radius * 0.2], 0.3, 0.38));
     return parts;
   });
-  return (
-    <group position={position} scale={scale}>
-      <BakedMesh geometry={geometry} />
-      <Plant position={[radius * 0.1, 0.48, -radius * 0.35]} scale={0.36} pot={palette.paper} kind="succulent" />
-    </group>
-  );
+  return <BakedMesh geometry={geometry} position={position} scale={scale} />;
 }
 
 export function SideTable({ position = [0, 0, 0], height = 0.55 }: Placement & { height?: number }) {

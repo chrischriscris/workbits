@@ -18,7 +18,6 @@ import {
 import { useAppStore } from "../state/app";
 import { palette } from "../theme";
 import { EmoteBubble, TeamAvatar, type AvatarMotion, type AvatarPose } from "./avatars";
-import { GltfProp } from "./models";
 import { RemotePlayers } from "./RemotePlayers";
 import {
   Block,
@@ -40,6 +39,7 @@ import {
   Plant,
   Pouf,
   Rug,
+  Sectional,
   Shelf,
   SideTable,
   SlatDivider,
@@ -249,18 +249,18 @@ function KitchenArea() {
 function Lounge() {
   return (
     <group>
-      <Rug position={[-5.35, 0.035, 2.3]} width={4.3} depth={4.6} variant="ivory" />
-      <GltfProp model="sofa" position={[-6.85, 0, 2.3]} rotation={[0, HALF_PI, 0]} scale={1.25} color="#9db392" />
-      <CoffeeTable position={[-5.05, 0, 2.3]} scale={1.2} />
-      <Pouf position={[-5.3, 0, 4.05]} scale={1.2} color={palette.terracotta} />
-      <GltfProp model="armchair" position={[-4.05, 0, 0.75]} rotation={[0, -0.75, 0]} color="#ece0cc" />
+      <Rug position={[-5.6, 0.035, 2.7]} width={4.0} depth={4.4} variant="ivory" />
+      {/* Corner sectional on the left wall, its return coming out at the back end. */}
+      <Sectional position={[LEFT_FACE + 0.52, 0, 2.65]} rotation={[0, HALF_PI, 0]} scale={1.1} />
+      <CoffeeTable position={[-5.3, 0, 2.95]} radius={0.62} scale={1.15} />
+      <Pouf position={[-4.35, 0, 2.05]} scale={1.15} color={palette.terracotta} />
       <Cat position={[-4.45, 0.06, 4.5]} rotation={[0, -0.7, 0]} />
 
       <SideTable position={[-7.0, 0, -0.35]} />
       <TableLamp position={[-7.05, 0.55, -0.4]} />
       <FloorLamp position={[-7.05, 0, 4.55]} />
 
-      <WallArt position={[LEFT_FACE + 0.03, 1.92, 2.3]} rotation={[0, HALF_PI, 0]} variant={1} width={1.9} height={1.2} />
+      <WallArt position={[LEFT_FACE + 0.03, 1.92, 2.9]} rotation={[0, HALF_PI, 0]} variant={1} width={1.9} height={1.2} />
 
       <Shelf position={[-5.5, 0, 5.05]} width={2.2} height={0.8} depth={0.36} seed={2} />
       <Plant position={[-7.0, 0, 5.0]} scale={1.15} pot={tone.cream} kind="tall" />
@@ -592,6 +592,9 @@ function MoveTarget() {
 /* Office                                                              */
 /* ------------------------------------------------------------------ */
 
+/** Art bench: `?art&noCast` hides every character so props can be compared against the reference. */
+const NO_CAST = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("noCast");
+
 export function Office() {
   return (
     <group>
@@ -604,9 +607,13 @@ export function Office() {
       <Engineering />
       <RightEdge />
       <NapNook />
-      <Team />
-      <RemotePlayers />
-      <LocalPlayer />
+      {!NO_CAST && (
+        <>
+          <Team />
+          <RemotePlayers />
+          <LocalPlayer />
+        </>
+      )}
       <MoveTarget />
     </group>
   );
