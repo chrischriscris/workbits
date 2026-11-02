@@ -30,7 +30,7 @@
 ## Git
 
 ```bash
-cd /home/chus/.t3/scratch/2026-11-02-need-u-to-work-all-5130e69d
+cd /home/chus/Projects/workbits
 git pull --ff-only
 bun install
 bun run dev
