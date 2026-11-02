@@ -32,7 +32,8 @@ await page
   .waitForFunction(() => window.__WORKBITS_READY__ === true, { timeout: 30000 })
   .catch(() => console.error("ready flag not set; screenshotting anyway"));
 await page.waitForTimeout(1500);
-await page.screenshot({ path: out });
+// SwiftShader can take well over 30s to hand back a frame of the full scene.
+await page.screenshot({ path: out, timeout: 120000, animations: "disabled" });
 console.log(out);
 
 await browser.close();

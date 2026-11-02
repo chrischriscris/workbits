@@ -497,9 +497,11 @@ function LocalPlayer() {
       if (distance < 0.12) {
         setTarget(null);
       } else {
-        const speed = Math.min(2.9, 1.1 + distance);
-        position.current.x += (offsetX / distance) * speed * delta;
-        position.current.z += (offsetZ / distance) * speed * delta;
+        // Never step past the target: at low frame rates a full step would
+        // overshoot and jitter around it (across zone edges) instead of landing.
+        const step = Math.min(distance, Math.min(2.9, 1.1 + distance) * delta);
+        position.current.x += (offsetX / distance) * step;
+        position.current.z += (offsetZ / distance) * step;
         dx = offsetX;
         dz = offsetZ;
       }
