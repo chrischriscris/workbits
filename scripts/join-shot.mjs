@@ -1,8 +1,9 @@
 import { chromium } from "playwright";
 const browser = await chromium.launch({ args: ["--use-gl=angle","--use-angle=swiftshader","--enable-unsafe-swiftshader","--ignore-gpu-blocklist"] });
 const page = await browser.newPage({ viewport: { width: 1200, height: 760 } });
-await page.goto("http://127.0.0.1:3100/?join=1", { waitUntil: "domcontentloaded" });
-await page.waitForFunction(() => window.__WORKBITS_READY__ === true, { timeout: 30000 });
+page.on("pageerror", (error) => console.log("pageerror:", error.message));
+await page.goto("http://127.0.0.1:3100/?join=1&e2e=1", { waitUntil: "domcontentloaded" });
+await page.waitForFunction(() => window.__WORKBITS_READY__ === true, undefined, { timeout: 60000 });
 await page.waitForTimeout(500);
 await page.screenshot({ path: "artifacts/shots/join.png", timeout: 120000, animations: "disabled" });
 const selected = await page.locator(".join-person.is-selected").innerText();

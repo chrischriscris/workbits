@@ -6,6 +6,28 @@ import type { SeedCharacter } from "@workbits/shared";
 import { palette, statusColor } from "../theme";
 import { Mat } from "./props";
 
+const emoteEmoji: Record<string, string> = {
+  wave: "👋",
+  clap: "👏",
+  heart: "❤️",
+};
+
+export function EmoteBubble({ kind, y = 2.3 }: { kind?: string; y?: number }) {
+  if (!kind) return null;
+  return (
+    <Html
+      position={[0, y, 0]}
+      center
+      zIndexRange={[24, 0]}
+      style={{ pointerEvents: "none", userSelect: "none" }}
+    >
+      <div className={`emote-bubble emote-bubble--${kind}`}>
+        {emoteEmoji[kind] ?? "✨"}
+      </div>
+    </Html>
+  );
+}
+
 export type AvatarPose = "standing" | "sitting" | "sleeping";
 export type AvatarMotion = "idle" | "walk" | "wave" | "type";
 

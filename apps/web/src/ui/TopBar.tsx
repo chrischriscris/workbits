@@ -16,9 +16,8 @@ import { palette, statusColor } from "../theme";
 type OpenMenu = "user" | "office" | null;
 
 export function TopBar() {
-  const setChatOpen = useAppStore((state) => state.setChatOpen);
-  const setChatTab = useAppStore((state) => state.setChatTab);
   const setTarget = useAppStore((state) => state.setTarget);
+  const setAssistantOpen = useAppStore((state) => state.setAssistantOpen);
   const realtimeStatus = useRealtimeStore((state) => state.status);
   const players = useRealtimeStore((state) => state.players);
   const localStatus = useRealtimeStore((state) => state.localStatus);
@@ -146,12 +145,9 @@ export function TopBar() {
         <button
           className="icon-button topbar-hide-mobile"
           type="button"
-          aria-label="Ask Workbits AI"
-          title="Ask Workbits AI"
-          onClick={() => {
-            setChatTab("office");
-            setChatOpen(true);
-          }}
+          aria-label="Ask Workbits assistant"
+          title="Ask Workbits assistant"
+          onClick={() => setAssistantOpen(true)}
         >
           <Sparkles size={17} />
         </button>

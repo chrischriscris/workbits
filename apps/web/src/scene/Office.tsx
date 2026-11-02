@@ -9,7 +9,7 @@ import { useAvatarStore } from "../state/avatar";
 import { chairFor, useOfficeLayout } from "../state/officeLayout";
 import { useAppStore } from "../state/app";
 import { palette } from "../theme";
-import { TeamAvatar, type AvatarMotion, type AvatarPose } from "./avatars";
+import { EmoteBubble, TeamAvatar, type AvatarMotion, type AvatarPose } from "./avatars";
 import { RemotePlayers } from "./RemotePlayers";
 import {
   Armchair,
@@ -535,6 +535,7 @@ function LocalPlayer() {
         motion={localEmote === "wave" ? "wave" : moving ? "walk" : "idle"}
         isLocal
       />
+      <EmoteBubble kind={localEmote} />
     </group>
   );
 }

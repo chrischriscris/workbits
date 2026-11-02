@@ -3,6 +3,7 @@ import { Client } from "colyseus.js";
 
 const client = new Client("ws://127.0.0.1:3101");
 const bot = await client.joinOrCreate("office", { characterId: "jules", name: "Jules" });
+bot.onMessage("*", () => {});
 const updates = [];
 bot.onMessage("player_updated", (player) => updates.push({ id: player.characterId, status: player.status }));
 

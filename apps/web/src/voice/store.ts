@@ -16,6 +16,7 @@ type VoiceChannel = "floor" | "meeting";
 
 type VoiceState = {
   status: VoiceStatus;
+  identity: string | null;
   channel: VoiceChannel | null;
   muted: boolean;
   deafened: boolean;
@@ -151,6 +152,7 @@ async function joinVoice(
 
   set({
     status: "connected",
+    identity: sessionId,
     channel: roomName.endsWith(":meeting") ? "meeting" : "floor",
     muted: !publish,
     error: null,
@@ -174,6 +176,7 @@ async function joinVoice(
 
 export const useVoiceStore = create<VoiceState>((set, get) => ({
   status: "idle",
+  identity: null,
   channel: null,
   muted: true,
   deafened: false,
@@ -197,6 +200,7 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
       stopVoice();
       set({
         status: "error",
+        identity: null,
         channel: null,
         error: error instanceof Error ? error.message : "Voice unavailable",
       });
@@ -205,7 +209,7 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
 
   disconnect: () => {
     stopVoice();
-    set({ status: "idle", channel: null, speaking: [], muted: true });
+    set({ status: "idle", identity: null, channel: null, speaking: [], muted: true });
   },
 
   toggleMute: async () => {
@@ -238,7 +242,7 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
     switching = true;
     const publish = !get().muted;
     stopVoice();
-    set({ status: "connecting", channel: null, speaking: [], error: null });
+    set({ status: "connecting", identity: null, channel: null, speaking: [], error: null });
     try {
       await joinVoice(set, publish);
     } catch (error) {
@@ -246,6 +250,7 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
       stopVoice();
       set({
         status: "error",
+        identity: null,
         channel: null,
         error: error instanceof Error ? error.message : "Voice unavailable",
       });
@@ -276,6 +281,7 @@ if (import.meta.env.DEV) {
     const state = useVoiceStore.getState();
     return {
       status: state.status,
+      identity: state.identity,
       channel: state.channel,
       muted: state.muted,
       deafened: state.deafened,

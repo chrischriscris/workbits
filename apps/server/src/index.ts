@@ -54,6 +54,7 @@ const httpServer = createServer(async (request, response) => {
 
     // The room is derived from the server-authoritative zone, never the client.
     const room = voiceRoomFor(participant.zone);
+    console.log(`voice token ${identity} zone=${participant.zone} room=${room}`);
 
     try {
       const token = new AccessToken(livekitKey, livekitSecret, {

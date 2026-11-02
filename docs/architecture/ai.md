@@ -1,5 +1,17 @@
 # AI design
 
+## Current implementation (no runtime keys)
+
+Three local, deterministic slices ship now and define the contracts for later models:
+
+| Feature | Implementation | Seam for a real model |
+|---|---|---|
+| Avatar Studio | Prompt → seeded modular configs from the avatar catalog; apply/persist/sync | Replace `generateAvatarBases` with a constrained LLM call that returns the same `AvatarConfig` |
+| Workspace Studio | Prompt → three desk arrangements from known placements; apply/persist/sync | Replace `generateOfficeLayouts` with an LLM program + deterministic packer |
+| Office assistant | Prompt intent matching over live presence, rooms, and recent chat | Replace `answerAssistant` with a tool-calling model; keep the same `AssistantReply` contract |
+
+The assistant is labeled **Local engine** and states that prompts stay in the browser. It does not call an external API and cannot invent rooms or people. The remaining features below are the design for when keys and billing exist.
+
 ## Principles
 
 1. **Constrained, not creative.** AI chooses from known catalogs and emits schema-valid data. It never invents asset keys, coordinates, or code.

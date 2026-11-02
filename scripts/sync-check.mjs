@@ -39,6 +39,7 @@ async function bot(characterId) {
     name: `${characterId} (sync bot)`,
     ...(characterId === "jules" ? { avatar: customAvatar } : {}),
   });
+  room.onMessage("*", () => {});
   const received = { chat: [], layout: [], updated: [], welcome: null };
   room.onMessage("welcome", (message) => (received.welcome = message));
   room.onMessage("chat", (message) => received.chat.push(message));

@@ -29,12 +29,15 @@ run "Voice token + publish" bun scripts/voice-check.mjs
 run "Two-client proximity voice" bun scripts/voice-two.mjs
 run "Voice room authorization" bun scripts/token-check.mjs
 run "Private room isolation" bun scripts/voice-room-check.mjs
+run "Realtime reconnect + voice rebind" bun scripts/reconnect-check.mjs
 run "Avatar studio" bun scripts/forge-shot.mjs
 run "Workspace studio" bun scripts/room-studio-shot.mjs
 run "DM privacy" bun scripts/dm-check.mjs
 run "Invite picker" bun scripts/join-shot.mjs
 run "Status broadcast" bun scripts/status-check.mjs
 run "Emote broadcast" bun scripts/emote-check.mjs
+run "Local assistant" bun scripts/assistant-check.mjs
+run "Customization sync" bun scripts/sync-check.mjs
 run "Mobile layout" bun scripts/mobile-shot.mjs
 
 printf '\nArtifacts: `%s`\n' "$OUT" | tee -a "$OUT/report.md"

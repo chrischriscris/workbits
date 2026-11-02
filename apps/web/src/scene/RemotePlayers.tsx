@@ -1,7 +1,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
-import { TeamAvatar } from "./avatars";
+import { EmoteBubble, TeamAvatar } from "./avatars";
 import type { Status } from "@workbits/shared";
 import { localCharacter, teamById } from "../data/team";
 import { useRealtimeStore, type RemotePlayer as RemotePlayerState } from "../realtime/store";
@@ -42,6 +42,7 @@ function RemoteAvatar({ player, speaking }: { player: RemotePlayerState; speakin
         motion={emotes[player.id]?.kind === "wave" ? "wave" : player.moving ? "walk" : "idle"}
         speaking={speaking}
       />
+      <EmoteBubble kind={emotes[player.id]?.kind} />
     </group>
   );
 }

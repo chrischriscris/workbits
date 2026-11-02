@@ -13,6 +13,7 @@ check("token without an office session is rejected", unauth.status === 403, `sta
 
 const client = new Client("ws://127.0.0.1:3101");
 const room = await client.joinOrCreate("office", { characterId: "jules", name: "Token bot" });
+room.onMessage("*", () => {});
 await new Promise((resolve) => setTimeout(resolve, 200));
 
 const floor = await fetch(

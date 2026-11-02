@@ -29,6 +29,7 @@ const bot = await client.joinOrCreate("office", {
   characterId: "jules",
   name: "Jules (bot)",
 });
+bot.onMessage("*", () => {});
 const received = [];
 bot.onMessage("chat", (message) => {
   received.push(message);

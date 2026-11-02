@@ -38,6 +38,7 @@ type RealtimeState = {
   players: Record<string, RemotePlayer>;
   messages: RealtimeMessage[];
   localPosition: { x: number; z: number };
+  hasMoved: boolean;
   emotes: Record<string, { kind: string; until: number }>;
   localStatus: string;
   connect: () => Promise<void>;
@@ -52,6 +53,9 @@ type RealtimeState = {
 };
 
 let client: Client | null = null;
+let reconnectTimer: number | null = null;
+let reconnectAttempts = 0;
+let manualDisconnect = false;
 
 function realtimeUrl() {
   const explicit = import.meta.env.VITE_REALTIME_URL as string | undefined;
@@ -60,18 +64,31 @@ function realtimeUrl() {
   return `${protocol}://${window.location.hostname}:3101`;
 }
 
-export const useRealtimeStore = create<RealtimeState>((set, get) => ({
+export const useRealtimeStore = create<RealtimeState>((set, get) => {
+  const scheduleReconnect = () => {
+    if (manualDisconnect || reconnectTimer !== null) return;
+    const delay = Math.min(15000, 1000 * 2 ** reconnectAttempts);
+    reconnectAttempts += 1;
+    reconnectTimer = window.setTimeout(() => {
+      reconnectTimer = null;
+      void get().connect();
+    }, delay);
+  };
+
+  return {
   status: "offline",
   room: null,
   sessionId: null,
   players: {},
   messages: [],
   localPosition: { x: -3.5, z: 6.5 },
+  hasMoved: false,
   emotes: {},
   localStatus: "available",
 
   connect: async () => {
     if (get().status !== "offline") return;
+    manualDisconnect = false;
     set({ status: "connecting" });
 
     try {
@@ -79,7 +96,11 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
       const room = await client.joinOrCreate("office", {
         characterId: localCharacterId,
         name: localCharacter.displayName,
+        status: get().localStatus,
         avatar: useAvatarStore.getState().config ?? undefined,
+        ...(get().hasMoved
+          ? { x: get().localPosition.x, z: get().localPosition.z }
+          : {}),
       });
 
       set({ status: "connected", room, sessionId: room.sessionId });
@@ -92,6 +113,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
           messages?: RealtimeMessage[];
           layout?: OfficeLayout;
         }) => {
+          reconnectAttempts = 0;
           const players = Object.fromEntries(message.players.map((player) => [player.id, player]));
           const localStatus = message.players.find((player) => player.id === message.selfId)?.status ?? "available";
           if (message.layout) useOfficeLayout.getState().applyLayout(message.layout);
@@ -144,24 +166,32 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
 
       room.onLeave(() => {
         set({ status: "offline", room: null, sessionId: null, players: {} });
+        scheduleReconnect();
       });
       room.onError(() => {
         set({ status: "offline", room: null, sessionId: null, players: {} });
+        scheduleReconnect();
       });
 
       room.send("hello");
     } catch (error) {
       console.warn("Workbits realtime connection failed", error);
       set({ status: "offline", room: null });
+      scheduleReconnect();
     }
   },
 
   disconnect: () => {
+    manualDisconnect = true;
+    if (reconnectTimer !== null) {
+      window.clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
     get().room?.leave();
     set({ status: "offline", room: null, sessionId: null, players: {} });
   },
 
-  setLocalPosition: (localPosition) => set({ localPosition }),
+  setLocalPosition: (localPosition) => set({ localPosition, hasMoved: true }),
 
   sendMove: (data) => {
     get().room?.send("move", data);
@@ -220,21 +250,26 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
       room.send("chat", { id, channel, body: trimmed, ...(to ? { to } : {}) });
     }
   },
-}));
+  };
+});
 
 if (import.meta.env.DEV && typeof window !== "undefined") {
-  (
-    window as unknown as {
-      __WORKBITS_DEBUG__: () => {
-        status: string;
-        sessionId: string | null;
-        players: RemotePlayer[];
-        localZone: string;
-        layout: OfficeLayout;
-        avatar: AvatarConfig | null;
-      };
-    }
-  ).__WORKBITS_DEBUG__ = () => {
+  const debugWindow = window as unknown as {
+    __WORKBITS_DEBUG__: () => {
+      status: string;
+      sessionId: string | null;
+      players: RemotePlayer[];
+      localZone: string;
+      layout: OfficeLayout;
+      avatar: AvatarConfig | null;
+    };
+    __WORKBITS_DROP__: () => void;
+  };
+
+  debugWindow.__WORKBITS_DROP__ = () => {
+    useRealtimeStore.getState().room?.leave();
+  };
+  debugWindow.__WORKBITS_DEBUG__ = () => {
     const state = useRealtimeStore.getState();
     return {
       status: state.status,

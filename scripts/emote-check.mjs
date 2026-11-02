@@ -3,6 +3,7 @@ import { Client } from "colyseus.js";
 
 const client = new Client("ws://127.0.0.1:3101");
 const bot = await client.joinOrCreate("office", { characterId: "jules", name: "Jules" });
+bot.onMessage("*", () => {});
 const received = [];
 bot.onMessage("emote", (event) => received.push(event));
 
@@ -17,10 +18,29 @@ const browser = await chromium.launch({
 const page = await browser.newPage({ viewport: { width: 1200, height: 760 } });
 await page.goto("http://127.0.0.1:3100/?character=chus&e2e=1", { waitUntil: "domcontentloaded" });
 await page.waitForFunction(() => window.__WORKBITS_READY__ === true, { timeout: 30000 });
-await page.locator('button[aria-label="Emotes"]').click();
-await page.getByRole("menuitem", { name: /Wave/ }).click();
-await page.waitForTimeout(700);
-console.log("bot emotes:", received);
-await page.screenshot({ path: "artifacts/shots/emote.png", timeout: 120000, animations: "disabled" });
+
+async function emote(label) {
+  await page.locator('button[aria-label="Emotes"]').click();
+  await page.getByRole("menuitem", { name: new RegExp(label, "i") }).click();
+  await page.waitForTimeout(350);
+  return page.locator(".emote-bubble").first().innerText().catch(() => "");
+}
+
+const wave = await emote("Wave");
+const clap = await emote("Clap");
+await page.waitForTimeout(350);
+const heart = await emote("Heart");
+await page.waitForTimeout(300);
+await page.screenshot({ path: "artifacts/shots/emote.png", timeout: 120000 });
+
+console.log("wave bubble:", wave || "missing");
+console.log("clap bubble:", clap || "missing");
+console.log("heart bubble:", heart || "missing");
+console.log("bot emotes:", received.map((event) => event.kind));
+
+const ok = wave === "👋" && clap === "👏" && heart === "❤️" && received.length >= 3;
+console.log("EMOTES:", ok ? "PASS" : "FAIL");
+
 await bot.leave();
 await browser.close();
+process.exit(ok ? 0 : 1);

@@ -4,6 +4,7 @@ import { Client } from "colyseus.js";
 const makeBot = async (characterId) => {
   const client = new Client("ws://127.0.0.1:3101");
   const room = await client.joinOrCreate("office", { characterId, name: characterId });
+  room.onMessage("*", () => {});
   const received = [];
   room.onMessage("chat", (message) => received.push(message));
   room.send("hello");

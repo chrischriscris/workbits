@@ -28,6 +28,8 @@ type AppState = {
   setAvatarStudioOpen: (open: boolean) => void;
   roomStudioOpen: boolean;
   setRoomStudioOpen: (open: boolean) => void;
+  assistantOpen: boolean;
+  setAssistantOpen: (open: boolean) => void;
 };
 
 export const useAppStore = create<AppState>((set) => ({
@@ -55,4 +57,6 @@ export const useAppStore = create<AppState>((set) => ({
   setAvatarStudioOpen: (avatarStudioOpen) => set({ avatarStudioOpen }),
   roomStudioOpen: false,
   setRoomStudioOpen: (roomStudioOpen) => set({ roomStudioOpen }),
+  assistantOpen: false,
+  setAssistantOpen: (assistantOpen) => set({ assistantOpen }),
 }));

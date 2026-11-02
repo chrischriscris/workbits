@@ -2,6 +2,7 @@ import { Client } from "colyseus.js";
 
 const client = new Client("ws://127.0.0.1:3101");
 const room = await client.joinOrCreate("office", { characterId: "chus", name: "Bot check" });
+room.onMessage("*", () => {});
 
 room.onMessage("welcome", (message) => {
   console.log("welcome", message);

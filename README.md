@@ -19,10 +19,12 @@ Workbits is built to be a product, not an internal tool: multi-tenant architectu
 - Click-to-walk and WASD movement with a floating move marker.
 - Colyseus realtime presence: two tabs see each other; movement is server-validated.
 - Shared text chat: Global, Office, Room, and DM; room chat is scoped to the room you are standing in, DMs are routed server-side to the two participants only, and history persists.
+- Local AI assistant: ask where people are, which room is free, who is in the meeting room, or for a summary. Answers come from live presence; no API key, with walk-to actions.
 - Proximity voice via LiveKit: server-minted room-scoped tokens, mic publish, distance-based volume, deafen, and a truly separate LiveKit room for the meeting room. Verified with two browser clients and cross-room isolation.
 - Avatar Studio: prompt → three modular base avatars → apply and persist locally; your avatar syncs to everyone in the office.
 - Workspace Studio: prompt → three desk layouts → apply to the engineering pod for everyone, and persist.
-- Rooms popover with click-to-walk navigation, invite links with a pick-your-seat onboarding, status menu, and room-wide emotes.
+- Office assistant panel: live presence/room Q&A, scene-aware answers, walk-to actions, and an explicit local-engine label.
+- Rooms popover with click-to-walk navigation, invite links with a pick-your-seat onboarding, status menu, animated room-wide emotes, and automatic reconnect.
 - Verification scripts: screenshots, headless bot, voice check, avatar studio, proximity math.
 
 **Not done yet:** auth/orgs/invites, a full office editor, a real LLM room generator, billing, landing page, and multi-instance scale. Chat persistence, mobile layout, and a local workspace generator are in.
@@ -63,7 +65,7 @@ This runs typecheck, proximity math checks, a desktop screenshot, a realtime bot
 | API | Node HTTP + LiveKit token endpoint |
 | Voice | LiveKit (self-hosted dev server; LiveKit Cloud for prod) |
 | State | Zustand + server-authoritative presence messages |
-| AI | Local modular avatar generator; provider adapter pending |
+| AI | Local avatar/workspace generators + local office assistant; provider adapter pending |
 | Runtime | Bun for installs/scripts; Node for Colyseus |
 | Deploy | Docker Compose + Caddy |
 

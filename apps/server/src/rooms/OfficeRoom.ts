@@ -374,7 +374,15 @@ export class OfficeRoom extends Room {
     const requested = typeof options.characterId === "string" ? options.characterId : "chus";
     const characterId = characterIds.has(requested) ? requested : "chus";
     const spawn = spawns[characterId] ?? spawns.chus!;
+    const restoreX = finite(options.x, -12.2, 12.2);
+    const restoreZ = finite(options.z, -8.5, 8.5);
+    const spawnX = restoreX ?? spawn.x;
+    const spawnZ = restoreZ ?? spawn.z;
     const avatar = sanitizeAvatar(options.avatar);
+    const requestedStatus = String(options.status ?? "");
+    const status = ["available", "focus", "away", "meeting"].includes(requestedStatus)
+      ? requestedStatus
+      : "available";
 
     const player: PlayerData = {
       id: client.sessionId,
@@ -383,12 +391,12 @@ export class OfficeRoom extends Room {
         typeof options.name === "string" && options.name.trim()
           ? options.name.trim().slice(0, 40)
           : characterId,
-      x: spawn.x,
-      z: spawn.z,
+      x: spawnX,
+      z: spawnZ,
       rotation: 0,
       moving: false,
-      status: "available",
-      zone: zoneAt(spawn.x, spawn.z),
+      status,
+      zone: zoneAt(spawnX, spawnZ),
       ...(avatar ? { avatar } : {}),
     };
 

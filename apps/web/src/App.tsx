@@ -5,6 +5,7 @@ import { useRealtimeStore } from "./realtime/store";
 import { OfficeScene } from "./scene/OfficeScene";
 import { useAppStore } from "./state/app";
 import { useVoiceStore } from "./voice/store";
+import { AssistantPanel } from "./ui/AssistantPanel";
 import { AvatarStudio } from "./ui/AvatarStudio";
 import { JoinOverlay } from "./ui/JoinOverlay";
 import { RoomStudio } from "./ui/RoomStudio";
@@ -53,9 +54,17 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (realtimeStatus === "connected" && sessionId) {
-      void connectVoice();
+    if (realtimeStatus !== "connected" || !sessionId) return;
+    const voice = useVoiceStore.getState();
+    if (voice.status === "connected" && voice.identity && voice.identity !== sessionId) {
+      const wasUnmuted = !voice.muted;
+      voice.disconnect();
+      void connectVoice().then(() => {
+        if (wasUnmuted) void useVoiceStore.getState().toggleMute();
+      });
+      return;
     }
+    void connectVoice();
   }, [realtimeStatus, sessionId, connectVoice]);
 
   useEffect(() => {
@@ -78,6 +87,7 @@ export default function App() {
       <ControlBar />
       <AvatarStudio />
       <RoomStudio />
+      <AssistantPanel />
       <JoinOverlay />
       <InteractionHint />
     </div>
