@@ -1,10 +1,11 @@
 import { Html, RoundedBox } from "@react-three/drei";
-import { useMemo, useRef, type RefObject } from "react";
+import { Suspense, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import type { SeedCharacter } from "@workbits/shared";
 import { palette, statusColor } from "../theme";
 import { Mat } from "./props";
+import { CozyPerson, PERSON_HEIGHT, PERSON_HIP, PERSON_SCALE, cozyLook, withGeneratedHead } from "./people";
 
 const emoteEmoji: Record<string, string> = {
   wave: "👋",
@@ -138,8 +139,17 @@ function NameTag({
   hidden?: boolean;
   y?: number;
 }) {
+  // drei's <Html> keeps one DOM element per instance and recreates its React
+  // root on it when its layout effect re-runs (e.g. a Suspense boundary
+  // re-showing this subtree). The old root's deferred unmount then wipes the
+  // new tag. Remounting with a fresh key gives each mount its own element.
+  const [generation, setGeneration] = useState(0);
+  useLayoutEffect(() => {
+    setGeneration((value) => value + 1);
+  }, []);
   return (
     <Html
+      key={generation}
       position={[0, y, 0]}
       center
       zIndexRange={[30, 0]}
@@ -265,11 +275,12 @@ function hairLayout(style: string): { len: number; tilt: number; pieces: HairPie
       };
     case "slick-short":
       return {
-        len: 1.4,
+        len: 1.5,
         tilt: 0.55,
         pieces: [
-          { p: [0, 0.28, 0.0], s: [0.23, 0.07, 0.26], r: [-0.2, 0, 0], tone: "hi" },
-          { p: [0.02, 0.255, 0.17], s: [0.2, 0.075, 0.1], r: [0.25, 0, -0.12], tone: "hi" },
+          { p: [0, 0.28, 0.0], s: [0.27, 0.085, 0.28], r: [-0.2, 0, 0], tone: "hi" },
+          { p: [0.03, 0.25, 0.15], s: [0.27, 0.08, 0.15], r: [0.3, 0, -0.12], tone: "hi" },
+          { p: [0, 0.14, -0.2], s: [0.27, 0.22, 0.12], tone: "lo" },
           ...sideburns(0.03, 0.11),
         ],
       };
@@ -289,29 +300,19 @@ function hairLayout(style: string): { len: number; tilt: number; pieces: HairPie
       };
     default: {
       // short-textured: spiky top, short fringe
-      const tufts: Array<[number, number, number, number]> = [
-        [-0.14, 0.29, 0.09, 0.4],
-        [0, 0.31, 0.13, 0],
-        [0.14, 0.29, 0.09, -0.4],
-        [-0.1, 0.3, -0.07, 0.3],
-        [0.1, 0.3, -0.07, -0.3],
-        [0, 0.29, -0.17, 0],
-      ];
+      // Three broad overlapping masses (crown, two swept sides) instead of a scatter of small tufts.
       return {
-        len: 1.4,
+        len: 1.36,
         tilt: 0.5,
         pieces: [
-          ...tufts.map(
-            ([x, y, z, rz], index): HairPiece => ({
-              p: [x, y, z],
-              s: [0.075, 0.065, 0.1],
-              r: [0.2, 0, rz],
-              tone: index % 2 ? "lo" : "hi",
-            }),
-          ),
-          { p: front(-0.12, 0.2), s: [0.1, 0.055, 0.06], r: [0.1, 0, 0.18] },
-          { p: front(0.03, 0.215), s: [0.11, 0.055, 0.06], r: [0.1, 0, -0.1], tone: "hi" },
-          { p: front(0.15, 0.19), s: [0.09, 0.05, 0.055], r: [0.1, 0, -0.3] },
+          { p: [0, 0.275, 0.0], s: [0.27, 0.095, 0.27], r: [-0.1, 0, 0], tone: "hi" },
+          { p: [-0.1, 0.285, 0.07], s: [0.17, 0.085, 0.17], r: [0.1, 0, 0.3], tone: "base" },
+          { p: [0.11, 0.285, 0.06], s: [0.17, 0.085, 0.17], r: [0.1, 0, -0.3], tone: "hi" },
+          { p: [0, 0.26, -0.15], s: [0.25, 0.1, 0.14], tone: "lo" },
+          // soft fringe resting on the forehead
+          { p: front(-0.11, 0.222, 0.004), s: [0.13, 0.045, 0.06], r: [0.15, 0.05, 0.3] },
+          { p: front(0.06, 0.232, 0.004), s: [0.15, 0.042, 0.06], r: [0.15, -0.05, -0.2], tone: "hi" },
+          { p: [0, -0.04, -0.23], s: [0.26, 0.19, 0.12], tone: "lo" },
           ...sideburns(0.04, 0.11),
         ],
       };
@@ -482,17 +483,17 @@ function Glasses({ character }: { character: SeedCharacter }) {
   const frame = glasses.color;
   const sun = glasses.style === "sunglasses";
   const round = glasses.style === "round";
-  const bar = sun ? 0.017 : 0.011;
+  const bar = 0.011;
   const w = round ? 0.17 : 0.175;
-  const h = round ? 0.17 : 0.13;
+  const h = round ? 0.17 : sun ? 0.108 : 0.13;
 
   const lens = sun ? (
     <meshStandardMaterial
-      color="#171a22"
+      color="#4a3f3a"
       roughness={0.12}
-      metalness={0.15}
+      metalness={0.1}
       transparent
-      opacity={0.78}
+      opacity={0.26}
       depthWrite={false}
     />
   ) : (
@@ -786,10 +787,18 @@ function Torso({ cfg }: { cfg: Avatar }) {
         <Mat color={top} roughness={0.9} />
       </RoundedBox>
 
-      <mesh position={[0, 0.955, 0]} castShadow>
-        <cylinderGeometry args={[0.07, 0.085, 0.07, 14]} />
+      <mesh position={[0, 0.975, 0]} castShadow>
+        <cylinderGeometry args={[0.078, 0.092, 0.11, 14]} />
         <Mat color={skin} roughness={0.85} />
       </mesh>
+      {/* shoulder yoke: bridges torso and sleeves so the arms grow out of the shirt */}
+      <Blob
+        p={[0, 0.885, 0]}
+        s={[0.29, 0.075, 0.165]}
+        color={top}
+        roughness={0.9}
+        cast
+      />
 
       {tee && (
         <mesh position={[0, 0.932, 0.005]} rotation={[Math.PI / 2, 0, 0]} scale={[1, 0.95, 1]}>
@@ -1569,26 +1578,76 @@ export function SleepingAvatar({
   rotation?: [number, number, number];
   hidden?: boolean;
 }) {
-  const eyes = useRef<THREE.Group>(null);
-  const mouth = useRef<THREE.Mesh>(null);
+  const look = useMemo(() => cozyLook(character.avatar), [character.avatar]);
+  const phase = usePhase(character.id);
   return (
-    <group position={position} rotation={rotation} visible={!hidden} scale={1.35}>
-      <group position={[0, 0.02, 0]} rotation={[-0.95, 0, 0]}>
-        <Head character={character} eyesRef={eyes} mouthRef={mouth} sleeping />
-      </group>
-      <mesh position={[0.1, -0.18, 0.3]} scale={[0.68, 0.2, 0.75]} castShadow>
-        <sphereGeometry args={[1, 20, 14]} />
-        <Mat color="#3d5a80" roughness={1} />
-      </mesh>
-      <Html position={[0.55, 0.75, 0]} center zIndexRange={[30, 0]} style={{ pointerEvents: "none" }}>
-        <div className="zzz">z&nbsp;z&nbsp;z</div>
-      </Html>
-      <NameTag character={character} hidden={hidden} y={1.15} />
+    <group position={position} rotation={rotation} visible={!hidden}>
+      <Suspense fallback={null}>
+        {/* Lying face-up, head on the pillow at the placement, feet toward +z. */}
+        <group position={[0, 0.06, 1.0 * SLEEP_SCALE - 0.1]} rotation={[-Math.PI / 2, 0, 0]} scale={SLEEP_SCALE}>
+          <CozyPerson look={look} phase={phase / (Math.PI * 2)} />
+        </group>
+        {/* Blanket from the shoulders to past the feet. */}
+        <RoundedBox args={[1.05, 0.24, 1.45]} radius={0.1} smoothness={4} position={[0, 0.25, 1.05]} castShadow receiveShadow>
+          <Mat color="#3d5a80" roughness={1} />
+        </RoundedBox>
+        <Html position={[0.55, 0.85, 0]} center zIndexRange={[30, 0]} style={{ pointerEvents: "none" }}>
+          <div className="zzz">z&nbsp;z&nbsp;z</div>
+        </Html>
+        <NameTag character={character} hidden={hidden} y={1.15} />
+      </Suspense>
     </group>
   );
 }
 
-export function TeamAvatar({
+const SEAT_TOP = 0.67;
+/** Beds are 2.15 long; sleepers shrink a little to fit. */
+const SLEEP_SCALE = PERSON_SCALE * 0.88;
+
+function CozyAvatar({
+  character,
+  pose,
+  motion,
+  speaking,
+  isLocal,
+  hidden,
+}: {
+  character: SeedCharacter;
+  pose: AvatarPose;
+  motion: AvatarMotion;
+  speaking?: boolean;
+  isLocal?: boolean;
+  hidden?: boolean;
+}) {
+  // The sleep mask only goes on in bed.
+  const look = useMemo(
+    () => withGeneratedHead(character.id, { ...cozyLook(character.avatar), sleepMask: undefined }),
+    [character.id, character.avatar],
+  );
+  const phase = usePhase(character.id);
+  const sitting = pose === "sitting";
+  // The tag lives inside the same Suspense as the model: an R3F <Html> that
+  // mounts next to a suspending sibling can lose its DOM root.
+  return (
+    <Suspense fallback={null}>
+      <group
+        position={[0, sitting ? SEAT_TOP - 0.08 - PERSON_HIP * PERSON_SCALE : 0, sitting ? 0.04 * PERSON_SCALE : 0]}
+        scale={PERSON_SCALE}
+      >
+        <CozyPerson look={look} pose={pose} motion={motion} phase={phase / (Math.PI * 2)} />
+      </group>
+      <VoiceRing active={speaking} />
+      <NameTag
+        character={character}
+        isLocal={isLocal}
+        hidden={hidden}
+        y={PERSON_HEIGHT * PERSON_SCALE + (sitting ? 0.34 : 0.22)}
+      />
+    </Suspense>
+  );
+}
+
+function TeamAvatarInner({
   character,
   position,
   rotation = [0, 0, 0],
@@ -1612,21 +1671,21 @@ export function TeamAvatar({
   }
   if (character.species === "frog") {
     return (
-      <group position={position} rotation={rotation} visible={!hidden} scale={1.35}>
+      <group position={position} rotation={rotation} visible={!hidden} scale={1.55}>
         <FrogAvatar character={character} speaking={speaking} isLocal={isLocal} hidden={hidden} />
       </group>
     );
   }
   if (character.species === "crab") {
     return (
-      <group position={position} rotation={rotation} visible={!hidden} scale={1.35}>
+      <group position={position} rotation={rotation} visible={!hidden} scale={1.55}>
         <CrabAvatar character={character} speaking={speaking} isLocal={isLocal} hidden={hidden} />
       </group>
     );
   }
   return (
-    <group position={position} rotation={rotation} visible={!hidden} scale={1.35}>
-      <HumanAvatar
+    <group position={position} rotation={rotation} visible={!hidden}>
+      <CozyAvatar
         character={character}
         pose={pose}
         motion={motion}
@@ -1635,5 +1694,20 @@ export function TeamAvatar({
         hidden={hidden}
       />
     </group>
+  );
+}
+
+type TeamAvatarProps = Parameters<typeof TeamAvatarInner>[0];
+
+/**
+ * Each avatar gets its own Suspense boundary. An R3F <Html> name tag that
+ * commits in the same boundary as a still-loading model can lose its DOM root
+ * (the "synchronously unmount a root" warning), which dropped whole tags.
+ */
+export function TeamAvatar(props: TeamAvatarProps) {
+  return (
+    <Suspense fallback={null}>
+      <TeamAvatarInner {...props} />
+    </Suspense>
   );
 }
