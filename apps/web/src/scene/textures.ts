@@ -134,6 +134,27 @@ export function createTextures() {
     ctx.filter = "none";
   });
 
+  // Warm wash an LED strip throws on the wall below a shelf: bright along the
+  // top edge, fading down and out to the ends. Black is "no light" (additive).
+  const wallGlow = makeTexture(256, (ctx, size) => {
+    const height = size / 2;
+    const down = ctx.createLinearGradient(0, 0, 0, height);
+    down.addColorStop(0, "#fff");
+    down.addColorStop(0.35, "#777");
+    down.addColorStop(1, "#000");
+    ctx.fillStyle = down;
+    ctx.fillRect(0, 0, size, height);
+    ctx.globalCompositeOperation = "multiply";
+    const across = ctx.createLinearGradient(0, 0, size, 0);
+    across.addColorStop(0, "#000");
+    across.addColorStop(0.12, "#fff");
+    across.addColorStop(0.88, "#fff");
+    across.addColorStop(1, "#000");
+    ctx.fillStyle = across;
+    ctx.fillRect(0, 0, size, height);
+    ctx.globalCompositeOperation = "source-over";
+  }, 128);
+
   // Pale warm microcement: big soft clouds and a faint speckle, drawn with
   // wrap-around so it tiles without seams.
   const concrete = makeTexture(1024, (ctx, size) => {
@@ -241,25 +262,6 @@ export function createTextures() {
     }
   });
   repeat(stone, 2, 2);
-
-  // White subway tile for the kitchen backsplash.
-  const backsplash = makeTexture(512, (ctx, size) => {
-    ctx.fillStyle = "#ddd6cb";
-    ctx.fillRect(0, 0, size, size);
-    const rows = 8;
-    const cols = 4;
-    const h = size / rows;
-    const w = size / cols;
-    for (let row = 0; row < rows; row += 1) {
-      const offset = row % 2 === 0 ? 0 : w / 2;
-      for (let col = -1; col <= cols; col += 1) {
-        const tone = 246 + Math.floor(random() * 6);
-        ctx.fillStyle = `rgb(${tone}, ${tone - 3}, ${tone - 9})`;
-        ctx.fillRect(offset + col * w + 2, row * h + 2, w - 4, h - 4);
-      }
-    }
-  });
-  repeat(backsplash, 6, 1);
 
   const rug = rugTexture(random, {
     field: "#d98e73",
@@ -426,11 +428,11 @@ export function createTextures() {
 
   return {
     sunPatch,
+    wallGlow,
     concrete,
     wood,
     tile,
     stone,
-    backsplash,
     rug,
     rugSage,
     rugCream,
