@@ -1114,15 +1114,21 @@ export function Pouf({ position = [0, 0, 0], scale = 1, color = palette.terracot
   return <BakedMesh geometry={geometry} position={position} scale={scale} />;
 }
 
+/** Slumped beanbag: a wide soft base, a taller back lump, a seat dent between. Back toward -z. */
 export function Beanbag({
   position = [0, 0, 0],
+  rotation = [0, 0, 0],
+  scale = 1,
   color = "#e0b84f",
 }: Placement & { color?: string }) {
   const geometry = baked(`beanbag|${color}`, () => [
-    ball([0.62, 0.36, 0.62], [0, 0.28, 0], color),
-    ball([0.5, 0.3, 0.4], [0, 0.38, -0.16], tint(color, -0.05)),
+    ball([0.6, 0.26, 0.58], [0, 0.24, 0.04], color, undefined, G.round3),
+    ball([0.5, 0.36, 0.3], [0, 0.42, -0.26], tint(color, -0.04), [-0.25, 0, 0], G.round3),
+    ball([0.3, 0.22, 0.32], [-0.36, 0.34, -0.06], tint(color, -0.02), [0, 0, 0.3], G.round3),
+    ball([0.3, 0.22, 0.32], [0.36, 0.34, -0.06], tint(color, -0.02), [0, 0, -0.3], G.round3),
+    ball([0.04, 0.02, 0.04], [0, 0.66, -0.38], tint(color, -0.2)),
   ]);
-  return <BakedMesh geometry={geometry} position={position} />;
+  return <BakedMesh geometry={geometry} position={position} rotation={rotation} scale={scale} />;
 }
 
 /** Round oak coffee table on three slim splayed legs, styled with a plant, books and a mug. */

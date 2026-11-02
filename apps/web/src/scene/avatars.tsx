@@ -1273,11 +1273,12 @@ function FrogAvatar({
   const eyeRight = useRef<THREE.Group>(null);
   const mouth = useRef<THREE.Mesh>(null);
   const phase = usePhase(character.id);
-  const skin = cfg.skin;
+  // Softened toward the Cozy cast: matte, a little less saturated.
+  const skin = mix(cfg.skin, "#6f8f5e", 0.5);
   const darker = shade(skin, -0.09);
-  const belly = cfg.belly ?? "#b7d98a";
-  const hoodie = cfg.outfit.topColor;
-  const blush = mix(skin, "#f0889a", 0.5);
+  const belly = mix(cfg.belly ?? "#b7d98a", "#efe8cf", 0.25);
+  const hoodie = mix(cfg.outfit.topColor, "#5a6f96", 0.35);
+  const blush = mix(skin, "#f08a8a", 0.6);
 
   useFrame((state) => {
     const t = state.clock.elapsedTime;
@@ -1319,11 +1320,11 @@ function FrogAvatar({
             <group ref={side === -1 ? eyeLeft : eyeRight} position={[0, 0.01, 0.1]} rotation={[0, side * 0.25, 0]}>
               <mesh scale={[0.115, 0.115, 0.07]}>
                 <sphereGeometry args={[1, 16, 12]} />
-                <meshStandardMaterial color="#fffdf8" roughness={0.3} />
+                <meshStandardMaterial color="#fffdf8" roughness={0.6} />
               </mesh>
               <mesh position={[side * -0.01, -0.005, 0.05]} scale={[0.07, 0.078, 0.04]}>
                 <sphereGeometry args={[1, 14, 10]} />
-                <meshStandardMaterial color="#14120f" roughness={0.2} />
+                <meshStandardMaterial color="#1d1a18" roughness={0.5} />
               </mesh>
               <mesh position={[0.02, 0.025, 0.085]}>
                 <sphereGeometry args={[0.02, 8, 6]} />
@@ -1354,7 +1355,7 @@ function FrogAvatar({
             rotation={[0, side * 0.9, 0]}
           >
             <sphereGeometry args={[1, 12, 8]} />
-            <meshBasicMaterial color={blush} transparent opacity={0.5} depthWrite={false} />
+            <meshBasicMaterial color={blush} transparent opacity={0.7} depthWrite={false} />
           </mesh>
         ))}
         {/* spots + sprout */}
@@ -1393,10 +1394,18 @@ function FrogAvatar({
         {([-1, 1] as const).map((side) => (
           <group key={side}>
             <Blob p={[side * 0.38, 0.22, 0.02]} s={[0.15, 0.17, 0.24]} color={skin} cast />
-            <Blob p={[side * 0.27, 0.1, 0.34]} s={[0.12, 0.055, 0.17]} color={darker} cast />
-            {([-0.05, 0, 0.05] as const).map((dx) => (
-              <Blob key={dx} p={[side * 0.27 + dx, 0.09, 0.5]} s={0.034} color={darker} lo />
-            ))}
+            {/* chunky white sneakers, like the persona picture */}
+            <group position={[side * 0.28, 0.06, 0.4]} rotation={[-0.35, side * 0.15, 0]}>
+              {/* ankle cuff, rounded toe, thick sole */}
+              <RoundedBox args={[0.17, 0.16, 0.15]} radius={0.06} position={[0, 0.07, -0.06]} castShadow>
+                <Mat color="#f6f4f0" roughness={0.85} />
+              </RoundedBox>
+              <Blob p={[0, 0.03, 0.06]} s={[0.09, 0.07, 0.13]} color="#f6f4f0" roughness={0.85} cast />
+              <RoundedBox args={[0.19, 0.04, 0.32]} radius={0.018} position={[0, -0.025, 0.0]}>
+                <Mat color="#d8d2c8" roughness={0.9} />
+              </RoundedBox>
+              <Blob p={[0, 0.075, 0.03]} s={[0.05, 0.02, 0.06]} color="#c9ced6" lo />
+            </group>
           </group>
         ))}
 
@@ -1470,46 +1479,42 @@ function CrabAvatar({
     <group>
       <GroundShadow radius={0.32} />
       <group ref={root}>
-        <Blob p={[0, 0, 0]} s={[0.31, 0.23, 0.26]} color={skin} cast />
-        <Blob p={[0, -0.05, 0.1]} s={[0.22, 0.14, 0.18]} color={light} />
-
-        {/* eyes on stalks */}
+        {/* chunky soft box body, like the persona picture */}
+        <RoundedBox args={[0.62, 0.44, 0.46]} radius={0.15} smoothness={5} castShadow>
+          <Mat color={skin} roughness={0.92} />
+        </RoundedBox>
+        <RoundedBox args={[0.46, 0.06, 0.34]} radius={0.03} position={[0, -0.215, 0.02]}>
+          <Mat color={dark} roughness={0.95} />
+        </RoundedBox>
+        {/* simple Cozy-style eyes */}
         {([-1, 1] as const).map((side) => (
-          <group key={side} position={[side * 0.12, 0.2, 0.1]}>
-            <mesh position={[0, -0.04, 0]}>
-              <capsuleGeometry args={[0.022, 0.1, 4, 8]} />
-              <Mat color={skin} roughness={0.9} />
+          <group key={side} position={[side * 0.12, 0.06, 0.232]}>
+            <Blob p={[0, 0, 0]} s={[0.042, 0.06, 0.02]} color="#1d1a18" roughness={0.5} />
+            <mesh position={[0.012, 0.022, 0.016]}>
+              <sphereGeometry args={[0.012, 8, 6]} />
+              <meshBasicMaterial color="#ffffff" />
             </mesh>
-            <group position={[0, 0.08, 0.02]}>
-              <Blob p={[0, 0, 0]} s={0.075} color="#fffdf8" roughness={0.3} />
-              <Blob p={[0, -0.003, 0.05]} s={[0.04, 0.045, 0.03]} color="#14120f" roughness={0.2} />
-              <mesh position={[0.012, 0.016, 0.075]}>
-                <sphereGeometry args={[0.012, 8, 6]} />
-                <meshBasicMaterial color="#ffffff" />
-              </mesh>
-            </group>
           </group>
         ))}
         {/* smile + cheeks */}
-        <mesh position={[0, -0.02, 0.255]} rotation={[0.1, 0, Math.PI]}>
-          <torusGeometry args={[0.045, 0.008, 6, 14, Math.PI]} />
+        <mesh position={[0, -0.05, 0.234]} rotation={[0, 0, Math.PI]}>
+          <torusGeometry args={[0.04, 0.009, 6, 14, Math.PI]} />
           <Mat color="#7a3a30" roughness={1} />
         </mesh>
         {([-1, 1] as const).map((side) => (
           <mesh
             key={side}
-            position={[side * 0.16, -0.02, 0.22]}
-            scale={[0.045, 0.03, 0.012]}
-            rotation={[0, side * 0.6, 0]}
+            position={[side * 0.2, -0.03, 0.232]}
+            scale={[0.05, 0.032, 0.008]}
           >
             <sphereGeometry args={[1, 10, 8]} />
-            <meshBasicMaterial color={blush} transparent opacity={0.55} depthWrite={false} />
+            <meshBasicMaterial color={blush} transparent opacity={0.75} depthWrite={false} />
           </mesh>
         ))}
 
         {/* pincers */}
         {([-1, 1] as const).map((side) => (
-          <group key={side} position={[side * 0.3, -0.03, 0.12]} rotation={[0, 0, -side * 0.35]}>
+          <group key={side} position={[side * 0.33, -0.06, 0.1]} rotation={[0, 0, -side * 0.35]}>
             <mesh position={[side * 0.04, -0.01, 0.02]} rotation={[0, 0, side * 1.1]} castShadow>
               <capsuleGeometry args={[0.03, 0.08, 4, 8]} />
               <Mat color={skin} roughness={0.9} />
@@ -1521,27 +1526,21 @@ function CrabAvatar({
             </group>
           </group>
         ))}
-        {/* legs */}
-        {([-1, 1] as const).flatMap((side) =>
-          [0.06, 0, -0.07].map((z, index) => (
-            <mesh
-              key={`${side}${index}`}
-              position={[side * (0.2 + index * 0.01), -0.19, z]}
-              rotation={[0, 0, side * (0.7 - index * 0.1)]}
-            >
-              <capsuleGeometry args={[0.017, 0.1, 4, 6]} />
-              <Mat color={dark} roughness={0.9} />
-            </mesh>
-          )),
-        )}
+        {/* four stubby legs */}
+        {([-0.21, -0.07, 0.07, 0.21] as const).map((x) => (
+          <RoundedBox key={x} args={[0.09, 0.22, 0.11]} radius={0.04} position={[x, -0.3, 0.0]} castShadow>
+            <Mat color={skin} roughness={0.92} />
+          </RoundedBox>
+        ))}
 
         {/* wings */}
         {([-1, 1] as const).map((side) => (
           <group
             key={side}
             ref={side === -1 ? wingLeft : wingRight}
-            position={[side * 0.17, 0.14, -0.18]}
-            rotation={[0.3, side * 0.2, side * 0.5]}
+            position={[side * 0.3, 0.1, -0.02]}
+            rotation={[0.1, side * 0.5, side * 0.5]}
+            scale={1.3}
           >
             {feathers.map(([rz, h, dz, c], index) => (
               <Blob

@@ -20,6 +20,7 @@ import { palette } from "../theme";
 import { EmoteBubble, TeamAvatar, type AvatarMotion, type AvatarPose } from "./avatars";
 import { RemotePlayers } from "./RemotePlayers";
 import {
+  Beanbag,
   Block,
   Books,
   Cat,
@@ -254,6 +255,7 @@ function Lounge() {
       <Sectional position={[LEFT_FACE + 0.52, 0, 2.65]} rotation={[0, HALF_PI, 0]} scale={1.1} />
       <CoffeeTable position={[-5.3, 0, 2.95]} radius={0.62} scale={1.15} />
       <Pouf position={[-4.35, 0, 2.05]} scale={1.15} color={palette.terracotta} />
+      <Beanbag position={[-5.22, 0, 0.42]} rotation={[0, 0.5, 0]} scale={1.4} />
       <Cat position={[-4.45, 0.06, 4.5]} rotation={[0, -0.7, 0]} />
 
       <SideTable position={[-7.0, 0, -0.35]} />
@@ -369,7 +371,8 @@ const seated: Record<string, { seat: number; motion?: AvatarMotion }> = {
 const placements: Record<string, Placement> = {
   jules: { position: [2.6, 0, -3.35], rotation: [0, 0.55, 0], motion: "wave" },
   clawd: { position: [1.4, 0, -2.75], rotation: [0, 0.9, 0] },
-  arlo: { position: [-5.15, 0, 0.55], rotation: [0, 0.5, 0] },
+  // Sunk into the beanbag, like the persona picture.
+  arlo: { position: [-5.15, 0.3, 0.55], rotation: [0, 0.5, 0] },
   // Head on the pillow end of the daybed.
   theo: { position: [NAP_BED.x, 0.68, NAP_BED.z - 0.8], rotation: [0, 0, 0], pose: "sleeping" },
 };
