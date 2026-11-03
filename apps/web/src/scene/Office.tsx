@@ -15,7 +15,8 @@ import {
   type DeskPlacement,
   type OfficeLayout,
 } from "../state/officeLayout";
-import { compileSpace, defaultLoft, deskItems } from "@workbits/shared";
+import { compileSpace, deskItems } from "@workbits/shared";
+import { shellOf, useSpace } from "../state/space";
 import { useAppStore } from "../state/app";
 import { palette } from "../theme";
 import { EmoteBubble, TeamAvatar, type AvatarMotion, type AvatarPose } from "./avatars";
@@ -48,13 +49,7 @@ import { textures, withRepeat } from "./textures";
  * packages/shared/src/zones.ts.
  */
 
-const WALL_HEIGHT = 2.7;
-const REAR_Z = -5.55;
-const LEFT_X = -7.55;
-const RIGHT_X = 7.5;
-const FRONT_Z = 5.5;
 const HALF_PI = Math.PI / 2;
-const WALL_CENTER_X = (LEFT_X + RIGHT_X) / 2;
 
 
 const tone = {
@@ -82,14 +77,14 @@ const benchRug: Record<OfficeLayout["rug"], RugVariant> = {
 /* Shell: plinth, floor, walls                                         */
 /* ------------------------------------------------------------------ */
 
-const FLOOR = { width: RIGHT_X - LEFT_X + 0.5, depth: FRONT_Z - REAR_Z + 0.55 };
-
 function Floor() {
   const setTarget = useAppStore((state) => state.setTarget);
+  const doc = useSpace((state) => state.doc);
+  const FLOOR = useMemo(() => shellOf(doc).slab, [doc]);
   // One continuous pale microcement floor, like the reference; rugs define zones.
-  const concrete = useMemo(() => withRepeat(textures.concrete, FLOOR.width / 5, FLOOR.depth / 5), []);
+  const concrete = useMemo(() => withRepeat(textures.concrete, FLOOR.width / 5, FLOOR.depth / 5), [FLOOR]);
   return (
-    <group>
+    <group position={[FLOOR.cx, 0, FLOOR.cz]}>
       {/* Thick pale limestone plinth: inset foot for a shadow line, slab, bright cap. */}
       <Block size={[FLOOR.width, 0.18, FLOOR.depth]} position={[0, -0.99, 0]} color={tone.plinthFoot} radius={0.04} />
       <Block size={[FLOOR.width + 0.3, 0.86, FLOOR.depth + 0.3]} position={[0, -0.47, 0]} color={tone.plinth} radius={0.05} />
@@ -113,13 +108,15 @@ function Floor() {
  * the floor with additive blending, skewed along the sun direction. Cheap,
  * and it's the signature of the reference's lighting.
  */
-const SUN_PATCHES: Array<{ x: number; z: number; w: number; d: number }> = [
-  { x: -5.5, z: 4.4, w: 3.0, d: 1.8 },
-  { x: -0.9, z: 3.6, w: 3.4, d: 2.0 },
-  { x: 3.2, z: -1.2, w: 3.2, d: 1.9 },
+/** Positions as fractions of the floor (taken from the 15 × 11 loft), so any size gets the same light. */
+const SUN_PATCHES: Array<{ fx: number; fz: number; w: number; d: number }> = [
+  { fx: (-5.5 + 7.46) / 15.16, fz: (4.4 + 5.46) / 11.21, w: 3.0, d: 1.8 },
+  { fx: (-0.9 + 7.46) / 15.16, fz: (3.6 + 5.46) / 11.21, w: 3.4, d: 2.0 },
+  { fx: (3.2 + 7.46) / 15.16, fz: (-1.2 + 5.46) / 11.21, w: 3.2, d: 1.9 },
 ];
 
 function SunPatches() {
+  const floor = useSpace((state) => state.doc.floor);
   const material = useMemo(
     () =>
       new THREE.MeshBasicMaterial({
@@ -137,8 +134,8 @@ function SunPatches() {
     <group>
       {SUN_PATCHES.map((patch) => (
         <mesh
-          key={`${patch.x}|${patch.z}`}
-          position={[patch.x, 0.045, patch.z]}
+          key={`${patch.fx}|${patch.fz}`}
+          position={[floor.x + patch.fx * floor.w, 0.045, floor.z + patch.fz * floor.d]}
           rotation={[-HALF_PI, 0, 0.62]}
           scale={[patch.w, patch.d, 1]}
           material={material}
@@ -152,24 +149,31 @@ function SunPatches() {
 }
 
 function Walls() {
-  const rearLength = RIGHT_X - LEFT_X + 0.14;
-  const leftLength = FRONT_Z - REAR_Z - 0.09;
+  const doc = useSpace((state) => state.doc);
+  const shell = useMemo(() => shellOf(doc), [doc]);
+  const { westX, northZ, eastX, southZ, height } = shell;
+  const northCenter = (westX + eastX) / 2;
+  const northLength = eastX - westX + 0.14;
+  const westCenter = (northZ + southZ) / 2;
+  const westLength = southZ - northZ - 0.09;
+  const openings = (wall: "north" | "west", center: number) =>
+    doc.shell.openings
+      .filter((opening) => opening.wall === wall)
+      .map(({ at, width, bottom, top, kind, curtain }) => ({ at: at - center, width, bottom, top, kind, curtain }));
   return (
     <group>
+      <Wall position={[northCenter, 0, northZ]} length={northLength} height={height} openings={openings("north", northCenter)} />
       <Wall
-        position={[WALL_CENTER_X, 0, REAR_Z]}
-        length={rearLength}
-        height={WALL_HEIGHT}
-        openings={[
-          { at: -4.85 - WALL_CENTER_X, width: 2.1, bottom: 0.8, top: 2.25, kind: "window", curtain: true },
-          { at: 6.75 - WALL_CENTER_X, width: 1.0, bottom: 0, top: 2.2, kind: "door" },
-        ]}
+        position={[westX, 0, westCenter]}
+        rotation={[0, HALF_PI, 0]}
+        length={westLength}
+        height={height}
+        openings={openings("west", westCenter)}
       />
-      <Wall position={[LEFT_X, 0, (REAR_Z + FRONT_Z) / 2]} rotation={[0, HALF_PI, 0]} length={leftLength} height={WALL_HEIGHT} />
       {/* Charcoal pilasters where the cut walls end. */}
-      <Block size={[0.26, WALL_HEIGHT + 0.06, 0.3]} position={[RIGHT_X - 0.08, (WALL_HEIGHT + 0.06) / 2, REAR_Z]} color={tone.charcoal} />
-      <Block size={[0.3, WALL_HEIGHT + 0.06, 0.26]} position={[LEFT_X, (WALL_HEIGHT + 0.06) / 2, FRONT_Z - 0.1]} color={tone.charcoal} />
-      <Block size={[0.3, WALL_HEIGHT + 0.06, 0.3]} position={[LEFT_X, (WALL_HEIGHT + 0.06) / 2, REAR_Z]} color={tone.charcoal} />
+      <Block size={[0.26, height + 0.06, 0.3]} position={[eastX - 0.08, (height + 0.06) / 2, northZ]} color={tone.charcoal} />
+      <Block size={[0.3, height + 0.06, 0.26]} position={[westX, (height + 0.06) / 2, southZ - 0.1]} color={tone.charcoal} />
+      <Block size={[0.3, height + 0.06, 0.3]} position={[westX, (height + 0.06) / 2, northZ]} color={tone.charcoal} />
     </group>
   );
 }
@@ -317,9 +321,10 @@ const START: Spawn = spawnFor(localCharacterId);
 /** The loft compiled with the current desk layout: walls, furniture and the walkable grid. */
 function useLoft() {
   const layout = useOfficeLayout((state) => state.layout);
+  const doc = useSpace((state) => state.doc);
   return useMemo(
-    () => compileSpace(defaultLoft, { extraItems: deskItems(desksFor(layout), layout.id === "default") }),
-    [layout],
+    () => compileSpace(doc, { extraItems: deskItems(desksFor(layout), layout.id === "default") }),
+    [doc, layout],
   );
 }
 
@@ -526,12 +531,13 @@ function MoveTarget() {
 const NO_CAST = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("noCast");
 
 export function Office() {
+  const doc = useSpace((state) => state.doc);
   return (
     <group>
       <Floor />
       <SunPatches />
       <Walls />
-      <SpaceContents doc={defaultLoft} />
+      <SpaceContents doc={doc} />
       <Engineering />
       {!NO_CAST && (
         <>
