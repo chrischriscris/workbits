@@ -1,6 +1,6 @@
 # Spaces: buildable, generated offices (proposal v2)
 
-Status: **draft, decisions pending** (see the end). Supersedes ADR-014's fixed floor plan and reconciles `data-model.md`'s `Layout` once accepted.
+Status: **accepted** as ADR-015 (decisions recorded at the end). Supersedes ADR-014's fixed floor plan and reconciles `data-model.md`'s `Layout` once accepted.
 
 v1 of this doc was reviewed adversarially by six models (Claude Opus 5.5, Sonnet 5.5, Haiku 5.5; GPT 6.1 Sol and GPT 6 Astra via Codex; DeepSeek v4.1 Flash via opencode). All six rejected it as an implementation plan for the same core reasons; this version is rebuilt around them. What changed is listed under "Review outcome".
 
@@ -124,7 +124,9 @@ Unanimous or near-unanimous (5–6 of 6):
 
 Cut or deferred: composition scoring, the LLM mapping, multiple styles at first, `size: "auto"`, uniform-grid room index, chunking/LOD before measurement, polygon rooms.
 
-## Decisions pending
+## Decisions (2026-11-02)
+
+All four went with the recommendation:
 
 1. **What "private" means.** Acoustic and chat privacy only (anyone can walk in and is then in that room's voice and chat), or access control (members list, locked doors, knock to enter)?
 2. **Large offices.** Fixed human-scale zoom with the camera following the player (recommended), or keep the whole office always in frame and cap floors at about 20 × 14?

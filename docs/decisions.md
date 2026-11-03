@@ -189,3 +189,18 @@ Append-only. If a decision changes, add a new ADR that supersedes the old one; d
   - Default bench centre moves to `(1.3, 1.6)`; client and server spawns move; the server clamps positions to ±8.2 / ±6.2 and custom-layout desks to z ≤ 4.9.
   - The seed pack, room list and assistant drop the garden.
   - `scripts/reconnect-check.mjs` asserted a restored position at `x > 3.3`, stale since ADR-013 moved the meeting room; it now checks `zoneAt(...) === "meeting"`.
+
+## ADR-015 — Buildable offices from a document (supersedes ADR-014's fixed plan)
+
+- **Status:** Accepted.
+- **Date:** 2026-11-02
+- **Context:** Teams should build their own offices (many per team, any room mix, generated from parameters, then edited) instead of living in one hand-placed 15 × 11 room. Six adversarial reviews of the first proposal found that privacy, isolation and scale assumptions don't hold in today's code (client-trusted movement, global chat/presence, fixed camera fit). Design: `docs/architecture/spaces.md`.
+- **Decision:**
+  - An office is a versioned `SpaceDoc` (rooms, shared edges, shell openings, items, spawns) compiled by one shared function into walls, a nav grid, room membership and spawns, used by both server and client.
+  - "Private" means voice and chat privacy only: anyone may walk in and then belongs to that room's voice and chat.
+  - The camera keeps today's human-scale zoom and follows the player; whole-plan view only in the editor; floors up to ~300 m².
+  - Generation starts from curated templates plus room kits with bounded parameters; a free partitioning generator comes later on the same kits.
+  - Furniture stays the procedural `props.tsx` kit for now; GLB per catalog key is allowed later (ADR-012 still applies to new models).
+  - Order: document + compiler + server-validated movement for today's office; templates/kits/camera follow/perf; auth and tenant scoping; many offices; editor; free generator.
+- **Consequences:** `zoneAt` becomes a lookup in the compiled document; movement gets server speed and walkability checks and A* click-to-move; ADR-014's room becomes the `default-loft` document; multiple offices wait for auth.
+
