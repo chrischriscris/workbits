@@ -65,15 +65,22 @@ paused (the kit can't reach the reference; a bought/commissioned or generated
 cast is a separate decision).
 
 1. ~~Document + compiler + server-validated movement for today's loft~~ (done).
-2. **Templates + room kits + camera follow + perf**: 6–10 plan templates in
-   2–3 size classes, kits that furnish a room rect from its type, the camera
-   at fixed human-scale zoom following the player, instanced/merged static
-   geometry, measured fps with 50 avatars. Replaces Workspace Studio and the
-   open `layout` message. Still one dev office, client-only.
+2. ~~Templates + room kits + camera follow + perf~~ (done, except the perf
+   target: see below).
 3. Auth, orgs, tenant-scoped presence/history/occupancy/voice.
 4. Many offices, persistence, switcher, publish protocol.
 5. Editor.
 6. Free procedural generator on top of the kits.
+
+Performance (`bun scripts/perf-check.mjs [--prod] [--vsync] [--breakdown]`,
+real GPU, 1080p): on this Intel UHD (Ice Lake GT1) the loft runs 43 fps and
+50 avatars 33 fps as seen (production, vsync, balanced tier). Remaining costs,
+largest first: shadow-map sampling on every surface, avatar skinning and
+triangles (~15k per person), ~17 small draws per avatar (ears, nose, extras,
+blob shadow), the colour-grade pass. Next levers: bake static sun shadows into
+the floor/walls instead of sampling a shadow map, merge avatar extras into the
+skinned body, decimate kit parts, and measure on a second machine before
+deciding the target is unreachable on GT1.
 
 Known: the lounge furniture fences off dead corners (along the meeting glass
 west of the door, behind the beanbag); fix when kits re-lay the lounge.
