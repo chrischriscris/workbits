@@ -43,6 +43,8 @@ export type CozyLook = {
   bracelet?: string;
   sleepMask?: string;
   earbud?: boolean;
+  /** Ears and nose the kit heads lack. */
+  face?: { skin: string };
 };
 
 function shade(hex: string, amount: number) {
@@ -186,6 +188,7 @@ export function cozyLook(avatar: AvatarConfig): CozyLook {
     watch: accessories.has("gold-watch") ? "#e2b44f" : undefined,
     bracelet: accessories.has("black-bracelet") ? "#1c1c1c" : undefined,
     sleepMask: accessories.has("sleep-mask") ? "#1f2a44" : undefined,
+    face: { skin },
     earbud: accessories.has("earbud"),
   };
 }
@@ -275,8 +278,36 @@ function solid(geometry: THREE.BufferGeometry, color: string, roughness = 0.7, m
   return mesh;
 }
 
+/**
+ * Ears and a button nose: the reference faces have them, the kit heads don't
+ * (they do paint thin brows). Soft, low-contrast shapes in the head bone's space (face front is
+ * about z 0.21, eyes about y 0.19), so they read at diorama distance without
+ * turning the chibi into a caricature.
+ */
+function addFace(bones: Record<string, THREE.Bone>, face: { skin: string }) {
+  const sphere = new THREE.SphereGeometry(1, 16, 12);
+  for (const side of [-1, 1]) {
+    const ear = solid(sphere, face.skin, 0.85);
+    ear.scale.set(0.026, 0.044, 0.034);
+    ear.position.set(side * 0.226, 0.145, -0.005);
+    ear.rotation.y = side * 0.35;
+    addTo(bones.head, ear);
+    const inner = solid(sphere, shade(face.skin, -0.06), 0.9);
+    inner.scale.set(0.01, 0.028, 0.02);
+    inner.position.set(side * 0.243, 0.145, 0.0);
+    inner.rotation.y = side * 0.35;
+    addTo(bones.head, inner);
+
+  }
+  const nose = solid(sphere, shade(face.skin, -0.035), 0.8);
+  nose.scale.set(0.018, 0.014, 0.013);
+  nose.position.set(0, 0.152, 0.214);
+  addTo(bones.head, nose);
+}
+
 /** Small authored extras the kit lacks, hung off bones in rig units. */
 function addExtras(bones: Record<string, THREE.Bone>, look: CozyLook) {
+  if (look.face && !look.headModel) addFace(bones, look.face);
   if (look.sunglasses) {
     for (const x of [-0.098, 0.098]) {
       const lens = solid(new THREE.CircleGeometry(0.058, 24), "#1d1b1f", 0.25, 0.1);
