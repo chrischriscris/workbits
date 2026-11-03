@@ -10,6 +10,13 @@ if [ -f .env ]; then
   set +a
 fi
 
+# `bun run verify` is the quick tier (about a minute): static checks, the
+# browserless realtime/voice checks and one browser smoke test.
+# `bun run verify:full` adds every browser check; run it at phase gates and
+# before pushing.
+MODE="quick"
+[ "${1:-}" = "--full" ] && MODE="full"
+
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 OUT="artifacts/verify/$STAMP"
 mkdir -p "$OUT"
@@ -61,11 +68,19 @@ run_ui_inner() {
 }
 
 : >"$REPORT"
-printf '# Workbits verification — %s\n' "$STAMP" >>"$REPORT"
+printf '# Workbits verification (%s) — %s\n' "$MODE" "$STAMP" >>"$REPORT"
 
 run "Typecheck" bun run typecheck
 run "Unit tests" bun test
 run "Proximity gain math" bun scripts/gain-check.mjs
+run "Voice room authorization" bun scripts/token-check.mjs
+
+if [ "$MODE" = quick ]; then
+  run_ui "Realtime presence + chat bot" bun run shot:multi
+  printf '\nTotal: %ss (quick; `bun run verify:full` for every browser check)\n' "$((SECONDS - TOTAL_START))" | tee -a "$REPORT"
+  printf '\nArtifacts: `%s`\n' "$OUT" | tee -a "$REPORT"
+  exit 0
+fi
 
 # Browser checks run in three parallel lanes. Lane A uses the dev stack's
 # realtime server (:3101); lanes B and C each get their own server, LiveKit
@@ -107,7 +122,6 @@ lane_a() {
   run_ui "Single-client office screenshot" bun run shot http://127.0.0.1:3100/ "artifacts/shots/verify-office.png"
   run_ui "Voice token + publish" bun scripts/voice-check.mjs
   run_ui "Two-client proximity voice" bun scripts/voice-two.mjs
-  run "Voice room authorization" bun scripts/token-check.mjs
   run_ui "Private room isolation" bun scripts/voice-room-check.mjs
   run_ui "Mobile layout" bun scripts/mobile-shot.mjs
 }

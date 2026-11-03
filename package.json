@@ -27,6 +27,7 @@
     "art:iterate": "bash scripts/art-iterate.sh",
     "shot:multi": "bun scripts/multi-shot.mjs",
     "verify": "bash scripts/verify.sh",
+    "verify:full": "bash scripts/verify.sh --full",
     "usage": "bash scripts/usage.sh"
   },
   "devDependencies": {

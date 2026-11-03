@@ -11,7 +11,7 @@ git fetch && git switch art/diorama-pass   # not merged into main yet
 bun install
 bun run dev        # web :3100, realtime :3101, LiveKit :7880 (needs Docker)
 bunx playwright install chromium-headless-shell   # `bun run verify` needs it
-bun run verify     # full suite; passed at handoff
+bun run verify     # quick tier, ~20s; `bun run verify:full` (~6 min) before pushing
 ```
 
 ## The goal

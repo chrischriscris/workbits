@@ -22,8 +22,15 @@ bun scripts/forge-shot.mjs    # Avatar Studio open/generate/apply screenshots
 bun scripts/mobile-shot.mjs   # 390×844 mobile screenshot
 bun scripts/ui-check.mjs      # rooms menu + character switcher
 bun scripts/gain-check.mjs    # proximity gain math assertions
-bun run verify                # all of the above + typecheck -> artifacts/verify/<run>/report.md
+bun run verify                # quick tier (~20s): typecheck, unit, token/authz, one browser smoke
+bun run verify:full           # every browser check, 3 parallel lanes (~6 min) -> artifacts/verify/<run>/report.md
 ```
+
+`verify` is for every change; `verify:full` is the gate for phases and pushes.
+The full run splits browser checks into three lanes, each with its own realtime
+server, LiveKit room prefix and chat history (`scripts/lib/lane.mjs`), and
+prints each step's time. Checks render in software GL (SwiftShader) by
+default; `WB_GPU=1` uses system Chrome on the GPU.
 
 The fuller harness (gallery, recorded flows, bots at scale, perf, axe, visual diff) is planned; see the command table below.
 
