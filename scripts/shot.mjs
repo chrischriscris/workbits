@@ -1,17 +1,14 @@
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
-import { chromium } from "playwright";
+import { app, launchBrowser } from "./lib/lane.mjs";
 
-const url = process.argv[2] ?? "http://127.0.0.1:3100/";
+const url = process.argv[2] ?? app();
 const out = process.argv[3] ?? "artifacts/shots/office.png";
 
 await mkdir(path.dirname(out), { recursive: true });
 
-const browser = await chromium.launch({
+const browser = await launchBrowser({
   args: [
-    "--use-gl=angle",
-    "--use-angle=swiftshader",
-    "--enable-unsafe-swiftshader",
     "--ignore-gpu-blocklist",
   ],
 });

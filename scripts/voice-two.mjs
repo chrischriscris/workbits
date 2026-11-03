@@ -1,23 +1,20 @@
-import { chromium } from "playwright";
 import { RoomServiceClient } from "livekit-server-sdk";
+import { VOICE_ROOM, app, launchBrowser } from "./lib/lane.mjs";
 
 const args = [
-  "--use-gl=angle",
-  "--use-angle=swiftshader",
-  "--enable-unsafe-swiftshader",
   "--ignore-gpu-blocklist",
   "--use-fake-ui-for-media-stream",
   "--use-fake-device-for-media-stream",
 ];
 
 async function open(character) {
-  const browser = await chromium.launch({ args });
+  const browser = await launchBrowser({ args });
   const context = await browser.newContext({
     viewport: { width: 900, height: 600 },
     permissions: ["microphone"],
   });
   const page = await context.newPage();
-  await page.goto(`http://127.0.0.1:3100/?character=${character}&e2e=1`, {
+  await page.goto(app(`?character=${character}&e2e=1`), {
     waitUntil: "domcontentloaded",
   });
   await page.waitForFunction(() => window.__WORKBITS_READY__ === true, { timeout: 30000 });
@@ -41,7 +38,7 @@ const jules = await open("jules");
 await chus.page.waitForTimeout(1200);
 
 const service = new RoomServiceClient("http://127.0.0.1:7880", "devkey", "secret");
-const participants = await service.listParticipants("office:workbits-loft");
+const participants = await service.listParticipants(VOICE_ROOM);
 console.log(
   "participants:",
   participants.map((p) => ({ identity: p.identity, tracks: p.tracks.length })),

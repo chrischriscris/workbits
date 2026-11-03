@@ -1,5 +1,5 @@
-import { chromium } from "playwright";
 import { Client } from "colyseus.js";
+import { WS, app, launchBrowser } from "./lib/lane.mjs";
 
 const customAvatar = {
   species: "human",
@@ -33,7 +33,7 @@ const layout = {
 
 const bots = {};
 async function bot(characterId) {
-  const client = new Client("ws://127.0.0.1:3101");
+  const client = new Client(WS);
   const room = await client.joinOrCreate("office", {
     characterId,
     name: `${characterId} (sync bot)`,
@@ -76,11 +76,8 @@ bots.jules.room.send("chat", { channel: "room", body: "kitchen message two" });
 await new Promise((resolve) => setTimeout(resolve, 300));
 console.log("fern room chat after walking into kitchen:", bots.fern.received.chat.length);
 
-const browser = await chromium.launch({
+const browser = await launchBrowser({
   args: [
-    "--use-gl=angle",
-    "--use-angle=swiftshader",
-    "--enable-unsafe-swiftshader",
     "--ignore-gpu-blocklist",
   ],
 });
@@ -90,7 +87,7 @@ await context.addInitScript((avatar) => {
 }, customAvatar);
 const page = await context.newPage();
 page.on("pageerror", (error) => console.log("pageerror:", error.message));
-await page.goto("http://127.0.0.1:3100/?character=chus&e2e=1", { waitUntil: "domcontentloaded" });
+await page.goto(app("?character=chus&e2e=1"), { waitUntil: "domcontentloaded" });
 await page.waitForFunction(() => window.__WORKBITS_READY__ === true, { timeout: 30000 });
 await page.waitForTimeout(1200);
 

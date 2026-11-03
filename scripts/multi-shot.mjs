@@ -1,21 +1,18 @@
 import { mkdir } from "node:fs/promises";
-import { chromium } from "playwright";
 import { Client } from "colyseus.js";
+import { WS, app, launchBrowser } from "./lib/lane.mjs";
 
-const base = process.argv[2] ?? "http://127.0.0.1:3100/";
+const pageUrl = process.argv[2] ? `${process.argv[2]}?character=chus&e2e=1` : app("?character=chus&e2e=1");
 await mkdir("artifacts/shots", { recursive: true });
 
-const browser = await chromium.launch({
+const browser = await launchBrowser({
   args: [
-    "--use-gl=angle",
-    "--use-angle=swiftshader",
-    "--enable-unsafe-swiftshader",
     "--ignore-gpu-blocklist",
   ],
 });
 const page = await browser.newPage({ viewport: { width: 1200, height: 760 } });
 page.on("pageerror", (error) => console.log("pageerror:", error.message));
-await page.goto(`${base}?character=chus&e2e=1`, { waitUntil: "domcontentloaded" });
+await page.goto(pageUrl, { waitUntil: "domcontentloaded" });
 await page.waitForFunction(() => window.__WORKBITS_READY__ === true, { timeout: 30000 });
 await page
   .waitForFunction(
@@ -24,7 +21,7 @@ await page
   )
   .catch(() => console.error("browser did not reach Live"));
 
-const client = new Client("ws://127.0.0.1:3101");
+const client = new Client(WS);
 const bot = await client.joinOrCreate("office", {
   characterId: "jules",
   name: "Jules (bot)",

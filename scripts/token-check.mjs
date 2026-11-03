@@ -1,6 +1,7 @@
 import { Client } from "colyseus.js";
+import { API, MEETING_ROOM, VOICE_ROOM, WS } from "./lib/lane.mjs";
 
-const base = "http://127.0.0.1:3101";
+const base = API;
 let failures = 0;
 
 function check(label, ok, detail = "") {
@@ -8,10 +9,10 @@ function check(label, ok, detail = "") {
   if (!ok) failures += 1;
 }
 
-const unauth = await fetch(`${base}/livekit/token?identity=ghost&room=office:workbits-loft:meeting`);
+const unauth = await fetch(`${base}/livekit/token?identity=ghost&room=${MEETING_ROOM}`);
 check("token without an office session is rejected", unauth.status === 403, `status ${unauth.status}`);
 
-const client = new Client("ws://127.0.0.1:3101");
+const client = new Client(WS);
 const room = await client.joinOrCreate("office", { characterId: "jules", name: "Token bot" });
 room.onMessage("*", () => {});
 const welcome = await new Promise((resolve) => {
@@ -30,12 +31,12 @@ const wrongKey = await fetch(
 check("token with a wrong voice key is rejected", wrongKey.status === 403, `status ${wrongKey.status}`);
 
 const floor = await fetch(
-  `${base}/livekit/token?identity=${room.sessionId}&key=${voiceKey}&room=office:workbits-loft:meeting`,
+  `${base}/livekit/token?identity=${room.sessionId}&key=${voiceKey}&room=${MEETING_ROOM}`,
 );
 const floorBody = await floor.json();
 check(
   "client-requested room cannot override the floor zone",
-  floorBody.room === "office:workbits-loft",
+  floorBody.room === VOICE_ROOM,
   `granted ${floorBody.room}`,
 );
 
@@ -43,12 +44,12 @@ room.send("move", { x: -4.8, z: -3.2, rotation: 0, moving: false });
 await new Promise((resolve) => setTimeout(resolve, 250));
 
 const meeting = await fetch(
-  `${base}/livekit/token?identity=${room.sessionId}&key=${voiceKey}&room=office:workbits-loft`,
+  `${base}/livekit/token?identity=${room.sessionId}&key=${voiceKey}&room=${VOICE_ROOM}`,
 );
 const meetingBody = await meeting.json();
 check(
   "meeting-room zone gets the private room",
-  meetingBody.room === "office:workbits-loft:meeting",
+  meetingBody.room === MEETING_ROOM,
   `granted ${meetingBody.room}`,
 );
 

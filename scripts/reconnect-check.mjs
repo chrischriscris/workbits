@@ -1,9 +1,9 @@
-import { chromium } from "playwright";
 import { Client } from "colyseus.js";
 import { RoomServiceClient } from "livekit-server-sdk";
 import { zoneAt } from "../packages/shared/src/zones.ts";
+import { MEETING_ROOM, WS, app, launchBrowser } from "./lib/lane.mjs";
 
-const observer = new Client("ws://127.0.0.1:3101");
+const observer = new Client(WS);
 const observerRoom = await observer.joinOrCreate("office", {
   characterId: "jules",
   name: "Reconnect observer",
@@ -12,11 +12,8 @@ observerRoom.onMessage("*", () => {});
 const joined = [];
 observerRoom.onMessage("player_added", (player) => joined.push(player));
 
-const browser = await chromium.launch({
+const browser = await launchBrowser({
   args: [
-    "--use-gl=angle",
-    "--use-angle=swiftshader",
-    "--enable-unsafe-swiftshader",
     "--ignore-gpu-blocklist",
     "--use-fake-ui-for-media-stream",
     "--use-fake-device-for-media-stream",
@@ -27,7 +24,7 @@ const page = await browser.newPage({
   permissions: ["microphone"],
 });
 page.on("pageerror", (error) => console.log("pageerror:", error.message));
-await page.goto("http://127.0.0.1:3100/?character=chus&e2e=1", { waitUntil: "domcontentloaded" });
+await page.goto(app("?character=chus&e2e=1"), { waitUntil: "domcontentloaded" });
 await page.waitForFunction(() => window.__WORKBITS_READY__ === true, { timeout: 30000 });
 await page.waitForFunction(() => window.__WORKBITS_VOICE__?.().status === "connected", {
   timeout: 20000,
@@ -83,7 +80,7 @@ console.log("voice rebound:", voiceRebound);
 console.log("mic preserved:", micPreserved);
 
 const service = new RoomServiceClient("http://127.0.0.1:7880", "devkey", "secret");
-const meeting = await service.listParticipants("office:workbits-loft:meeting");
+const meeting = await service.listParticipants(MEETING_ROOM);
 console.log("meeting participants:", meeting.map((p) => ({ identity: p.identity, tracks: p.tracks.length })));
 const inMeeting = meeting.some((participant) => participant.identity === after.sessionId);
 

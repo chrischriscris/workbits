@@ -1,15 +1,12 @@
-import { chromium } from "playwright";
 import { Client } from "colyseus.js";
+import { WS, app, launchBrowser } from "./lib/lane.mjs";
 
-const client = new Client("ws://127.0.0.1:3101");
+const client = new Client(WS);
 const bot = await client.joinOrCreate("office", { characterId: "jules", name: "Jules (occupancy)" });
 bot.onMessage("*", () => {});
 
-const browser = await chromium.launch({
+const browser = await launchBrowser({
   args: [
-    "--use-gl=angle",
-    "--use-angle=swiftshader",
-    "--enable-unsafe-swiftshader",
     "--ignore-gpu-blocklist",
   ],
 });
@@ -20,7 +17,7 @@ page.on("console", (message) => {
     console.log("console:", message.text().slice(0, 160));
   }
 });
-await page.goto("http://127.0.0.1:3100/?join=1&host=chus&e2e=1", { waitUntil: "domcontentloaded" });
+await page.goto(app("?join=1&host=chus&e2e=1"), { waitUntil: "domcontentloaded" });
 await page.waitForFunction(() => window.__WORKBITS_READY__ === true, undefined, { timeout: 60000 });
 await page.waitForTimeout(700);
 

@@ -1,10 +1,7 @@
-import { chromium } from "playwright";
+import { app, launchBrowser } from "./lib/lane.mjs";
 
-const browser = await chromium.launch({
+const browser = await launchBrowser({
   args: [
-    "--use-gl=angle",
-    "--use-angle=swiftshader",
-    "--enable-unsafe-swiftshader",
     "--ignore-gpu-blocklist",
   ],
 });
@@ -15,7 +12,7 @@ const page = await browser.newPage({
   hasTouch: true,
 });
 page.on("pageerror", (error) => console.log("pageerror:", error.message));
-await page.goto("http://127.0.0.1:3100/?character=chus&e2e=1", {
+await page.goto(app("?character=chus&e2e=1"), {
   waitUntil: "domcontentloaded",
 });
 await page.waitForFunction(() => window.__WORKBITS_READY__ === true, { timeout: 30000 });

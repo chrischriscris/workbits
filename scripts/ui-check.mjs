@@ -1,11 +1,8 @@
-import { chromium } from "playwright";
+import { app, launchBrowser } from "./lib/lane.mjs";
 
 const base = "http://127.0.0.1:3100";
-const browser = await chromium.launch({
+const browser = await launchBrowser({
   args: [
-    "--use-gl=angle",
-    "--use-angle=swiftshader",
-    "--enable-unsafe-swiftshader",
     "--ignore-gpu-blocklist",
   ],
 });
@@ -14,7 +11,7 @@ await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: 
 const page = await context.newPage();
 const errors = [];
 page.on("pageerror", (error) => errors.push(error.message));
-await page.goto(`${base}/?character=chus&e2e=1`, { waitUntil: "domcontentloaded" });
+await page.goto(app("?character=chus&e2e=1"), { waitUntil: "domcontentloaded" });
 await page.waitForFunction(() => window.__WORKBITS_READY__ === true, undefined, { timeout: 60000 });
 
 await page.locator(".office-switcher").click();

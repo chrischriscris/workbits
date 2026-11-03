@@ -1,8 +1,8 @@
-import { chromium } from "playwright";
 import { Client } from "colyseus.js";
+import { WS, app, launchBrowser } from "./lib/lane.mjs";
 
 const makeBot = async (characterId) => {
-  const client = new Client("ws://127.0.0.1:3101");
+  const client = new Client(WS);
   const room = await client.joinOrCreate("office", { characterId, name: characterId });
   room.onMessage("*", () => {});
   const received = [];
@@ -14,16 +14,13 @@ const makeBot = async (characterId) => {
 const arlo = await makeBot("arlo");
 const jules = await makeBot("jules");
 
-const browser = await chromium.launch({
+const browser = await launchBrowser({
   args: [
-    "--use-gl=angle",
-    "--use-angle=swiftshader",
-    "--enable-unsafe-swiftshader",
     "--ignore-gpu-blocklist",
   ],
 });
 const page = await browser.newPage({ viewport: { width: 1200, height: 760 } });
-await page.goto("http://127.0.0.1:3100/?character=chus&e2e=1", { waitUntil: "domcontentloaded" });
+await page.goto(app("?character=chus&e2e=1"), { waitUntil: "domcontentloaded" });
 await page.waitForFunction(() => window.__WORKBITS_READY__ === true, { timeout: 30000 });
 await page.locator(".chat-bar").click();
 await page.getByRole("tab", { name: "DM · Arlo" }).click();

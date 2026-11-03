@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { appendFile, mkdir, readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { Client, Room } from "@colyseus/core";
 import { zoneAt, type AvatarConfig, type OfficeLayout } from "@workbits/shared";
 import { presence } from "../presence";
@@ -197,7 +197,7 @@ export class OfficeRoom extends Room {
   private lastMeta = new Map<string, number>();
   private history: StoredMessage[] = [];
   private layout?: OfficeLayout;
-  private historyFile = join(process.cwd(), "data", "chat.jsonl");
+  private historyFile = join(process.env.DATA_DIR ?? join(process.cwd(), "data"), "chat.jsonl");
 
   override async onCreate() {
     await this.loadHistory();
@@ -359,7 +359,7 @@ export class OfficeRoom extends Room {
 
   private async loadHistory() {
     try {
-      await mkdir(join(process.cwd(), "data"), { recursive: true });
+      await mkdir(dirname(this.historyFile), { recursive: true });
       const raw = await readFile(this.historyFile, "utf8");
       this.history = raw
         .split("\n")

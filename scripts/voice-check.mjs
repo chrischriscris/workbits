@@ -1,11 +1,8 @@
-import { chromium } from "playwright";
 import { RoomServiceClient } from "livekit-server-sdk";
+import { VOICE_ROOM, app, launchBrowser } from "./lib/lane.mjs";
 
-const browser = await chromium.launch({
+const browser = await launchBrowser({
   args: [
-    "--use-gl=angle",
-    "--use-angle=swiftshader",
-    "--enable-unsafe-swiftshader",
     "--ignore-gpu-blocklist",
     "--use-fake-ui-for-media-stream",
     "--use-fake-device-for-media-stream",
@@ -20,7 +17,7 @@ page.on("pageerror", (error) => console.log("pageerror:", error.message));
 page.on("console", (message) => {
   if (message.type() === "error") console.log("console:", message.text().slice(0, 200));
 });
-await page.goto("http://127.0.0.1:3100/?character=chus&e2e=1", {
+await page.goto(app("?character=chus&e2e=1"), {
   waitUntil: "domcontentloaded",
 });
 await page.waitForFunction(() => window.__WORKBITS_READY__ === true, { timeout: 30000 });
@@ -32,7 +29,7 @@ await page.waitForTimeout(2000);
 console.log("voice after:", await page.evaluate(() => window.__WORKBITS_VOICE__?.()));
 
 const service = new RoomServiceClient("http://127.0.0.1:7880", "devkey", "secret");
-const participants = await service.listParticipants("office:workbits-loft");
+const participants = await service.listParticipants(VOICE_ROOM);
 console.log(
   "livekit participants:",
   participants.map((p) => ({ identity: p.identity, tracks: p.tracks.length })),

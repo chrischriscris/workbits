@@ -1,24 +1,21 @@
-import { chromium } from "playwright";
 import { RoomServiceClient } from "livekit-server-sdk";
+import { MEETING_ROOM, VOICE_ROOM, app, launchBrowser } from "./lib/lane.mjs";
 
 const args = [
-  "--use-gl=angle",
-  "--use-angle=swiftshader",
-  "--enable-unsafe-swiftshader",
   "--ignore-gpu-blocklist",
   "--use-fake-ui-for-media-stream",
   "--use-fake-device-for-media-stream",
 ];
 
 async function open(character) {
-  const browser = await chromium.launch({ args });
+  const browser = await launchBrowser({ args });
   const context = await browser.newContext({
     viewport: { width: 960, height: 640 },
     permissions: ["microphone"],
   });
   const page = await context.newPage();
   page.on("pageerror", (error) => console.log(`${character} pageerror:`, error.message));
-  await page.goto(`http://127.0.0.1:3100/?character=${character}&e2e=1`, {
+  await page.goto(app(`?character=${character}&e2e=1`), {
     waitUntil: "domcontentloaded",
   });
   await page.waitForFunction(() => window.__WORKBITS_READY__ === true, { timeout: 30000 });
@@ -44,8 +41,8 @@ const chusId = await sessionId(chus.page);
 const juanId = await sessionId(jules.page);
 const service = new RoomServiceClient("http://127.0.0.1:7880", "devkey", "secret");
 
-const floorBefore = await service.listParticipants("office:workbits-loft");
-const meetingBefore = await service.listParticipants("office:workbits-loft:meeting");
+const floorBefore = await service.listParticipants(VOICE_ROOM);
+const meetingBefore = await service.listParticipants(MEETING_ROOM);
 console.log("floor before:", floorBefore.map((p) => ({ identity: p.identity, tracks: p.tracks.length })));
 console.log("meeting before:", meetingBefore.map((p) => p.identity));
 console.log("chus voice before:", await chus.page.evaluate(() => window.__WORKBITS_VOICE__?.()));
@@ -63,8 +60,8 @@ await chus.page.waitForFunction(
 );
 await chus.page.waitForTimeout(1800);
 
-const floorAfter = await service.listParticipants("office:workbits-loft");
-const meetingAfter = await service.listParticipants("office:workbits-loft:meeting");
+const floorAfter = await service.listParticipants(VOICE_ROOM);
+const meetingAfter = await service.listParticipants(MEETING_ROOM);
 console.log("floor after:", floorAfter.map((p) => ({ identity: p.identity, tracks: p.tracks.length })));
 console.log("meeting after:", meetingAfter.map((p) => ({ identity: p.identity, tracks: p.tracks.length })));
 console.log("chus identity:", chusId, "jules identity:", juanId);
