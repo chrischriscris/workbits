@@ -19,39 +19,16 @@ import { compileSpace, defaultLoft, deskItems } from "@workbits/shared";
 import { useAppStore } from "../state/app";
 import { palette } from "../theme";
 import { EmoteBubble, TeamAvatar, type AvatarMotion, type AvatarPose } from "./avatars";
+import { SpaceContents } from "./catalog";
 import { RemotePlayers } from "./RemotePlayers";
 import {
-  Beanbag,
   Block,
-  Books,
-  Cat,
-  CoffeeTable,
-  Credenza,
-  Daybed,
   Desk,
   DeskPartition,
-  FloorLamp,
-  Fridge,
-  GlassWall,
-  Planter,
-  KitchenRun,
-  MeetingTable,
   OfficeChair,
   Pendant,
-  Plant,
-  Pouf,
   Rug,
-  Sectional,
-  Shelf,
-  SideTable,
-  SlatDivider,
-  TableLamp,
-  TallCabinet,
-  Tree,
-  Vase,
   Wall,
-  WallArt,
-  WallClock,
   type RugVariant,
 } from "./props";
 import { textures, withRepeat } from "./textures";
@@ -76,19 +53,15 @@ const REAR_Z = -5.55;
 const LEFT_X = -7.55;
 const RIGHT_X = 7.5;
 const FRONT_Z = 5.5;
-const REAR_FACE = REAR_Z + 0.09;
-const LEFT_FACE = LEFT_X + 0.09;
 const HALF_PI = Math.PI / 2;
 const WALL_CENTER_X = (LEFT_X + RIGHT_X) / 2;
 
 
 const tone = {
-  cream: "#f1ece3",
   charcoal: "#3f444c",
   plinth: "#ece3d3",
   plinthCap: "#f6f0e6",
   plinthFoot: "#d3c6b3",
-  rust: "#c4633f",
 };
 
 /** Custom layouts keep their own desks; their rug/pendant stay centred here. */
@@ -197,8 +170,6 @@ function Walls() {
       <Block size={[0.26, WALL_HEIGHT + 0.06, 0.3]} position={[RIGHT_X - 0.08, (WALL_HEIGHT + 0.06) / 2, REAR_Z]} color={tone.charcoal} />
       <Block size={[0.3, WALL_HEIGHT + 0.06, 0.26]} position={[LEFT_X, (WALL_HEIGHT + 0.06) / 2, FRONT_Z - 0.1]} color={tone.charcoal} />
       <Block size={[0.3, WALL_HEIGHT + 0.06, 0.3]} position={[LEFT_X, (WALL_HEIGHT + 0.06) / 2, REAR_Z]} color={tone.charcoal} />
-      <SlatDivider position={[-1.85, 0, -4.7]} rotation={[0, HALF_PI, 0]} length={1.5} height={2.62} />
-      <WallClock position={[-1.45, 1.75, REAR_FACE + 0.03]} />
     </group>
   );
 }
@@ -207,69 +178,8 @@ function Walls() {
 /* Rooms                                                               */
 /* ------------------------------------------------------------------ */
 
-/** Glass box, back-left: x -7.5..-2.2, z -5.5..-0.9, door gap at x -3.6..-2.7. */
-function MeetingRoom() {
-  return (
-    <group>
-      <GlassWall position={[-5.55, 0, -0.9]} length={3.9} height={2.6} />
-      <GlassWall position={[-2.45, 0, -0.9]} length={0.5} height={2.6} />
-      <GlassWall position={[-3.15, 2.2, -0.9]} length={0.9} height={0.4} />
-      <GlassWall position={[-2.2, 0, -3.2]} rotation={[0, HALF_PI, 0]} length={4.6} height={2.6} />
 
-      <Rug position={[-4.8, 0.035, -3.2]} width={4.6} depth={3.6} variant="cream" />
-      <MeetingTable position={[-4.8, 0, -3.25]} length={3.4} width={1.45} chairScale={1.2} />
-      <Pendant position={[-4.8, 1.62, -3.25]} kind="bell" drop={1.2} size={1.6} light />
 
-      <WallArt position={[LEFT_FACE + 0.03, 1.62, -3.25]} rotation={[0, HALF_PI, 0]} variant={0} width={1.7} height={1.3} />
-      <Credenza position={[LEFT_FACE + 0.25, 0, -3.25]} rotation={[0, HALF_PI, 0]} length={1.9} height={0.62} depth={0.42} />
-      <Vase position={[LEFT_FACE + 0.25, 0.62, -3.85]} color="#e8dccb" />
-      <Books position={[LEFT_FACE + 0.25, 0.62, -3.1]} count={3} rotation={[0, 1.4, 0]} />
-
-      <Plant position={[-7.0, 0, -5.0]} scale={1.2} pot={tone.cream} kind="tall" />
-      <Plant position={[-2.75, 0, -5.0]} scale={1.15} pot={tone.cream} kind="leafy" />
-      <Plant position={[-7.05, 0, -1.4]} scale={1.1} pot={palette.terracotta} kind="leafy" />
-    </group>
-  );
-}
-
-/** Back-right: one long counter run on the rear wall, fridge, pantry, door. */
-function KitchenArea() {
-  return (
-    <group>
-      <KitchenRun position={[1.45, 0, REAR_FACE + 0.33]} length={5.8} />
-      <Fridge position={[4.95, 0, REAR_FACE + 0.35]} />
-      <TallCabinet position={[5.9, 0, REAR_FACE + 0.32]} height={2.25} />
-      <Plant position={[5.9, 2.25, REAR_FACE + 0.3]} scale={0.62} pot={tone.cream} kind="trailing" />
-      <Plant position={[7.05, 0, -4.4]} scale={1.2} pot={tone.cream} kind="leafy" />
-      <Rug position={[1.6, 0.035, -4.4]} width={2.6} depth={0.75} variant="lines" />
-    </group>
-  );
-}
-
-/** Left/front: sage sofa on the left wall, one ivory rug, coffee table, pouf. */
-function Lounge() {
-  return (
-    <group>
-      <Rug position={[-5.6, 0.035, 2.7]} width={4.0} depth={4.4} variant="ivory" />
-      {/* Corner sectional on the left wall, its return coming out at the back end. */}
-      <Sectional position={[LEFT_FACE + 0.52, 0, 2.65]} rotation={[0, HALF_PI, 0]} scale={1.1} />
-      <CoffeeTable position={[-5.3, 0, 2.95]} radius={0.62} scale={1.15} />
-      <Pouf position={[-4.35, 0, 2.05]} scale={1.15} color={palette.terracotta} />
-      <Beanbag position={[-5.22, 0, 0.42]} rotation={[0, 0.5, 0]} scale={1.4} />
-      <Cat position={[-4.45, 0.06, 4.5]} rotation={[0, -0.7, 0]} />
-
-      <SideTable position={[-7.0, 0, -0.35]} />
-      <TableLamp position={[-7.05, 0.55, -0.4]} />
-      <FloorLamp position={[-7.05, 0, 4.55]} />
-
-      <WallArt position={[LEFT_FACE + 0.03, 1.92, 2.9]} rotation={[0, HALF_PI, 0]} variant={1} width={1.9} height={1.2} />
-
-      <Shelf position={[-5.5, 0, 5.05]} width={2.2} height={0.8} depth={0.36} seed={2} />
-      <Plant position={[-7.0, 0, 5.0]} scale={1.15} pot={tone.cream} kind="tall" />
-      <Plant position={[-3.75, 0, -0.45]} scale={1.05} pot={tone.cream} kind="leafy" />
-    </group>
-  );
-}
 
 const chairPalette = [
   { color: "#56627a", accent: "#f2efe9" },
@@ -315,40 +225,14 @@ function Engineering() {
           </group>
         );
       })}
-      {/* Long low planter on the open front edge, like the reference. */}
-      <Planter position={[-1.3, 0, 5.0]} length={3.2} width={0.55} height={0.5} />
     </group>
   );
 }
 
-/** Right edge between the kitchen and the nap nook: a bookcase and a big tree. */
-function RightEdge() {
-  return (
-    <group>
-      <Shelf position={[6.55, 0, -1.9]} width={1.5} height={1.95} depth={0.38} seed={6} />
-      <Tree position={[6.75, 0, 0.55]} scale={1.1} />
-      <Plant position={[5.6, 0, -1.95]} scale={0.95} pot={palette.terracotta} kind="leafy" />
-    </group>
-  );
-}
 
-/** Front-right corner: a compact nook behind low half-height glass. */
+/** The daybed in the nap nook (a default-loft item), where Theo sleeps. */
 const NAP_BED = { x: 6.4, z: 3.85 };
 
-function NapNook() {
-  return (
-    <group>
-      <GlassWall position={[6.05, 0, 2.0]} length={2.9} height={1.3} frosted />
-      <GlassWall position={[4.6, 0, 3.1]} rotation={[0, HALF_PI, 0]} length={2.2} height={1.3} />
-      <Rug position={[6.25, 0.035, 3.9]} width={2.3} depth={2.6} variant="blush" />
-      <Daybed position={[NAP_BED.x, 0, NAP_BED.z]} />
-      <SideTable position={[5.25, 0, 2.5]} />
-      <TableLamp position={[5.23, 0.55, 2.45]} light />
-      <Books position={[5.33, 0.55, 2.62]} count={2} rotation={[0, -0.4, 0]} />
-      <Plant position={[7.1, 0, 5.05]} scale={0.95} pot={palette.terracotta} kind="leafy" />
-    </group>
-  );
-}
 
 /* ------------------------------------------------------------------ */
 /* Team                                                                */
@@ -647,12 +531,8 @@ export function Office() {
       <Floor />
       <SunPatches />
       <Walls />
-      <MeetingRoom />
-      <KitchenArea />
-      <Lounge />
+      <SpaceContents doc={defaultLoft} />
       <Engineering />
-      <RightEdge />
-      <NapNook />
       {!NO_CAST && (
         <>
           <Team />
