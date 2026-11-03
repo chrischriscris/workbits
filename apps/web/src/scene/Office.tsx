@@ -153,7 +153,7 @@ function SunPatches() {
         map: textures.sunPatch,
         color: "#ffc98a",
         transparent: true,
-        opacity: 0.5,
+        opacity: 0.3,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
         toneMapped: false,

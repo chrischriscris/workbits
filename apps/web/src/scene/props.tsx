@@ -74,7 +74,7 @@ const plasterMaterial = new THREE.MeshStandardMaterial({
   vertexColors: true,
   roughness: 0.92,
   emissive: "#f2e6d2",
-  emissiveIntensity: 0.1,
+  emissiveIntensity: 0.18,
 });
 
 const glassMaterial = new THREE.MeshStandardMaterial({

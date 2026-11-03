@@ -113,18 +113,18 @@ export function OfficeScene() {
       gl={{ antialias: !e2e, alpha: true, powerPreference: e2e ? "low-power" : "high-performance" }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.16;
+        gl.toneMappingExposure = 1.0;
       }}
     >
       <Suspense fallback={null}>
         {!e2e && <SoftShadows size={26} samples={8} focus={0.7} />}
-        <SoftEnvironment intensity={0.25} />
-        <hemisphereLight args={["#ffeedd", "#f0d8bf", 0.2]} />
+        <SoftEnvironment intensity={0.4} />
+        <hemisphereLight args={["#fff4e6", "#f3e2cc", 0.32]} />
         {/* Warm, lower afternoon sun from the window side: longer soft shadows. */}
         <directionalLight
           castShadow
           position={[-12, 13, 7]}
-          intensity={3.3}
+          intensity={2.8}
           color="#ffd6a3"
           shadow-mapSize={[2048, 2048]}
           shadow-camera-left={-17}
@@ -155,7 +155,7 @@ export function OfficeScene() {
         <CameraRig />
         {!e2e && (
           <EffectComposer multisampling={0} enableNormalPass>
-            <SSAO samples={16} radius={5} intensity={10} luminanceInfluence={0.22} color="#1b1b1b" />
+            <SSAO samples={16} radius={5} intensity={5} luminanceInfluence={0.22} color="#1b1b1b" />
             <HueSaturation saturation={0.12} />
             <BrightnessContrast brightness={0} contrast={0.11} />
             <Bloom
