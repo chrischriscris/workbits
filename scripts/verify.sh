@@ -75,6 +75,7 @@ run "Unit tests" bun test
 run "Proximity gain math" bun scripts/gain-check.mjs
 run "Voice room authorization" bun scripts/token-check.mjs
 run "Walls block movement" bun scripts/wall-check.mjs
+run "Office templates on the server" bun scripts/space-check.mjs
 
 if [ "$MODE" = quick ]; then
   run_ui "Realtime presence + chat bot" bun run shot:multi
@@ -131,7 +132,7 @@ lane_b() {
   run_ui "Realtime presence + chat bot" bun run shot:multi
   run_ui "Realtime reconnect + voice rebind" bun scripts/reconnect-check.mjs
   run_ui "Avatar studio" bun scripts/forge-shot.mjs
-  run_ui "Workspace studio" bun scripts/room-studio-shot.mjs
+  run_ui "Office studio" bun scripts/room-studio-shot.mjs
   run_ui "DM privacy" bun scripts/dm-check.mjs
   run_ui "Invite picker" bun scripts/join-shot.mjs
   run_ui "Status broadcast" bun scripts/status-check.mjs

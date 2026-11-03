@@ -2093,6 +2093,11 @@ button:focus-visible {
   gap: 11px;
 }
 
+.plan--svg {
+  display: block;
+  width: 100%;
+}
+
 .plan-card {
   display: flex;
   flex-direction: column;

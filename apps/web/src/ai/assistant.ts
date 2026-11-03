@@ -1,4 +1,4 @@
-import { zoneAt, zoneName, zones, type ZoneId } from "@workbits/shared";
+import { currentRooms, roomAtNow, roomName } from "../state/space";
 import { localCharacterId, teamById, teamCharacters } from "../data/team";
 
 export type AssistantPlayer = {
@@ -26,7 +26,7 @@ export type AssistantReply = {
   action?: AssistantAction;
 };
 
-const roomWords: Array<{ id: ZoneId; words: string[] }> = [
+const roomWords: Array<{ id: string; words: string[] }> = [
   { id: "meeting", words: ["meeting", "conference", "glass room"] },
   { id: "lounge", words: ["lounge", "sofa", "couch"] },
   { id: "kitchen", words: ["kitchen", "coffee", "lunch", "dining"] },
@@ -39,7 +39,7 @@ function displayName(player: AssistantPlayer) {
 }
 
 function zoneOf(player: AssistantPlayer) {
-  return zoneAt(player.x, player.z);
+  return roomAtNow(player.x, player.z).id;
 }
 
 function roomMention(text: string) {
@@ -70,14 +70,14 @@ function presenceByRoom(players: AssistantPlayer[], selfId: string | null) {
     groups.set(zone, list);
   }
   return [...groups.entries()]
-    .map(([zone, people]) => `${zoneName(zone)}: ${people.join(", ")}`)
+    .map(([zone, people]) => `${roomName(zone)}: ${people.join(", ")}`)
     .join("\n");
 }
 
-function walkAction(zone: ZoneId): AssistantAction {
-  const room = zones.find((item) => item.id === zone);
+function walkAction(zone: string): AssistantAction {
+  const room = currentRooms().find((item) => item.id === zone);
   return {
-    label: `Walk to ${zoneName(zone)}`,
+    label: `Walk to ${roomName(zone)}`,
     x: room?.anchor.x ?? 0,
     z: room?.anchor.z ?? 0,
   };
@@ -90,7 +90,7 @@ export function answerAssistant(
   const text = prompt.toLowerCase().trim();
   const { players, messages, selfId } = context;
   const self = players.find((player) => player.id === selfId);
-  const selfZone = self ? zoneName(zoneOf(self)) : "the office";
+  const selfZone = self ? roomName(zoneOf(self)) : "the office";
 
   if (!text || /^(hi|hello|hey|help|what can you do)/.test(text)) {
     return {
@@ -112,10 +112,10 @@ export function answerAssistant(
   }
 
   if (/free|empty|quiet|available|open room|where.*meet/.test(text)) {
-    const free = zones.filter(
+    const free = currentRooms().filter(
       (room) => !players.some((player) => zoneOf(player) === room.id),
     );
-    const meeting = zones.find((room) => room.id === "meeting")!;
+    const meeting = currentRooms().find((room) => room.id === "meeting")!;
     const meetingPeople = livePeople(players, selfId).filter(
       (player) => zoneOf(player) === "meeting",
     );
@@ -137,8 +137,8 @@ export function answerAssistant(
     return {
       text:
         inRoom.length === 0
-          ? `No one is connected in ${zoneName(room.id)} right now.`
-          : `${zoneName(room.id)}: ${inRoom.map((person) => person.label).join(", ")}.`,
+          ? `No one is connected in ${roomName(room.id)} right now.`
+          : `${roomName(room.id)}: ${inRoom.map((person) => person.label).join(", ")}.`,
       action: walkAction(room.id),
     };
   }
@@ -148,13 +148,13 @@ export function answerAssistant(
     const live = players.find((player) => player.characterId === named.id);
     if (live) {
       return {
-        text: `${named.displayName} is in ${zoneName(zoneOf(live))} right now.`,
+        text: `${named.displayName} is in ${roomName(zoneOf(live))} right now.`,
         action: walkAction(zoneOf(live)),
       };
     }
     return {
       text: `${named.displayName} is not connected. Their demo seat is in ${named.room === "engineering" ? "Engineering" : named.room.replace(/^./, (letter) => letter.toUpperCase())}.`,
-      action: walkAction(named.room as ZoneId),
+      action: walkAction(named.room as string),
     };
   }
 

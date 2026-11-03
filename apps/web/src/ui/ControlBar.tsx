@@ -139,7 +139,7 @@ export function ControlBar() {
       >
         <MessageCircle size={18} />
       </ControlButton>
-      <ControlButton label="Workspace studio" onClick={() => setRoomStudioOpen(true)} hideMobile>
+      <ControlButton label="Office studio" onClick={() => setRoomStudioOpen(true)} hideMobile>
         <LayoutTemplate size={18} />
       </ControlButton>
       <ControlButton label="Avatar studio" onClick={() => setAvatarStudioOpen(true)} hideMobile>

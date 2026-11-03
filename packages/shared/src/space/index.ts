@@ -5,3 +5,4 @@ export * from "./defaultLoft";
 export * from "./desks";
 export * from "./kits";
 export * from "./templates";
+export * from "./office";

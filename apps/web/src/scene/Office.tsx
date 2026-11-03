@@ -6,8 +6,8 @@ import { spawnFor, type Spawn } from "../data/spawns";
 import { localCharacter, localCharacterId, teamCharacters } from "../data/team";
 import { useRealtimeStore } from "../realtime/store";
 import { useAvatarStore } from "../state/avatar";
-import { compileSpace, seatsOf, type Seat } from "@workbits/shared";
-import { shellOf, useOfficeDoc, useSpace } from "../state/space";
+import { compileSpace, seatsOf, type Seat, type SpaceDoc } from "@workbits/shared";
+import { shellOf, useSpace } from "../state/space";
 import { useAppStore } from "../state/app";
 import { palette } from "../theme";
 import { EmoteBubble, TeamAvatar, type AvatarMotion, type AvatarPose } from "./avatars";
@@ -193,7 +193,38 @@ const placements: Record<string, Placement> = {
   theo: { position: [NAP_BED.x, 0.68, NAP_BED.z - 0.8], rotation: [0, 0, 0], pose: "sleeping" },
 };
 
-function placementFor(id: string, seats: Seat[]): Placement | undefined {
+/**
+ * Where the unseated cast stands in an office built from a template: Theo on
+ * the daybed, Arlo on a beanbag or in the lounge, Jules and Claw'd in the
+ * kitchen. Undefined means "not in this office" (no daybed, no room).
+ */
+function placementsIn(doc: SpaceDoc): Record<string, Placement | undefined> {
+  if (doc.id === "default-loft") return placements;
+  const room = (id: string) => doc.rooms.find((candidate) => candidate.id === id);
+  const bed = doc.items.find((item) => item.key === "Daybed");
+  const beanbag = doc.items.find((item) => item.key === "Beanbag");
+  const kitchen = room("kitchen")?.anchor;
+  const lounge = room("lounge")?.anchor;
+  const pillow = (rot: number) => ({ x: -Math.sin(rot) * 0.8, z: -Math.cos(rot) * 0.8 });
+  return {
+    theo: bed
+      ? {
+          position: [bed.at.x + pillow(bed.rot ?? 0).x, 0.68, bed.at.z + pillow(bed.rot ?? 0).z],
+          rotation: [0, bed.rot ?? 0, 0],
+          pose: "sleeping",
+        }
+      : undefined,
+    arlo: beanbag
+      ? { position: [beanbag.at.x + 0.07, 0.3, beanbag.at.z + 0.13], rotation: [0, beanbag.rot ?? 0, 0] }
+      : lounge
+        ? { position: [lounge.x, 0, lounge.z], rotation: [0, 0.5, 0] }
+        : undefined,
+    jules: kitchen ? { position: [kitchen.x - 0.6, 0, kitchen.z], rotation: [0, 0.55, 0], motion: "wave" } : undefined,
+    clawd: kitchen ? { position: [kitchen.x + 0.7, 0, kitchen.z + 0.4], rotation: [0, 0.9, 0] } : undefined,
+  };
+}
+
+function placementFor(id: string, seats: Seat[], doc: SpaceDoc): Placement | undefined {
   const seat = seated[id];
   if (seat && seats.length > 0) {
     const chair = seats[seat.seat % seats.length]!;
@@ -204,12 +235,12 @@ function placementFor(id: string, seats: Seat[]): Placement | undefined {
       motion: seat.motion,
     };
   }
-  return placements[id];
+  return placementsIn(doc)[id];
 }
 
 function Team() {
   const players = useRealtimeStore((state) => state.players);
-  const doc = useOfficeDoc();
+  const doc = useSpace((state) => state.doc);
   const seats = useMemo(() => seatsOf(doc), [doc]);
   const occupied = new Set([
     localCharacterId,
@@ -220,7 +251,7 @@ function Team() {
       {teamCharacters
         .filter((character) => character.id !== localCharacterId)
         .map((character) => {
-          const placement = placementFor(character.id, seats);
+          const placement = placementFor(character.id, seats, doc);
           if (!placement) return null;
           return (
             <TeamAvatar
@@ -247,7 +278,7 @@ const START: Spawn = spawnFor(localCharacterId);
 
 /** The loft compiled with the current desk layout: walls, furniture and the walkable grid. */
 function useLoft() {
-  const doc = useOfficeDoc();
+  const doc = useSpace((state) => state.doc);
   return useMemo(() => compileSpace(doc), [doc]);
 }
 
@@ -454,7 +485,7 @@ function MoveTarget() {
 const NO_CAST = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("noCast");
 
 export function Office() {
-  const doc = useOfficeDoc();
+  const doc = useSpace((state) => state.doc);
   return (
     <group>
       <Floor />

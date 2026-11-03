@@ -3,14 +3,14 @@ import { appendFile, mkdir, readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { Client, Room } from "@colyseus/core";
 import {
-  applyDeskLayout,
+  buildOffice,
   characterSpawns,
   compileSpace,
-  defaultLoft,
-  zoneAt,
+  defaultOfficeParams,
+  sanitizeOfficeParams,
   type AvatarConfig,
   type CompiledSpace,
-  type OfficeLayout,
+  type OfficeParams,
 } from "@workbits/shared";
 import { presence } from "../presence";
 
@@ -49,8 +49,9 @@ const SERVER_RADIUS = 0.12;
 const MAX_SPEED = 2.9 * 1.5;
 const MOVE_SLACK = 0.4;
 
-function compileOffice(layout?: OfficeLayout): CompiledSpace {
-  return compileSpace(applyDeskLayout(defaultLoft, layout), { radius: SERVER_RADIUS });
+/** The office the server walks and routes on, built from small parameters (ADR-015). */
+function compileOffice(params: OfficeParams): CompiledSpace {
+  return compileSpace(buildOffice(params), { radius: SERVER_RADIUS });
 }
 
 type MoveMessage = {
@@ -78,7 +79,6 @@ type StoredMessage = {
   to?: string;
 };
 
-const MAX_DESKS = 8;
 const MAX_HISTORY = 600;
 
 function text(value: unknown, max = 40): string | undefined {
@@ -158,50 +158,6 @@ function finite(value: unknown, min: number, max: number): number | undefined {
   return Math.max(min, Math.min(max, number));
 }
 
-function sanitizeLayout(value: unknown): OfficeLayout | undefined {
-  if (!value || typeof value !== "object") return undefined;
-  if (JSON.stringify(value).length > 8000) return undefined;
-  const record = value as Record<string, unknown>;
-  const rugInput = text(record.rug, 20);
-  const rug: OfficeLayout["rug"] = ["cream", "sage", "terracotta"].includes(rugInput ?? "")
-    ? (rugInput as OfficeLayout["rug"])
-    : "cream";
-  if (!Array.isArray(record.desks)) return undefined;
-
-  const desks = record.desks
-    .slice(0, MAX_DESKS)
-    .map((item, index) => {
-      if (!item || typeof item !== "object") return undefined;
-      const desk = item as Record<string, unknown>;
-      const x = finite(desk.x, -3.0, 4.0);
-      const z = finite(desk.z, -0.4, 4.9);
-      if (x === undefined || z === undefined) return undefined;
-      const rotationNumber = Number(desk.rotation);
-      const rotation =
-        Number.isFinite(rotationNumber) && Math.abs(rotationNumber) > Math.PI / 2 ? Math.PI : 0;
-      const variantNumber = Number(desk.variant);
-      return {
-        id: text(desk.id, 24) ?? `desk-${index}`,
-        x,
-        z,
-        rotation,
-        variant: Number.isFinite(variantNumber)
-          ? Math.max(0, Math.min(3, Math.floor(variantNumber)))
-          : 0,
-      };
-    })
-    .filter((desk): desk is OfficeLayout["desks"][number] => Boolean(desk));
-
-  if (desks.length === 0) return undefined;
-
-  return {
-    id: text(record.id, 32) ?? "custom",
-    name: text(record.name, 60) ?? "Custom layout",
-    note: text(record.note, 120) ?? `${desks.length} desks`,
-    rug,
-    desks,
-  };
-}
 
 export class OfficeRoom extends Room {
   override maxClients = 32;
@@ -209,8 +165,8 @@ export class OfficeRoom extends Room {
   private lastMove = new Map<string, number>();
   private lastMeta = new Map<string, number>();
   private history: StoredMessage[] = [];
-  private layout?: OfficeLayout;
-  private space: CompiledSpace = compileOffice();
+  private office: OfficeParams = defaultOfficeParams;
+  private space: CompiledSpace = compileOffice(defaultOfficeParams);
   /** When each player's current position was accepted, for the speed check. */
   private acceptedAt = new Map<string, number>();
   private historyFile = join(process.env.DATA_DIR ?? join(process.cwd(), "data"), "chat.jsonl");
@@ -220,7 +176,7 @@ export class OfficeRoom extends Room {
 
     this.onMessage("hello", (client) => {
       const player = this.players.get(client.sessionId);
-      const zone = player ? zoneAt(player.x, player.z) : "lounge";
+      const zone = player ? this.space.roomAt(player.x, player.z).id : this.space.doc.floorRoom.id;
       const visibleHistory = this.history.filter((message) => {
         if (message.channel === "dm") {
           return message.authorId === player?.characterId || message.to === player?.characterId;
@@ -233,7 +189,7 @@ export class OfficeRoom extends Room {
         voiceKey: presence.get(client.sessionId)?.voiceKey,
         players: [...this.players.values()],
         messages: visibleHistory.slice(-MAX_HISTORY),
-        ...(this.layout ? { layout: this.layout } : {}),
+        office: this.office,
       });
     });
 
@@ -263,13 +219,7 @@ export class OfficeRoom extends Room {
       player.z = z;
       player.rotation = Number.isFinite(Number(message.rotation)) ? Number(message.rotation) : 0;
       player.moving = Boolean(message.moving);
-      player.zone = zoneAt(player.x, player.z);
-      const entry = presence.get(client.sessionId);
-      if (entry) {
-        entry.x = player.x;
-        entry.z = player.z;
-        entry.zone = player.zone;
-      }
+      this.place(client.sessionId, player);
 
       this.broadcast("player_moved", player, { except: client });
     });
@@ -297,18 +247,32 @@ export class OfficeRoom extends Room {
       this.broadcast("player_updated", player);
     });
 
-    this.onMessage("layout", (client, message: { layout?: unknown }) => {
+    // Switch the office plan (ADR-015). Only bounded parameters cross the wire; the
+    // server builds the document itself. No authz yet: that arrives with auth (step 3).
+    this.onMessage("space", (client, message: { office?: unknown }) => {
       const player = this.players.get(client.sessionId);
       if (!player) return;
       const now = Date.now();
-      if (now - (this.lastMeta.get(`layout:${client.sessionId}`) ?? 0) < 300) return;
-      this.lastMeta.set(`layout:${client.sessionId}`, now);
+      if (now - (this.lastMeta.get(`space:${client.sessionId}`) ?? 0) < 1000) return;
+      this.lastMeta.set(`space:${client.sessionId}`, now);
 
-      const layout = sanitizeLayout(message?.layout);
-      if (!layout) return;
-      this.layout = layout;
-      this.space = compileOffice(layout);
-      this.broadcast("layout", layout);
+      const office = sanitizeOfficeParams(message?.office);
+      if (!office) return;
+      this.office = office;
+      this.space = compileOffice(office);
+      // Anyone now standing inside furniture or a wall moves to the nearest open spot.
+      for (const [sessionId, occupant] of this.players) {
+        if (!this.space.walkable(occupant.x, occupant.z)) {
+          const spot = this.space.nearestWalkable(occupant);
+          occupant.x = spot.x;
+          occupant.z = spot.z;
+          this.clients.find((candidate) => candidate.sessionId === sessionId)?.send("correct", spot);
+        }
+        this.acceptedAt.set(sessionId, now);
+        this.place(sessionId, occupant);
+      }
+      this.broadcast("space", office);
+      for (const occupant of this.players.values()) this.broadcast("player_moved", occupant);
     });
 
     this.onMessage("emote", (client, message: { kind?: string }) => {
@@ -337,7 +301,7 @@ export class OfficeRoom extends Room {
 
       const to = channel === "dm" ? String(message.to ?? "") : undefined;
       if (channel === "dm" && !to) return;
-      const zone = channel === "room" ? zoneAt(player.x, player.z) : undefined;
+      const zone = channel === "room" ? this.space.roomAt(player.x, player.z).id : undefined;
 
       const stored: StoredMessage = {
         id,
@@ -372,7 +336,7 @@ export class OfficeRoom extends Room {
       if (channel === "room") {
         for (const client of this.clients) {
           const participant = this.players.get(client.sessionId);
-          if (participant && zoneAt(participant.x, participant.z) === zone) {
+          if (participant && this.space.roomAt(participant.x, participant.z).id === zone) {
             client.send("chat", stored);
           }
         }
@@ -395,6 +359,19 @@ export class OfficeRoom extends Room {
         .filter((message) => message && message.body);
     } catch {
       this.history = [];
+    }
+  }
+
+  /** Record a player's room on them and in presence (voice uses it). */
+  private place(sessionId: string, player: PlayerData) {
+    const room = this.space.roomAt(player.x, player.z);
+    player.zone = room.id;
+    const entry = presence.get(sessionId);
+    if (entry) {
+      entry.x = player.x;
+      entry.z = player.z;
+      entry.zone = room.id;
+      entry.privateRoom = room.privacy === "private";
     }
   }
 
@@ -429,7 +406,7 @@ export class OfficeRoom extends Room {
       rotation: 0,
       moving: false,
       status,
-      zone: zoneAt(spawnX, spawnZ),
+      zone: this.space.roomAt(spawnX, spawnZ).id,
       ...(avatar ? { avatar } : {}),
     };
 
@@ -443,6 +420,7 @@ export class OfficeRoom extends Room {
       x: player.x,
       z: player.z,
       zone: player.zone,
+      privateRoom: this.space.roomAt(player.x, player.z).privacy === "private",
       voiceKey: randomUUID(),
     });
     this.broadcast("player_added", player, { except: client });

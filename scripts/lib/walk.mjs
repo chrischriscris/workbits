@@ -14,9 +14,9 @@ export function spawnOf(characterId) {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** Walk `room`'s player from `from` to (the walkable spot nearest) `to`. Returns where it ended, or null. */
-export async function walkBot(room, from, to, { stepMs = 75, rotation = 0 } = {}) {
-  const path = loft.findPath(from, to);
+/** Walk `room`'s player from `from` to (the walkable spot nearest) `to` on `space` (the loft by default). Returns where it ended, or null. */
+export async function walkBot(room, from, to, { stepMs = 75, rotation = 0, space = loft } = {}) {
+  const path = space.findPath(from, to);
   if (!path) return null;
   let here = from;
   for (let i = 1; i < path.length; i += 1) {

@@ -1,6 +1,7 @@
 import { Keyboard, MousePointer2, ZoomIn } from "lucide-react";
 import { useEffect, useState } from "react";
-import { zoneAt } from "@workbits/shared";
+import { spaceOf } from "@workbits/shared";
+import { useSpace } from "./state/space";
 import { useRealtimeStore } from "./realtime/store";
 import { OfficeScene } from "./scene/OfficeScene";
 import { useAppStore } from "./state/app";
@@ -8,7 +9,7 @@ import { useVoiceStore } from "./voice/store";
 import { AssistantPanel } from "./ui/AssistantPanel";
 import { AvatarStudio } from "./ui/AvatarStudio";
 import { JoinOverlay } from "./ui/JoinOverlay";
-import { RoomStudio } from "./ui/RoomStudio";
+import { OfficeStudio } from "./ui/OfficeStudio";
 import { CharacterSheet } from "./ui/CharacterSheet";
 import { ChatDock } from "./ui/ChatDock";
 import { ControlBar } from "./ui/ControlBar";
@@ -47,7 +48,10 @@ export default function App() {
   const connectVoice = useVoiceStore((state) => state.connect);
   const syncVoiceZone = useVoiceStore((state) => state.syncZone);
   const localPosition = useRealtimeStore((state) => state.localPosition);
-  const localZone = zoneAt(localPosition.x, localPosition.z);
+  const doc = useSpace((state) => state.doc);
+  const localRoom = spaceOf(doc).roomAt(localPosition.x, localPosition.z);
+  const localZone = localRoom.id;
+  const localPrivate = localRoom.privacy === "private";
   const isJoinScreen =
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).get("join") === "1";
@@ -78,10 +82,10 @@ export default function App() {
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      void syncVoiceZone(localZone);
+      void syncVoiceZone(localZone, localPrivate);
     }, 450);
     return () => window.clearTimeout(timer);
-  }, [localZone, syncVoiceZone]);
+  }, [localZone, localPrivate, syncVoiceZone]);
 
   return (
     <div className={`app-shell${artMode ? " app-shell--art" : ""}`}>
@@ -95,7 +99,7 @@ export default function App() {
       <ChatDock />
       <ControlBar />
       <AvatarStudio />
-      <RoomStudio />
+      <OfficeStudio />
       <AssistantPanel />
       <JoinOverlay />
       <InteractionHint />

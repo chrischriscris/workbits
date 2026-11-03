@@ -1,5 +1,4 @@
-import type { DeskPlacement, OfficeLayout } from "../types";
-import type { Item, SpaceDoc } from "./types";
+import type { SpaceDoc } from "./types";
 
 /** A chair someone can sit at: where it stands and which way the sitter faces. */
 export type Seat = { x: number; z: number; rotation: number };
@@ -44,33 +43,4 @@ export function seatsOf(doc: SpaceDoc): Seat[] {
     }
   }
   return seats;
-}
-
-/** Items that make up the desk area, replaced wholesale by a custom desk layout. */
-const deskAreaKeys = new Set(["DeskPod", "Desk"]);
-const isDeskAreaDressing = (item: Item) => item.id.startsWith("pod-");
-
-/**
- * Swap the document's desk pods for a custom layout's single desks (Workspace
- * Studio). Shared so the server's walkable grid matches what clients draw.
- */
-export function applyDeskLayout(doc: SpaceDoc, layout: OfficeLayout | undefined): SpaceDoc {
-  if (!layout || layout.id === "default") return doc;
-  const rugVariant = layout.rug === "cream" ? "lines" : layout.rug;
-  const desks: Item[] = layout.desks.map((desk: DeskPlacement) => ({
-    id: `desk-${desk.id}`,
-    key: "Desk",
-    at: { x: desk.x, z: desk.z },
-    rot: desk.rotation,
-    params: { width: 1.8, depth: 0.85, variant: desk.variant, panel: true },
-  }));
-  return {
-    ...doc,
-    items: [
-      ...doc.items.filter((item) => !deskAreaKeys.has(item.key) && !isDeskAreaDressing(item)),
-      { id: "pod-custom-rug", key: "Rug", at: { x: 0, y: 0.035, z: 3.0 }, params: { width: 6.0, depth: 4.4, variant: rugVariant } },
-      { id: "pod-custom-light", key: "Pendant", at: { x: 0, y: 2.05, z: 3.0 }, params: { kind: "bar", length: 3.0, drop: 0.6, light: true } },
-      ...desks,
-    ],
-  };
 }

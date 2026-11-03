@@ -1,27 +1,51 @@
-import { useMemo } from "react";
 import { create } from "zustand";
-import { applyDeskLayout, buildOffice, defaultLoft, type SpaceDoc } from "@workbits/shared";
-import { useOfficeLayout } from "./officeLayout";
+import {
+  buildOffice,
+  defaultOfficeParams,
+  roomsOf,
+  spaceOf,
+  type OfficeParams,
+  type RoomRef,
+  type SpaceDoc,
+} from "@workbits/shared";
 
-/** The office document the scene renders and walks on (ADR-015). */
+/** The office the scene renders and walks on (ADR-015): built from small params the server agrees on. */
 type SpaceState = {
+  office: OfficeParams;
   doc: SpaceDoc;
-  setDoc: (doc: SpaceDoc) => void;
+  setOffice: (office: OfficeParams) => void;
 };
 
 /** Dev-only art bench: `?office=atelier&seats=12&seed=3` renders a template locally. */
-function initialDoc(): SpaceDoc {
-  if (!import.meta.env.DEV || typeof window === "undefined") return defaultLoft;
+function initialOffice(): OfficeParams {
+  if (!import.meta.env.DEV || typeof window === "undefined") return defaultOfficeParams;
   const params = new URLSearchParams(window.location.search);
   const template = params.get("office");
-  if (!template) return defaultLoft;
-  return buildOffice({ template, headcount: Number(params.get("seats") ?? 8), seed: Number(params.get("seed") ?? 1) });
+  if (!template) return defaultOfficeParams;
+  return { template, headcount: Number(params.get("seats") ?? 8), seed: Number(params.get("seed") ?? 1) };
 }
 
+const startOffice = initialOffice();
+
 export const useSpace = create<SpaceState>((set) => ({
-  doc: initialDoc(),
-  setDoc: (doc) => set({ doc }),
+  office: startOffice,
+  doc: buildOffice(startOffice),
+  setOffice: (office) => set({ office, doc: buildOffice(office) }),
 }));
+
+/** Room lookups against the current office, for code outside React. */
+export function currentRooms(): RoomRef[] {
+  return roomsOf(useSpace.getState().doc);
+}
+export function roomAtNow(x: number, z: number): RoomRef {
+  return spaceOf(useSpace.getState().doc).roomAt(x, z);
+}
+export function roomName(id: string): string {
+  return currentRooms().find((room) => room.id === id)?.name ?? "Office";
+}
+export function roomAnchor(id: string): { x: number; z: number } | null {
+  return currentRooms().find((room) => room.id === id)?.anchor ?? null;
+}
 
 /**
  * The visible shell around a document's walkable floor: wall centre lines,
@@ -50,9 +74,3 @@ export function shellOf(doc: SpaceDoc) {
   };
 }
 
-/** The document as rendered and walked: the office plus any custom desk layout (Workspace Studio). */
-export function useOfficeDoc() {
-  const doc = useSpace((state) => state.doc);
-  const layout = useOfficeLayout((state) => state.layout);
-  return useMemo(() => applyDeskLayout(doc, layout), [doc, layout]);
-}

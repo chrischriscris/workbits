@@ -1,5 +1,6 @@
 import { Client } from "colyseus.js";
 import { WS, app, launchBrowser } from "./lib/lane.mjs";
+import { spawnOf, walkBot } from "./lib/walk.mjs";
 
 const customAvatar = {
   species: "human",
@@ -18,18 +19,6 @@ const customAvatar = {
   palette: { primary: "#6c8cff", secondary: "#d9b98c", accent: "#6c8cff" },
 };
 
-const layout = {
-  id: "sync-test",
-  name: "Sync test layout",
-  note: "4 desks · focus line",
-  rug: "sage",
-  desks: [
-    { id: "s1", x: -2.7, z: 3.9, rotation: 0, variant: 0 },
-    { id: "s2", x: -0.9, z: 3.9, rotation: 0, variant: 1 },
-    { id: "s3", x: 0.9, z: 3.9, rotation: 0, variant: 2 },
-    { id: "s4", x: 2.7, z: 3.9, rotation: 0, variant: 3 },
-  ],
-};
 
 const bots = {};
 async function bot(characterId) {
@@ -40,10 +29,9 @@ async function bot(characterId) {
     ...(characterId === "jules" ? { avatar: customAvatar } : {}),
   });
   room.onMessage("*", () => {});
-  const received = { chat: [], layout: [], updated: [], welcome: null };
+  const received = { chat: [], updated: [], welcome: null };
   room.onMessage("welcome", (message) => (received.welcome = message));
   room.onMessage("chat", (message) => received.chat.push(message));
-  room.onMessage("layout", (message) => received.layout.push(message));
   room.onMessage("player_updated", (message) => received.updated.push(message));
   room.onMessage("player_added", (message) => received.updated.push(message));
   room.send("hello");
@@ -59,10 +47,6 @@ await new Promise((resolve) => setTimeout(resolve, 400));
 console.log("jules avatar seen by fern:", Boolean(bots.fern.received.welcome?.players.find((p) => p.characterId === "jules")?.avatar));
 console.log("jules avatar skin:", bots.fern.received.welcome?.players.find((p) => p.characterId === "jules")?.avatar?.skin);
 
-bots.jules.room.send("layout", { layout });
-await new Promise((resolve) => setTimeout(resolve, 300));
-console.log("layout broadcasts:", bots.fern.received.layout.length, bots.fern.received.layout[0]?.name, bots.fern.received.layout[0]?.rug);
-console.log("layout sanitized desks:", bots.fern.received.layout[0]?.desks?.length);
 
 bots.jules.room.send("chat", { channel: "room", body: "kitchen-only message" });
 await new Promise((resolve) => setTimeout(resolve, 300));
@@ -70,7 +54,8 @@ console.log("jules room chat count (self, kitchen):", bots.jules.received.chat.l
 console.log("fern room chat (engineering):", bots.fern.received.chat.length);
 console.log("arlo room chat (lounge):", bots.arlo.received.chat.length);
 
-bots.fern.room.send("move", { x: 4.2, z: -4.2, rotation: 0, moving: false });
+// Walk into the kitchen (the server refuses teleports, ADR-015).
+await walkBot(bots.fern.room, spawnOf("fern"), { x: 4.2, z: -4.2 }, { stepMs: 40 });
 await new Promise((resolve) => setTimeout(resolve, 150));
 bots.jules.room.send("chat", { channel: "room", body: "kitchen message two" });
 await new Promise((resolve) => setTimeout(resolve, 300));
