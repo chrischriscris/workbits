@@ -1,5 +1,7 @@
+import { useMemo } from "react";
 import { create } from "zustand";
-import { defaultLoft, type SpaceDoc } from "@workbits/shared";
+import { applyDeskLayout, defaultLoft, type SpaceDoc } from "@workbits/shared";
+import { useOfficeLayout } from "./officeLayout";
 
 /** The office document the scene renders and walks on (ADR-015). */
 type SpaceState = {
@@ -37,4 +39,11 @@ export function shellOf(doc: SpaceDoc) {
       cz: (northZ + southZ) / 2,
     },
   };
+}
+
+/** The document as rendered and walked: the office plus any custom desk layout (Workspace Studio). */
+export function useOfficeDoc() {
+  const doc = useSpace((state) => state.doc);
+  const layout = useOfficeLayout((state) => state.layout);
+  return useMemo(() => applyDeskLayout(doc, layout), [doc, layout]);
 }

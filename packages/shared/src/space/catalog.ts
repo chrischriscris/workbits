@@ -38,8 +38,10 @@ const footprints: Record<string, (params: Params | undefined) => Footprint[]> = 
   Planter: (p) => [{ cx: 0, cz: 0, w: num(p, "length", 3), d: num(p, "width", 0.55) }],
   Daybed: () => [{ cx: 0, cz: 0, w: 1.2, d: 2.15 }],
   SlatDivider: (p) => [{ cx: 0, cz: 0, w: num(p, "length", 1.6), d: 0.14 }],
-  /** One bench desk (or a custom-layout desk); pods are four of these back to back. */
+  /** A single desk (custom layouts); its chair sits in front, on walkable floor. */
   Desk: (p) => [{ cx: 0, cz: 0, w: num(p, "width", 1.8), d: num(p, "depth", 0.85) }],
+  /** A 2 × 2 bench: four desks back to back around a planted partition. Chairs stay walkable. */
+  DeskPod: (p) => [{ cx: 0, cz: 0, w: num(p, "deskWidth", 1.8) * 2, d: num(p, "deskDepth", 1.0) * 2 }],
 };
 
 export function footprintOf(item: Item): Footprint[] {

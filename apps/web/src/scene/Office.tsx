@@ -6,17 +6,8 @@ import { spawnFor, type Spawn } from "../data/spawns";
 import { localCharacter, localCharacterId, teamCharacters } from "../data/team";
 import { useRealtimeStore } from "../realtime/store";
 import { useAvatarStore } from "../state/avatar";
-import {
-  BENCH_DESK,
-  BENCH_DESKS,
-  BENCH_PODS,
-  chairFor,
-  useOfficeLayout,
-  type DeskPlacement,
-  type OfficeLayout,
-} from "../state/officeLayout";
-import { compileSpace, deskItems } from "@workbits/shared";
-import { shellOf, useSpace } from "../state/space";
+import { compileSpace, seatsOf, type Seat } from "@workbits/shared";
+import { shellOf, useOfficeDoc, useSpace } from "../state/space";
 import { useAppStore } from "../state/app";
 import { palette } from "../theme";
 import { EmoteBubble, TeamAvatar, type AvatarMotion, type AvatarPose } from "./avatars";
@@ -24,13 +15,7 @@ import { SpaceContents } from "./catalog";
 import { RemotePlayers } from "./RemotePlayers";
 import {
   Block,
-  Desk,
-  DeskPartition,
-  OfficeChair,
-  Pendant,
-  Rug,
   Wall,
-  type RugVariant,
 } from "./props";
 import { textures, withRepeat } from "./textures";
 
@@ -59,19 +44,8 @@ const tone = {
   plinthFoot: "#d3c6b3",
 };
 
-/** Custom layouts keep their own desks; their rug/pendant stay centred here. */
-const POD = { x: 0, z: 3.0 };
 
-/** The default layout renders as the joined bench; custom layouts keep their own desks. */
-function desksFor(layout: OfficeLayout) {
-  return layout.id === "default" ? BENCH_DESKS : layout.desks;
-}
 
-const benchRug: Record<OfficeLayout["rug"], RugVariant> = {
-  cream: "lines",
-  sage: "sage",
-  terracotta: "terracotta",
-};
 
 /* ------------------------------------------------------------------ */
 /* Shell: plinth, floor, walls                                         */
@@ -185,53 +159,7 @@ function Walls() {
 
 
 
-const chairPalette = [
-  { color: "#56627a", accent: "#f2efe9" },
-  { color: "#5e6a80", accent: "#f2efe9" },
-  { color: "#525d73", accent: "#ebe6dd" },
-  { color: "#5a667c", accent: "#f2efe9" },
-];
 
-/** Centre: two joined pods with planted spines, a long planter at the front. */
-function Engineering() {
-  const layout = useOfficeLayout((state) => state.layout);
-  const desks = desksFor(layout);
-  const bench = layout.id === "default";
-  const centers = bench ? BENCH_PODS : [POD];
-  return (
-    <group>
-      {centers.map((center) => (
-        <group key={`${center.x}|${center.z}`}>
-          <Rug position={[center.x, 0.035, center.z]} width={bench ? 4.6 : 6.0} depth={bench ? 3.8 : 4.4} variant={benchRug[layout.rug]} />
-          <Pendant position={[center.x, 2.05, center.z]} kind="bar" length={3.0} drop={0.6} light />
-          {bench && <DeskPartition position={[center.x, 0, center.z]} length={BENCH_DESK.width * 2} depth={BENCH_DESK.depth} />}
-        </group>
-      ))}
-      {desks.map((desk) => {
-        const chair = chairFor(desk);
-        const colors = chairPalette[desk.variant % chairPalette.length] ?? chairPalette[0]!;
-        return (
-          <group key={desk.id}>
-            <Desk
-              position={[desk.x, 0, desk.z]}
-              rotation={[0, desk.rotation, 0]}
-              variant={desk.variant}
-              panel={!bench}
-              width={bench ? BENCH_DESK.width : undefined}
-              depth={bench ? BENCH_DESK.depth : undefined}
-            />
-            <OfficeChair
-              position={[chair.x, 0, chair.z]}
-              rotation={[0, chair.rotation, 0]}
-              color={colors.color}
-              accent={colors.accent}
-            />
-          </group>
-        );
-      })}
-    </group>
-  );
-}
 
 
 /** The daybed in the nap nook (a default-loft item), where Theo sleeps. */
@@ -265,11 +193,10 @@ const placements: Record<string, Placement> = {
   theo: { position: [NAP_BED.x, 0.68, NAP_BED.z - 0.8], rotation: [0, 0, 0], pose: "sleeping" },
 };
 
-function placementFor(id: string, desks: DeskPlacement[]): Placement | undefined {
+function placementFor(id: string, seats: Seat[]): Placement | undefined {
   const seat = seated[id];
-  if (seat && desks.length > 0) {
-    const desk = desks[seat.seat % desks.length]!;
-    const chair = chairFor(desk);
+  if (seat && seats.length > 0) {
+    const chair = seats[seat.seat % seats.length]!;
     return {
       position: [chair.x, 0.08, chair.z],
       rotation: [0, chair.rotation, 0],
@@ -282,8 +209,8 @@ function placementFor(id: string, desks: DeskPlacement[]): Placement | undefined
 
 function Team() {
   const players = useRealtimeStore((state) => state.players);
-  const layout = useOfficeLayout((state) => state.layout);
-  const desks = desksFor(layout);
+  const doc = useOfficeDoc();
+  const seats = useMemo(() => seatsOf(doc), [doc]);
   const occupied = new Set([
     localCharacterId,
     ...Object.values(players).map((player) => player.characterId),
@@ -293,7 +220,7 @@ function Team() {
       {teamCharacters
         .filter((character) => character.id !== localCharacterId)
         .map((character) => {
-          const placement = placementFor(character.id, desks);
+          const placement = placementFor(character.id, seats);
           if (!placement) return null;
           return (
             <TeamAvatar
@@ -320,12 +247,8 @@ const START: Spawn = spawnFor(localCharacterId);
 
 /** The loft compiled with the current desk layout: walls, furniture and the walkable grid. */
 function useLoft() {
-  const layout = useOfficeLayout((state) => state.layout);
-  const doc = useSpace((state) => state.doc);
-  return useMemo(
-    () => compileSpace(doc, { extraItems: deskItems(desksFor(layout), layout.id === "default") }),
-    [doc, layout],
-  );
+  const doc = useOfficeDoc();
+  return useMemo(() => compileSpace(doc), [doc]);
 }
 
 function LocalPlayer() {
@@ -531,14 +454,13 @@ function MoveTarget() {
 const NO_CAST = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("noCast");
 
 export function Office() {
-  const doc = useSpace((state) => state.doc);
+  const doc = useOfficeDoc();
   return (
     <group>
       <Floor />
       <SunPatches />
       <Walls />
       <SpaceContents doc={doc} />
-      <Engineering />
       {!NO_CAST && (
         <>
           <Team />

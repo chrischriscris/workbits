@@ -1,17 +1,11 @@
 // Bots must walk like clients now (ADR-015): the server rejects teleports and
 // steps through walls or furniture. This plans a path on the shared grid and
 // sends it at walking pace.
-import {
-  BENCH_DESKS,
-  characterSpawns,
-  compileSpace,
-  defaultLoft,
-  deskItems,
-} from "../../packages/shared/src/space/index.ts";
+import { characterSpawns, compileSpace, defaultLoft } from "../../packages/shared/src/space/index.ts";
 
 /** The default loft as a client sees it (client padding). */
-export const loft = compileSpace(defaultLoft, { extraItems: deskItems(BENCH_DESKS, true) });
-const serverLoft = compileSpace(defaultLoft, { radius: 0.12, extraItems: deskItems(BENCH_DESKS, true) });
+export const loft = compileSpace(defaultLoft);
+const serverLoft = compileSpace(defaultLoft, { radius: 0.12 });
 
 /** Where the server puts a fresh join for this character. */
 export function spawnOf(characterId) {

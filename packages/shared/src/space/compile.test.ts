@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { characterSpawns, compileSpace, defaultLoft, deskItems, BENCH_DESKS } from ".";
+import { characterSpawns, compileSpace, defaultLoft, seatsOf, BENCH_DESKS } from ".";
 
-const loft = compileSpace(defaultLoft, { extraItems: deskItems(BENCH_DESKS, true) });
+const loft = compileSpace(defaultLoft);
 
 describe("default loft", () => {
   test("every room anchor and doc spawn is walkable", () => {
@@ -56,5 +56,21 @@ describe("default loft", () => {
     const end = path![path!.length - 1]!;
     expect(loft.walkable(end.x, end.z)).toBe(true);
     expect(loft.roomAt(end.x, end.z).id).toBe("meeting");
+  });
+});
+
+describe("seats", () => {
+  test("the loft's pods give the bench layout's eight chairs, in the same order", () => {
+    const seats = seatsOf(defaultLoft);
+    expect(seats.length).toBe(BENCH_DESKS.length);
+    BENCH_DESKS.forEach((desk, index) => {
+      const z = desk.z + (desk.rotation === 0 ? 0.95 : -0.95);
+      expect(seats[index]!.x).toBeCloseTo(desk.x, 5);
+      expect(seats[index]!.z).toBeCloseTo(z, 5);
+    });
+  });
+
+  test("every chair is walkable, so people can reach their seat", () => {
+    for (const seat of seatsOf(defaultLoft)) expect(loft.walkable(seat.x, seat.z)).toBe(true);
   });
 });

@@ -3,11 +3,10 @@ import { appendFile, mkdir, readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { Client, Room } from "@colyseus/core";
 import {
-  BENCH_DESKS,
+  applyDeskLayout,
   characterSpawns,
   compileSpace,
   defaultLoft,
-  deskItems,
   zoneAt,
   type AvatarConfig,
   type CompiledSpace,
@@ -51,8 +50,7 @@ const MAX_SPEED = 2.9 * 1.5;
 const MOVE_SLACK = 0.4;
 
 function compileOffice(layout?: OfficeLayout): CompiledSpace {
-  const desks = layout ? deskItems(layout.desks, false) : deskItems(BENCH_DESKS, true);
-  return compileSpace(defaultLoft, { radius: SERVER_RADIUS, extraItems: desks });
+  return compileSpace(applyDeskLayout(defaultLoft, layout), { radius: SERVER_RADIUS });
 }
 
 type MoveMessage = {

@@ -14,6 +14,11 @@ const CREAM = "#f1ece3";
 const TERRACOTTA = "#d98e73";
 const HALF_PI = Math.PI / 2;
 
+const BENCH_PODS_INIT = [
+  { x: -0.8, z: 0.55 },
+  { x: 2.6, z: 3.7 },
+];
+
 let next = 0;
 const item = (key: string, x: number, z: number, extra: Omit<Item, "id" | "key" | "at"> & { y?: number } = {}): Item => {
   const { y, ...rest } = extra;
@@ -88,7 +93,14 @@ export const defaultLoft: SpaceDoc = {
     item("Plant", -7.0, 5.0, { scale: 1.15, params: { pot: CREAM, kind: "tall" } }),
     item("Plant", -3.75, -0.45, { scale: 1.05, params: { pot: CREAM, kind: "leafy" } }),
 
-    // Open floor: the long front planter (desk pods come from the desk layout).
+    // Engineering: two joined 2×2 pods on the diagonal, each with its rug and bar light.
+    ...BENCH_PODS_INIT.flatMap((pod, index): Item[] => [
+      { id: `pod-${index}-rug`, key: "Rug", at: { x: pod.x, y: 0.035, z: pod.z }, params: { width: 4.6, depth: 3.8, variant: "lines" } },
+      { id: `pod-${index}-light`, key: "Pendant", at: { x: pod.x, y: 2.05, z: pod.z }, params: { kind: "bar", length: 3.0, drop: 0.6, light: true } },
+      { id: `pod-${index}`, key: "DeskPod", at: { x: pod.x, z: pod.z }, params: { deskWidth: 1.8, deskDepth: 1.0 } },
+    ]),
+
+    // Open floor: the long front planter.
     // Ends short of the second pod so the walk to the nap nook stays open.
     item("Planter", -1.55, 5.0, { params: { length: 2.7, width: 0.55, height: 0.5 } }),
 
@@ -115,13 +127,10 @@ export const defaultLoft: SpaceDoc = {
 
 /**
  * Default engineering area: two joined 2×2 pods offset on the diagonal, like
- * the reference. Shared so the rendered benches, seat placements and the
- * server's walkable grid can't drift.
+ * the reference. The document places them; Workspace Studio's default layout
+ * still lists the same desks.
  */
-export const BENCH_PODS = [
-  { x: -0.8, z: 0.55 },
-  { x: 2.6, z: 3.7 },
-];
+export const BENCH_PODS = BENCH_PODS_INIT;
 export const BENCH_DESK = { width: 1.8, depth: 1.0 };
 export const BENCH_DESKS: DeskPlacement[] = BENCH_PODS.flatMap((pod, index) => [
   { id: `p${index}d1`, x: pod.x - BENCH_DESK.width / 2, z: pod.z - BENCH_DESK.depth / 2, rotation: Math.PI, variant: 0 },
@@ -129,17 +138,6 @@ export const BENCH_DESKS: DeskPlacement[] = BENCH_PODS.flatMap((pod, index) => [
   { id: `p${index}d3`, x: pod.x - BENCH_DESK.width / 2, z: pod.z + BENCH_DESK.depth / 2, rotation: 0, variant: 2 },
   { id: `p${index}d4`, x: pod.x + BENCH_DESK.width / 2, z: pod.z + BENCH_DESK.depth / 2, rotation: 0, variant: 3 },
 ]);
-
-/** Desk obstacles for the walkable grid: the bench layout or a custom one. */
-export function deskItems(desks: DeskPlacement[], bench: boolean): Item[] {
-  return desks.map((desk) => ({
-    id: `desk-${desk.id}`,
-    key: "Desk",
-    at: { x: desk.x, z: desk.z },
-    rot: desk.rotation,
-    params: bench ? { width: BENCH_DESK.width, depth: BENCH_DESK.depth } : { width: 1.8, depth: 0.85 },
-  }));
-}
 
 /** Where each seed character first appears; joins snap to the nearest walkable spot. */
 export const characterSpawns: Record<string, { x: number; z: number }> = {
