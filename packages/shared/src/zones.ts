@@ -1,3 +1,5 @@
+import { compileSpace, defaultLoft } from "./space";
+
 export type ZoneId = "lounge" | "engineering" | "meeting" | "kitchen" | "nap";
 
 export type Zone = {
@@ -7,13 +9,16 @@ export type Zone = {
   anchor: { x: number; z: number };
 };
 
-export const zones: Zone[] = [
-  { id: "lounge", name: "Lounge", private: false, anchor: { x: -4.6, z: 3.2 } },
-  { id: "engineering", name: "Engineering", private: false, anchor: { x: -1.3, z: 3.8 } },
-  { id: "meeting", name: "Meeting Room", private: true, anchor: { x: -3.0, z: -1.6 } },
-  { id: "kitchen", name: "Kitchen", private: false, anchor: { x: 3.6, z: -3.2 } },
-  { id: "nap", name: "Nap Room", private: true, anchor: { x: 5.2, z: 4.9 } },
-];
+/** The rooms of the default loft (ADR-015), in menu order. */
+const order: ZoneId[] = ["lounge", "engineering", "meeting", "kitchen", "nap"];
+const loftRooms = [...defaultLoft.rooms, { ...defaultLoft.floorRoom, privacy: "open" as const }];
+export const zones: Zone[] = order.map((id) => {
+  const room = loftRooms.find((candidate) => candidate.id === id)!;
+  return { id, name: room.name, private: room.privacy === "private", anchor: room.anchor };
+});
+
+/** The default loft compiled once: room lookup, walls and the walkable grid. */
+export const loft = compileSpace(defaultLoft);
 
 const byId = Object.fromEntries(zones.map((zone) => [zone.id, zone]));
 
@@ -26,11 +31,7 @@ export function zoneById(id: string): Zone | undefined {
  * for chat routing and private-room gating, so client and server cannot drift.
  */
 export function zoneAt(x: number, z: number): ZoneId {
-  if (x < -2.2 && z < -0.9) return "meeting";
-  if (x < -3.4 && z >= -0.9) return "lounge";
-  if (x >= -2.2 && z < -2.6) return "kitchen";
-  if (x > 4.6 && z >= 2.0) return "nap";
-  return "engineering";
+  return loft.roomAt(x, z).id as ZoneId;
 }
 
 export function zoneName(id: string) {
