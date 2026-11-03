@@ -59,22 +59,24 @@ real-time vs Cycles, cast lineup, generated head).
 
 ## Next, in order
 
-1. ~~Rebuild the remaining furniture to the desk standard~~ (done: kitchen,
-   lounge, meeting room; see `docs/art/progress/*-reference-before-after.jpg`).
-   Left over: the meeting-room credenza and the nap nook are still old builds,
-   and the whole frame still has more empty floor than the reference.
-2. ~~Frog (Arlo) and crab (Claw'd)~~ (done: matte Cozy surface, frog on a
-   beanbag in sneakers, crab as a chunky soft box; see
-   `docs/art/progress/frog-crab-reference-before-after.jpg`).
-3. **Faces**: ears and a button nose are added on the head bone (`addFace` in
-   `scene/people.tsx`); the kit already paints thin brows. The bigger gap is
-   the eyes: the reference has large eyes with highlights, the kit has small
-   dots and lines. Next would be custom eye textures/decals per head, or the
-   generated-heads decision below.
-4. **Lighting**: real-time is close in grade; Cycles shows what soft bounce
-   adds. Options if needed: bake lightmaps for the static room in Blender, or
-   pre-render the room (camera never rotates) with live characters on top.
-5. Sun pools (`SunPatches` in `scene/Office.tsx`) are a fake; tune or replace.
+The direction changed on 2026-11-02: offices become buildable documents
+(ADR-015, `docs/architecture/spaces.md`, "Order of work"). Character tuning is
+paused (the kit can't reach the reference; a bought/commissioned or generated
+cast is a separate decision).
+
+1. ~~Document + compiler + server-validated movement for today's loft~~ (done).
+2. **Templates + room kits + camera follow + perf**: 6–10 plan templates in
+   2–3 size classes, kits that furnish a room rect from its type, the camera
+   at fixed human-scale zoom following the player, instanced/merged static
+   geometry, measured fps with 50 avatars. Replaces Workspace Studio and the
+   open `layout` message. Still one dev office, client-only.
+3. Auth, orgs, tenant-scoped presence/history/occupancy/voice.
+4. Many offices, persistence, switcher, publish protocol.
+5. Editor.
+6. Free procedural generator on top of the kits.
+
+Known: the lounge furniture fences off dead corners (along the meeting glass
+west of the door, behind the beanbag); fix when kits re-lay the lounge.
 
 ## Open decisions (ask the user)
 
