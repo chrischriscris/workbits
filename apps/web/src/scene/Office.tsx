@@ -15,6 +15,7 @@ import {
   type DeskPlacement,
   type OfficeLayout,
 } from "../state/officeLayout";
+import { compileSpace, defaultLoft, deskItems } from "@workbits/shared";
 import { useAppStore } from "../state/app";
 import { palette } from "../theme";
 import { EmoteBubble, TeamAvatar, type AvatarMotion, type AvatarPose } from "./avatars";
@@ -80,7 +81,6 @@ const LEFT_FACE = LEFT_X + 0.09;
 const HALF_PI = Math.PI / 2;
 const WALL_CENTER_X = (LEFT_X + RIGHT_X) / 2;
 
-const BOUNDS = { minX: LEFT_FACE + 0.35, maxX: RIGHT_X + 0.1, minZ: REAR_FACE + 0.45, maxZ: FRONT_Z + 0.1 };
 
 const tone = {
   cream: "#f1ece3",
@@ -430,6 +430,15 @@ function Team() {
 
 const START: Spawn = spawnFor(localCharacterId);
 
+/** The loft compiled with the current desk layout: walls, furniture and the walkable grid. */
+function useLoft() {
+  const layout = useOfficeLayout((state) => state.layout);
+  return useMemo(
+    () => compileSpace(defaultLoft, { extraItems: deskItems(desksFor(layout), layout.id === "default") }),
+    [layout],
+  );
+}
+
 function LocalPlayer() {
   const customAvatar = useAvatarStore((state) => state.config);
   const localStatus = useRealtimeStore((state) => state.localStatus);
@@ -447,7 +456,15 @@ function LocalPlayer() {
   const target = useAppStore((state) => state.target);
   const setTarget = useAppStore((state) => state.setTarget);
   const group = useRef<THREE.Group>(null);
-  const position = useRef(new THREE.Vector3(...START));
+  const loft = useLoft();
+  const position = useRef<THREE.Vector3 | null>(null);
+  if (!position.current) {
+    const start = loft.nearestWalkable({ x: START[0], z: START[2] });
+    position.current = new THREE.Vector3(start.x, 0, start.z);
+  }
+  /** Waypoints toward the current click target, from A* on the walkable grid. */
+  const path = useRef<{ x: number; z: number }[]>([]);
+  const correction = useRealtimeStore((state) => state.correction);
   const keys = useRef<Record<string, boolean>>({});
   const movingRef = useRef(false);
   const lastSent = useRef(0);
@@ -474,9 +491,24 @@ function LocalPlayer() {
     };
   }, [setTarget]);
 
+  useEffect(() => {
+    const here = position.current!;
+    path.current = target ? (loft.findPath({ x: here.x, z: here.z }, target)?.slice(1) ?? []) : [];
+    if (target && path.current.length === 0) setTarget(null);
+  }, [loft, setTarget, target]);
+
+  // The server rejected a step (through a wall, or too fast): snap back to its spot.
+  useEffect(() => {
+    if (!correction) return;
+    position.current!.set(correction.x, 0, correction.z);
+    path.current = [];
+    setTarget(null);
+  }, [correction, setTarget]);
+
   useFrame((_, delta) => {
     const node = group.current;
-    if (!node) return;
+    const here = position.current;
+    if (!node || !here) return;
 
     let dx = 0;
     let dz = 0;
@@ -490,29 +522,41 @@ function LocalPlayer() {
       const length = Math.hypot(dx, dz);
       dx /= length;
       dz /= length;
-      const speed = 2.5;
-      position.current.x += dx * speed * delta;
-      position.current.z += dz * speed * delta;
-    } else if (target) {
-      const offsetX = target.x - position.current.x;
-      const offsetZ = target.z - position.current.z;
+      const step = 2.5 * delta;
+      // Slide along walls and furniture: try the full step, then each axis alone.
+      const options = [
+        [here.x + dx * step, here.z + dz * step],
+        [here.x + dx * step, here.z],
+        [here.x, here.z + dz * step],
+      ] as const;
+      const next = options.find(([x, z]) => loft.walkable(x, z));
+      if (next) {
+        here.x = next[0];
+        here.z = next[1];
+      }
+    } else if (path.current.length > 0) {
+      const waypoint = path.current[0]!;
+      const goal = path.current[path.current.length - 1]!;
+      const offsetX = waypoint.x - here.x;
+      const offsetZ = waypoint.z - here.z;
       const distance = Math.hypot(offsetX, offsetZ);
-      if (distance < 0.12) {
-        setTarget(null);
-      } else {
-        // Never step past the target: at low frame rates a full step would
-        // overshoot and jitter around it (across zone edges) instead of landing.
-        const step = Math.min(distance, Math.min(2.9, 1.1 + distance) * delta);
-        position.current.x += (offsetX / distance) * step;
-        position.current.z += (offsetZ / distance) * step;
+      const remaining = Math.hypot(goal.x - here.x, goal.z - here.z);
+      // Never step past the waypoint: at low frame rates a full step would
+      // overshoot and jitter around it (across zone edges) instead of landing.
+      const step = Math.min(distance, Math.min(2.9, 1.1 + remaining) * delta);
+      if (distance > 1e-6) {
+        here.x += (offsetX / distance) * step;
+        here.z += (offsetZ / distance) * step;
         dx = offsetX;
         dz = offsetZ;
       }
+      if (distance - step < 0.02) {
+        path.current.shift();
+        if (path.current.length === 0) setTarget(null);
+      }
     }
 
-    position.current.x = THREE.MathUtils.clamp(position.current.x, BOUNDS.minX, BOUNDS.maxX);
-    position.current.z = THREE.MathUtils.clamp(position.current.z, BOUNDS.minZ, BOUNDS.maxZ);
-    node.position.set(position.current.x, 0, position.current.z);
+    node.position.set(here.x, 0, here.z);
 
     if (dx !== 0 || dz !== 0) {
       const desired = Math.atan2(dx, dz);
@@ -531,13 +575,10 @@ function LocalPlayer() {
     const now = Date.now();
     if (now - lastSent.current > (isMoving ? 70 : 450)) {
       lastSent.current = now;
-      useRealtimeStore.getState().setLocalPosition({
-        x: position.current.x,
-        z: position.current.z,
-      });
+      useRealtimeStore.getState().setLocalPosition({ x: here.x, z: here.z });
       useRealtimeStore.getState().sendMove({
-        x: position.current.x,
-        z: position.current.z,
+        x: here.x,
+        z: here.z,
         rotation: node.rotation.y,
         moving: isMoving,
       });
@@ -545,7 +586,7 @@ function LocalPlayer() {
   });
 
   return (
-    <group ref={group} position={START}>
+    <group ref={group} position={[position.current.x, 0, position.current.z]}>
       <TeamAvatar
         character={character}
         position={[0, 0, 0]}

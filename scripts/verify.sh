@@ -74,6 +74,7 @@ run "Typecheck" bun run typecheck
 run "Unit tests" bun test
 run "Proximity gain math" bun scripts/gain-check.mjs
 run "Voice room authorization" bun scripts/token-check.mjs
+run "Walls block movement" bun scripts/wall-check.mjs
 
 if [ "$MODE" = quick ]; then
   run_ui "Realtime presence + chat bot" bun run shot:multi

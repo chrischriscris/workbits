@@ -43,6 +43,8 @@ type RealtimeState = {
   messages: RealtimeMessage[];
   localPosition: { x: number; z: number };
   hasMoved: boolean;
+  /** Last position the server snapped us back to (`seq` changes on every correction). */
+  correction: { x: number; z: number; seq: number } | null;
   emotes: Record<string, { kind: string; until: number }>;
   localStatus: string;
   connect: () => Promise<void>;
@@ -82,6 +84,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => {
   messages: [],
   localPosition: { x: -3.5, z: 6.5 },
   hasMoved: false,
+  correction: null,
   emotes: {},
   localStatus: "available",
 
@@ -134,6 +137,12 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => {
           });
         },
       );
+      room.onMessage("correct", (position: { x: number; z: number }) => {
+        if (!Number.isFinite(position?.x) || !Number.isFinite(position?.z)) return;
+        set((state) => ({
+          correction: { x: position.x, z: position.z, seq: (state.correction?.seq ?? 0) + 1 },
+        }));
+      });
       room.onMessage("player_added", (player: RemotePlayer) => {
         set((state) => ({ players: { ...state.players, [player.id]: player } }));
       });

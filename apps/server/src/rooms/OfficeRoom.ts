@@ -2,7 +2,17 @@ import { randomUUID } from "node:crypto";
 import { appendFile, mkdir, readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { Client, Room } from "@colyseus/core";
-import { zoneAt, type AvatarConfig, type OfficeLayout } from "@workbits/shared";
+import {
+  BENCH_DESKS,
+  characterSpawns,
+  compileSpace,
+  defaultLoft,
+  deskItems,
+  zoneAt,
+  type AvatarConfig,
+  type CompiledSpace,
+  type OfficeLayout,
+} from "@workbits/shared";
 import { presence } from "../presence";
 
 type PlayerData = {
@@ -29,16 +39,21 @@ const characterIds = new Set([
   "clawd",
 ]);
 
-const spawns: Record<string, { x: number; z: number }> = {
-  chus: { x: -3.6, z: 4.2 },
-  jules: { x: 2.6, z: -3.35 },
-  mira: { x: -1.7, z: 2.0 },
-  felix: { x: 3.5, z: 2.25 },
-  fern: { x: -1.7, z: -0.9 },
-  arlo: { x: -5.15, z: 0.55 },
-  theo: { x: 6.4, z: 3.05 },
-  clawd: { x: 1.4, z: -2.75 },
-};
+/**
+ * Movement is checked against the office's walkable grid (ADR-015). The
+ * server pads walls and furniture less than the client does (0.12 vs 0.25),
+ * so a client following its own path never trips the check, while walking
+ * through a wall, a desk or the meeting-room glass does.
+ */
+const SERVER_RADIUS = 0.12;
+/** Fastest a client walks (click-to-move tops out at 2.9 m/s), with headroom for jitter. */
+const MAX_SPEED = 2.9 * 1.5;
+const MOVE_SLACK = 0.4;
+
+function compileOffice(layout?: OfficeLayout): CompiledSpace {
+  const desks = layout ? deskItems(layout.desks, false) : deskItems(BENCH_DESKS, true);
+  return compileSpace(defaultLoft, { radius: SERVER_RADIUS, extraItems: desks });
+}
 
 type MoveMessage = {
   x: number;
@@ -197,6 +212,9 @@ export class OfficeRoom extends Room {
   private lastMeta = new Map<string, number>();
   private history: StoredMessage[] = [];
   private layout?: OfficeLayout;
+  private space: CompiledSpace = compileOffice();
+  /** When each player's current position was accepted, for the speed check. */
+  private acceptedAt = new Map<string, number>();
   private historyFile = join(process.env.DATA_DIR ?? join(process.cwd(), "data"), "chat.jsonl");
 
   override async onCreate() {
@@ -234,8 +252,17 @@ export class OfficeRoom extends Room {
       const z = Number(message?.z);
       if (!Number.isFinite(x) || !Number.isFinite(z)) return;
 
-      player.x = Math.max(-8.2, Math.min(8.2, x));
-      player.z = Math.max(-6.2, Math.min(6.2, z));
+      const elapsed = (now - (this.acceptedAt.get(client.sessionId) ?? now)) / 1000;
+      const distance = Math.hypot(x - player.x, z - player.z);
+      const plausible = distance <= MAX_SPEED * elapsed + MOVE_SLACK;
+      if (!plausible || !this.space.segmentClear(player, { x, z })) {
+        // Too fast, or through a wall or furniture: keep the last good spot and tell the client.
+        client.send("correct", { x: player.x, z: player.z });
+        return;
+      }
+      this.acceptedAt.set(client.sessionId, now);
+      player.x = x;
+      player.z = z;
       player.rotation = Number.isFinite(Number(message.rotation)) ? Number(message.rotation) : 0;
       player.moving = Boolean(message.moving);
       player.zone = zoneAt(player.x, player.z);
@@ -282,6 +309,7 @@ export class OfficeRoom extends Room {
       const layout = sanitizeLayout(message?.layout);
       if (!layout) return;
       this.layout = layout;
+      this.space = compileOffice(layout);
       this.broadcast("layout", layout);
     });
 
@@ -375,11 +403,16 @@ export class OfficeRoom extends Room {
   override onJoin(client: Client, options: Record<string, unknown>) {
     const requested = typeof options.characterId === "string" ? options.characterId : "chus";
     const characterId = characterIds.has(requested) ? requested : "chus";
-    const spawn = spawns[characterId] ?? spawns.chus!;
-    const restoreX = finite(options.x, -12.2, 12.2);
-    const restoreZ = finite(options.z, -8.5, 8.5);
-    const spawnX = restoreX ?? spawn.x;
-    const spawnZ = restoreZ ?? spawn.z;
+    // A reconnect may restore its last spot, but only onto walkable ground.
+    const restoreX = finite(options.x, -100, 100);
+    const restoreZ = finite(options.z, -100, 100);
+    const restored =
+      restoreX !== undefined && restoreZ !== undefined && this.space.walkable(restoreX, restoreZ)
+        ? { x: restoreX, z: restoreZ }
+        : undefined;
+    const start = restored ?? this.space.nearestWalkable(characterSpawns[characterId] ?? characterSpawns.chus!);
+    const spawnX = start.x;
+    const spawnZ = start.z;
     const avatar = sanitizeAvatar(options.avatar);
     const requestedStatus = String(options.status ?? "");
     const status = ["available", "focus", "away", "meeting"].includes(requestedStatus)
@@ -404,6 +437,7 @@ export class OfficeRoom extends Room {
 
     this.players.set(client.sessionId, player);
     this.lastMove.set(client.sessionId, 0);
+    this.acceptedAt.set(client.sessionId, Date.now());
     presence.set(client.sessionId, {
       sessionId: client.sessionId,
       characterId,
@@ -419,6 +453,7 @@ export class OfficeRoom extends Room {
   override onLeave(client: Client) {
     this.players.delete(client.sessionId);
     this.lastMove.delete(client.sessionId);
+    this.acceptedAt.delete(client.sessionId);
     this.lastMeta.delete(client.sessionId);
     presence.delete(client.sessionId);
     this.broadcast("player_left", { id: client.sessionId });

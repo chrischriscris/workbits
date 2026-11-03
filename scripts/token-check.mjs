@@ -1,5 +1,6 @@
 import { Client } from "colyseus.js";
 import { API, MEETING_ROOM, VOICE_ROOM, WS } from "./lib/lane.mjs";
+import { walkBot } from "./lib/walk.mjs";
 
 const base = API;
 let failures = 0;
@@ -40,7 +41,9 @@ check(
   `granted ${floorBody.room}`,
 );
 
-room.send("move", { x: -4.8, z: -3.2, rotation: 0, moving: false });
+// Walk in through the door; the server rejects teleports (ADR-015).
+const self = welcome.players.find((player) => player.id === room.sessionId);
+await walkBot(room, { x: self.x, z: self.z }, { x: -4.8, z: -3.2 });
 await new Promise((resolve) => setTimeout(resolve, 250));
 
 const meeting = await fetch(

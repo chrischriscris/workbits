@@ -1,6 +1,7 @@
 import { mkdir } from "node:fs/promises";
 import { Client } from "colyseus.js";
 import { WS, app, launchBrowser } from "./lib/lane.mjs";
+import { spawnOf, walkBot } from "./lib/walk.mjs";
 
 const pageUrl = process.argv[2] ? `${process.argv[2]}?character=chus&e2e=1` : app("?character=chus&e2e=1");
 await mkdir("artifacts/shots", { recursive: true });
@@ -36,7 +37,7 @@ bot.onMessage("chat", (message) => {
 console.log("bot state keys", Object.keys(bot.state ?? {}));
 console.log("bot players type", typeof bot.state?.players, typeof bot.state?.players?.onAdd, bot.state?.players?.size);
 console.log("bot players", bot.state?.players ? [...bot.state.players.values()].map((p) => ({ ...p })) : null);
-bot.send("move", { x: -4.9, z: 4.3, rotation: 0.5, moving: false });
+await walkBot(bot, spawnOf("jules"), { x: -4.9, z: 4.3 }, { stepMs: 40, rotation: 0.5 });
 await page.waitForTimeout(1500);
 
 console.log("tags:", await page.locator(".name-tag").allTextContents());
