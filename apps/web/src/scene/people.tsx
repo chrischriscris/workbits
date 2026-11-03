@@ -3,7 +3,9 @@ import { createPortal, useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { AvatarConfig } from "@workbits/shared";
+import { perfTools } from "../lib/perfMode";
 
 /**
  * Chibi people assembled at runtime from the Grab3D Character Mixer "Cozy"
@@ -235,16 +237,27 @@ function attachPart(
   part: THREE.Object3D,
   spec: PartSpec,
   fit: Fit,
+  skeletons: Map<string, THREE.Skeleton>,
 ) {
   const meshes: THREE.SkinnedMesh[] = [];
   part.traverse((child) => {
     if (child instanceof THREE.SkinnedMesh) meshes.push(child);
   });
   for (const source of meshes) {
-    const skeleton = new THREE.Skeleton(
-      source.skeleton.bones.map((bone) => bones[bone.name]!),
-      source.skeleton.boneInverses,
-    );
+    // Parts on the same rig and bind pose share one skeleton: three uploads a
+    // bone texture per skeleton every frame, so per-part skeletons multiplied
+    // that cost by the number of parts (perf, ADR-015).
+    const key = `${source.skeleton.bones.map((bone) => bone.name).join(",")}|${source.skeleton.boneInverses
+      .map((matrix) => matrix.elements.map((value) => value.toFixed(4)).join(","))
+      .join(";")}`;
+    let skeleton = skeletons.get(key);
+    if (!skeleton) {
+      skeleton = new THREE.Skeleton(
+        source.skeleton.bones.map((bone) => bones[bone.name]!),
+        source.skeleton.boneInverses,
+      );
+      skeletons.set(key, skeleton);
+    }
     const mesh = new THREE.SkinnedMesh(
       source.geometry,
       Array.isArray(source.material)
@@ -303,6 +316,103 @@ function addFace(bones: Record<string, THREE.Bone>, face: { skin: string }) {
   nose.scale.set(0.018, 0.014, 0.013);
   nose.position.set(0, 0.152, 0.214);
   addTo(bones.head, nose);
+}
+
+/** Perf bisection switch: `?fx=-mixer` freezes animation. */
+const NO_MIXER =
+  perfTools && typeof window !== "undefined" && (new URLSearchParams(window.location.search).get("fx") ?? "").includes("-mixer");
+
+/** Dev-only comparison switch: `?fx=-merge` keeps avatar parts separate. */
+const NO_MERGE =
+  perfTools && typeof window !== "undefined" && (new URLSearchParams(window.location.search).get("fx") ?? "").includes("-merge");
+
+/**
+ * One material for every merged avatar: slot colours live in vertex colours,
+ * and the kit look's faint self-glow (emissive = 0.14 × colour) is kept by
+ * scaling the emissive term by the vertex colour.
+ */
+const avatarMaterial = new THREE.MeshStandardMaterial({
+  vertexColors: true,
+  roughness: 0.78,
+  metalness: 0,
+  emissive: new THREE.Color(0.14, 0.14, 0.14),
+});
+avatarMaterial.onBeforeCompile = (shader) => {
+  shader.fragmentShader = shader.fragmentShader.replace(
+    "vec3 totalEmissiveRadiance = emissive;",
+    "vec3 totalEmissiveRadiance = emissive * vColor.rgb;",
+  );
+};
+
+/**
+ * Merge an avatar's kit parts into one skinned mesh per shared skeleton (perf,
+ * ADR-015): ~20 draw calls per person become one. Morph-based body fits are
+ * baked into positions first. Groups whose bind matrices differ are left alone.
+ */
+function mergeSkinnedParts(rig: THREE.Object3D) {
+  const bySkeleton = new Map<THREE.Skeleton, THREE.SkinnedMesh[]>();
+  rig.traverse((child) => {
+    const mesh = child as THREE.SkinnedMesh;
+    if (!mesh.isSkinnedMesh || Array.isArray(mesh.material)) return;
+    const list = bySkeleton.get(mesh.skeleton) ?? [];
+    list.push(mesh);
+    bySkeleton.set(mesh.skeleton, list);
+  });
+  for (const [skeleton, meshes] of bySkeleton) {
+    if (meshes.length < 2) continue;
+    const bind = meshes[0]!.bindMatrix;
+    if (!meshes.every((mesh) => mesh.bindMatrix.equals(bind))) continue;
+    const pieces: THREE.BufferGeometry[] = [];
+    for (const mesh of meshes) {
+      const source = mesh.geometry;
+      const piece = (source.index ? source.toNonIndexed() : source.clone()) as THREE.BufferGeometry;
+      // Bake active morph targets (body fits) into the base shape.
+      const influences = mesh.morphTargetInfluences ?? [];
+      for (const name of ["position", "normal"] as const) {
+        const base = piece.getAttribute(name) as THREE.BufferAttribute | undefined;
+        const targets = piece.morphAttributes[name];
+        if (!base || !targets) continue;
+        influences.forEach((weight, index) => {
+          const target = targets[index];
+          if (!weight || !target) return;
+          for (let i = 0; i < base.count; i += 1) {
+            for (let axis = 0; axis < 3; axis += 1) {
+              const from = base.getComponent(i, axis);
+              const value = target.getComponent(i, axis);
+              base.setComponent(i, axis, piece.morphTargetsRelative ? from + value * weight : from + (value - from) * weight);
+            }
+          }
+        });
+      }
+      piece.morphAttributes = {};
+      piece.morphTargetsRelative = false;
+      const color = (mesh.material as THREE.MeshStandardMaterial).color;
+      const count = piece.getAttribute("position").count;
+      const colors = new Float32Array(count * 3);
+      for (let i = 0; i < count; i += 1) {
+        colors[i * 3] = color.r;
+        colors[i * 3 + 1] = color.g;
+        colors[i * 3 + 2] = color.b;
+      }
+      piece.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+      for (const name of Object.keys(piece.attributes)) {
+        if (!["position", "normal", "skinIndex", "skinWeight", "color"].includes(name)) piece.deleteAttribute(name);
+      }
+      if (!piece.getAttribute("normal")) piece.computeVertexNormals();
+      pieces.push(piece);
+    }
+    const geometry = mergeGeometries(pieces, false);
+    pieces.forEach((piece) => piece.dispose());
+    if (!geometry) continue;
+    const merged = new THREE.SkinnedMesh(geometry, avatarMaterial);
+    merged.name = "avatar-body";
+    merged.castShadow = true;
+    merged.receiveShadow = true;
+    merged.frustumCulled = false;
+    meshes[0]!.parent!.add(merged);
+    merged.bind(skeleton, bind);
+    for (const mesh of meshes) mesh.removeFromParent();
+  }
 }
 
 /** Small authored extras the kit lacks, hung off bones in rig units. */
@@ -445,12 +555,16 @@ export function CozyPerson({ look, pose = "standing", motion = "idle", phase = 0
   const { rig, bones } = useMemo(() => {
     const rig = cloneSkeleton(skeleton.scene);
     const bones = findBones(rig);
-    look.parts.forEach((spec, index) => attachPart(rig, bones, parts[index]!.scene, spec, look.fit));
+    const skeletons = new Map<string, THREE.Skeleton>();
+    look.parts.forEach((spec, index) => attachPart(rig, bones, parts[index]!.scene, spec, look.fit, skeletons));
+    if (!NO_MERGE) mergeSkinnedParts(rig);
     addExtras(bones, look);
     return { rig, bones };
   }, [skeleton, parts, look]);
 
-  const { actions } = useAnimations(animations, group);
+  const { actions, mixer } = useAnimations(animations, group);
+  // Perf bisection switch (?fx=-mixer): freeze the clips.
+  if (NO_MIXER) mixer.timeScale = 0;
 
   const clip = motion === "walk" ? "walk" : motion === "wave" && pose === "standing" ? "wave" : "idle";
   useEffect(() => {

@@ -1,12 +1,14 @@
-import { ContactShadows, MapControls, SoftShadows } from "@react-three/drei";
+import { ContactShadows, MapControls, PerformanceMonitor, SoftShadows } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Bloom, BrightnessContrast, EffectComposer, HueSaturation, SSAO, Vignette } from "@react-three/postprocessing";
-import { Suspense, useEffect, useMemo } from "react";
+import { Bloom, BrightnessContrast, EffectComposer, HueSaturation, Vignette } from "@react-three/postprocessing";
+import { memo, Suspense, useEffect, useMemo, useRef } from "react";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import * as THREE from "three";
 import { useRealtimeStore } from "../realtime/store";
+import { forcedQuality, useQuality } from "../state/quality";
 import { useSpace } from "../state/space";
 import { Office } from "./Office";
+import { perfTools } from "../lib/perfMode";
 
 const tmpRight = new THREE.Vector3();
 const tmpUp = new THREE.Vector3();
@@ -39,6 +41,11 @@ function CameraRig() {
     [floor],
   );
   const initial = artMode ? new THREE.Vector3(artTarget[0], artTarget[1], artTarget[2]) : fitTarget;
+
+  // Avatars render on layer 1 (kept out of the once-per-office contact shadows).
+  useEffect(() => {
+    camera.layers.enable(1);
+  }, [camera]);
 
   useEffect(() => {
     const orthographic = camera as THREE.OrthographicCamera;
@@ -118,6 +125,60 @@ function CameraRig() {
 }
 
 /**
+ * The sun's shadow map only changes with the office (avatars don't cast into
+ * it), so it renders for a few frames after each change instead of every frame.
+ */
+function StaticShadows({ docKey }: { docKey: string }) {
+  const gl = useThree((state) => state.gl);
+  const pending = useRef(0);
+  useEffect(() => {
+    gl.shadowMap.autoUpdate = false;
+    pending.current = 10; // a few frames, so late-mounting items are included
+    return () => {
+      gl.shadowMap.autoUpdate = true;
+    };
+  }, [gl, docKey]);
+  useFrame(() => {
+    if (pending.current <= 0) return;
+    pending.current -= 1;
+    gl.shadowMap.needsUpdate = true;
+  });
+  return null;
+}
+
+/**
+ * Dev-only perf hook: draw calls and triangles summed over every render pass in
+ * a frame (shadow map, post-processing, contact shadows), read by
+ * scripts/perf-check.mjs through window.__WORKBITS_PERF__().
+ */
+function PerfProbe() {
+  const gl = useThree((state) => state.gl);
+  const last = useRef({ calls: 0, triangles: 0, geometries: 0, textures: 0 });
+  useEffect(() => {
+    if (!perfTools) return;
+    gl.info.autoReset = false;
+    const target = window as unknown as { __WORKBITS_PERF__?: () => typeof last.current };
+    target.__WORKBITS_PERF__ = () => ({ ...last.current });
+    return () => {
+      gl.info.autoReset = true;
+      delete target.__WORKBITS_PERF__;
+    };
+  }, [gl]);
+  // Runs first each frame: record the previous frame's totals, then reset.
+  useFrame(() => {
+    if (!perfTools) return;
+    last.current = {
+      calls: gl.info.render.calls,
+      triangles: gl.info.render.triangles,
+      geometries: gl.info.memory.geometries,
+      textures: gl.info.memory.textures,
+    };
+    gl.info.reset();
+  }, -1000);
+  return null;
+}
+
+/**
  * Soft image-based light from three's procedural studio room, generated
  * locally (no HDR download). It gives every surface the gentle wrap-around
  * fill and soft highlights the plush reference renders have.
@@ -145,7 +206,7 @@ function SoftEnvironment({ intensity = 0.5 }: { intensity?: number }) {
 function DevExport() {
   const scene = useThree((state) => state.scene);
   useEffect(() => {
-    if (!import.meta.env.DEV) return;
+    if (!perfTools) return;
     const target = window as unknown as { __WORKBITS_EXPORT__?: () => Promise<string> };
     target.__WORKBITS_EXPORT__ = async () => (await import("./devExport")).exportSceneGlb(scene);
     return () => {
@@ -155,9 +216,19 @@ function DevExport() {
   return null;
 }
 
-export function OfficeScene() {
-  const e2e = new URLSearchParams(window.location.search).has("e2e");
+/** Memoised: it takes no props, so App updates (status, chat, menus) never re-render the 3D tree. */
+export const OfficeScene = memo(function OfficeScene() {
+  const search = new URLSearchParams(window.location.search);
+  const e2e = search.has("e2e");
+  // Dev-only perf switches, e.g. ?fx=-post,-soft (scripts/perf-check.mjs): -post, -soft,
+  // -contact, -shadows, -aa, -bloom. Production ignores them.
+  const off = new Set(perfTools ? (search.get("fx") ?? "").split(",").map((part) => part.replace(/^-/, "")) : []);
+  const shadows = !e2e && !off.has("shadows");
+  const quality = useQuality((state) => state.quality);
+  const setQuality = useQuality((state) => state.setQuality);
+  const high = quality === "high";
   const floor = useSpace((state) => state.doc.floor);
+  const docKey = useSpace((state) => `${state.doc.id}|${JSON.stringify(state.office)}`);
   // Lights and shadows sit relative to the floor; the loft's floor gives the old origin exactly.
   const center = { x: floor.x + floor.w / 2 - 0.12, z: floor.z + floor.d / 2 - 0.145 };
   // ±17 for the 15 × 11 loft.
@@ -172,20 +243,22 @@ export function OfficeScene() {
 
   return (
     <Canvas
-      shadows={!e2e}
+      shadows={shadows}
       orthographic
       camera={{ position: [20, 15, 20], zoom: 46, near: -100, far: 200 }}
       // e2e checks run in SwiftShader (CPU); half-resolution 3D keeps them fast.
       // The HTML UI on top stays sharp, and art checks use art-view, not e2e.
       dpr={e2e ? 0.5 : [1, 1.75]}
-      gl={{ antialias: !e2e, alpha: true, powerPreference: e2e ? "low-power" : "high-performance" }}
+      gl={{ antialias: !e2e && !off.has("aa"), alpha: true, powerPreference: e2e ? "low-power" : "high-performance" }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
         gl.toneMappingExposure = 1.0;
       }}
     >
+      {/* Step down to the balanced tier when frames sag (integrated GPUs); remembered per browser. */}
+      {!e2e && !forcedQuality && high && <PerformanceMonitor onDecline={() => setQuality("balanced")} />}
       <Suspense fallback={null}>
-        {!e2e && <SoftShadows size={26} samples={8} focus={0.7} />}
+        {shadows && high && !off.has("soft") && <SoftShadows size={26} samples={8} focus={0.7} />}
         <SoftEnvironment intensity={0.4} />
         <hemisphereLight args={["#fff4e6", "#f3e2cc", 0.32]} />
         {/* Warm, lower afternoon sun from the window side: longer soft shadows. */}
@@ -209,8 +282,11 @@ export function OfficeScene() {
         <Office />
         <DevExport />
         {/* Re-renders the scene from below every frame: skipped in e2e checks. */}
-        {!e2e && (
+        {!e2e && !off.has("contact") && (
           <ContactShadows
+            // Rendered once per office: furniture doesn't move, and avatars (layer 1) are excluded.
+            key={docKey}
+            frames={1}
             position={[center.x, 0.055, center.z]}
             opacity={0.36}
             scale={Math.max(floor.w, floor.d) * 2.25}
@@ -221,21 +297,23 @@ export function OfficeScene() {
           />
         )}
         <CameraRig />
-        {!e2e && (
-          <EffectComposer multisampling={0} enableNormalPass>
-            <SSAO samples={16} radius={5} intensity={5} luminanceInfluence={0.22} color="#1b1b1b" />
+        <PerfProbe />
+        <StaticShadows docKey={docKey} />
+        {!e2e && !off.has("post") && (
+          // No SSAO: it cost ~2/3 of the frame on integrated graphics for a barely visible
+          // difference (artifacts/perf); contact shadows carry the grounding.
+          <EffectComposer multisampling={0}>
             <HueSaturation saturation={0.12} />
             <BrightnessContrast brightness={0} contrast={0.11} />
-            <Bloom
-              intensity={0.06}
-              luminanceThreshold={0.98}
-              luminanceSmoothing={0.35}
-              mipmapBlur
-            />
+            {high && !off.has("bloom") ? (
+              <Bloom intensity={0.06} luminanceThreshold={0.98} luminanceSmoothing={0.35} mipmapBlur />
+            ) : (
+              <></>
+            )}
             <Vignette eskil={false} offset={0.16} darkness={0.18} />
           </EffectComposer>
         )}
       </Suspense>
     </Canvas>
   );
-}
+});

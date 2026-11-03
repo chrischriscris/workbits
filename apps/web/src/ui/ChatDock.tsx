@@ -1,6 +1,6 @@
 import { MessageCircle, SendHorizontal, Smile, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { spaceOf } from "@workbits/shared";
+import { roomsOf, spaceOf } from "@workbits/shared";
 import { useSpace } from "../state/space";
 import { localCharacterId, teamById } from "../data/team";
 import { useRealtimeStore } from "../realtime/store";
@@ -98,7 +98,6 @@ export function ChatDock() {
   const sendChat = useRealtimeStore((state) => state.sendChat);
   const connection = useRealtimeStore((state) => state.status);
   const livePlayers = useRealtimeStore((state) => state.players);
-  const localPosition = useRealtimeStore((state) => state.localPosition);
   const dmTargetId = useAppStore((state) => state.dmTargetId);
   const dmTarget = teamById[dmTargetId];
   const [draft, setDraft] = useState("");
@@ -140,9 +139,9 @@ export function ChatDock() {
   const totalUnread = Object.values(unread).reduce((sum, count) => sum + count, 0);
 
   const doc = useSpace((state) => state.doc);
-  const localRoom = spaceOf(doc).roomAt(localPosition.x, localPosition.z);
-  const localZone = localRoom.id;
-  const roomName = localRoom.name;
+  // The room id, not the position object, so chat doesn't re-render on every step.
+  const localZone = useRealtimeStore((state) => spaceOf(doc).roomAt(state.localPosition.x, state.localPosition.z).id);
+  const roomName = roomsOf(doc).find((room) => room.id === localZone)?.name ?? "Office";
   const messages: ChatMessage[] = [...initialMessages, ...realtimeMessages];
   const visibleMessages = messages.filter((message) => {
     if (message.channel !== chatTab) return false;

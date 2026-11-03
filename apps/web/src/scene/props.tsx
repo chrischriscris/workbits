@@ -3,7 +3,9 @@ import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { palette } from "../theme";
+import { useQuality } from "../state/quality";
 import { textures } from "./textures";
+import { perfTools } from "../lib/perfMode";
 
 export type V3 = [number, number, number];
 
@@ -53,6 +55,17 @@ const ink = {
   fabric: "#7d8894",
   leafLight: "#9cbb8c",
 };
+
+/** Dev-only perf switch (?fx=-points): lamps and pendants without real point lights. */
+const NO_POINT_LIGHTS =
+  perfTools &&
+  typeof window !== "undefined" &&
+  (new URLSearchParams(window.location.search).get("fx") ?? "").includes("-points");
+
+/** Real lamp/pendant lights only at the high quality tier (each one is a per-pixel cost everywhere). */
+function useLampLights() {
+  return useQuality((state) => state.quality) === "high" && !NO_POINT_LIGHTS;
+}
 
 const materialCache = new Map<string, THREE.MeshStandardMaterial>();
 
@@ -1172,6 +1185,7 @@ export function TableLamp({
   position = [0, 0, 0],
   light = false,
 }: Placement & { light?: boolean }) {
+  const lampLights = useLampLights();
   const geometry = baked("tablelamp", () => [
     ball([0.1, 0.12, 0.1], [0, 0.12, 0], "#d7c3a5"),
     cyl(0.012, 0.16, [0, 0.3, 0], ink.metal, undefined, G.cylLow),
@@ -1180,7 +1194,7 @@ export function TableLamp({
     <group position={position}>
       <BakedMesh geometry={geometry} />
       <mesh position={[0, 0.44, 0]} scale={[0.17, 0.2, 0.17]} geometry={G.cone} material={shadeMaterial} castShadow dispose={null} />
-      {light && <pointLight position={[0, 0.36, 0]} intensity={0.55} distance={3} color="#ffd9a0" />}
+      {light && lampLights && <pointLight position={[0, 0.36, 0]} intensity={0.55} distance={3} color="#ffd9a0" />}
     </group>
   );
 }
@@ -2100,6 +2114,7 @@ export function FloorLamp({
   color = palette.paper,
   light = true,
 }: Placement & { color?: string; light?: boolean }) {
+  const lampLights = useLampLights();
   const geometry = baked(`floorlamp`, () => [
     cyl(0.18, 0.03, [0, 0.015, 0], ink.charcoal),
     cyl(0.016, 1.55, [0, 0.79, 0], ink.charcoal, undefined, G.cylLow),
@@ -2111,7 +2126,7 @@ export function FloorLamp({
         <sphereGeometry args={[1, 20, 14]} />
         <meshStandardMaterial color={color} emissive="#ffe9c4" emissiveIntensity={0.55} roughness={0.9} />
       </mesh>
-      {light && <pointLight position={[0, 1.6, 0]} intensity={0.6} distance={3.5} color="#ffd9a0" />}
+      {light && lampLights && <pointLight position={[0, 1.6, 0]} intensity={0.6} distance={3.5} color="#ffd9a0" />}
     </group>
   );
 }
@@ -2125,6 +2140,7 @@ export function Pendant({
   light = false,
   size = 1,
 }: Placement & { kind?: "dome" | "cone" | "bell" | "bar"; drop?: number; length?: number; light?: boolean; size?: number }) {
+  const lampLights = useLampLights();
   return (
     <group position={position}>
       {kind === "bar" ? (
@@ -2150,7 +2166,7 @@ export function Pendant({
           <mesh position={[0, 0.05, 0]} scale={0.08 * size} geometry={G.sphere} material={glowMaterial} dispose={null} />
         </>
       )}
-      {light && <pointLight position={[0, -0.1, 0]} intensity={0.8} distance={4.5} color="#ffd9a0" />}
+      {light && lampLights && <pointLight position={[0, -0.1, 0]} intensity={0.8} distance={4.5} color="#ffd9a0" />}
     </group>
   );
 }

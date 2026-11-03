@@ -12,6 +12,8 @@ import { useAppStore } from "../state/app";
 import { palette } from "../theme";
 import { EmoteBubble, TeamAvatar, type AvatarMotion, type AvatarPose } from "./avatars";
 import { SpaceContents } from "./catalog";
+import { DevBots } from "./DevBots";
+import { StaticBatch } from "./StaticBatch";
 import { RemotePlayers } from "./RemotePlayers";
 import {
   Block,
@@ -488,14 +490,18 @@ export function Office() {
   const doc = useSpace((state) => state.doc);
   return (
     <group>
-      <Floor />
+      {/* Everything static merges into a few draw calls; rebuilt when the office changes. */}
+      <StaticBatch key={doc.id + doc.items.length}>
+        <Floor />
+        <Walls />
+        <SpaceContents doc={doc} />
+      </StaticBatch>
       <SunPatches />
-      <Walls />
-      <SpaceContents doc={doc} />
       {!NO_CAST && (
         <>
           <Team />
           <RemotePlayers />
+          <DevBots />
           <LocalPlayer />
         </>
       )}

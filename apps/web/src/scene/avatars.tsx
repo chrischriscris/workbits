@@ -6,6 +6,7 @@ import type { SeedCharacter } from "@workbits/shared";
 import { palette, statusColor } from "../theme";
 import { Mat } from "./props";
 import { CozyPerson, PERSON_HEIGHT, PERSON_HIP, PERSON_SCALE, cozyLook, withGeneratedHead } from "./people";
+import { perfTools } from "../lib/perfMode";
 
 const emoteEmoji: Record<string, string> = {
   wave: "👋",
@@ -128,6 +129,9 @@ function faceZ(x: number, y: number) {
 /* HUD bits                                                            */
 /* ------------------------------------------------------------------ */
 
+/** Perf bisection switch (?fx=-tags). */
+const NO_TAGS = perfTools && typeof window !== "undefined" && (new URLSearchParams(window.location.search).get("fx") ?? "").includes("-tags");
+
 function NameTag({
   character,
   isLocal,
@@ -147,6 +151,7 @@ function NameTag({
   useLayoutEffect(() => {
     setGeneration((value) => value + 1);
   }, []);
+  if (NO_TAGS) return null;
   return (
     <Html
       key={generation}
@@ -190,13 +195,54 @@ function VoiceRing({ active }: { active?: boolean }) {
   );
 }
 
-function GroundShadow({ radius }: { radius: number }) {
+/** Soft radial falloff for avatar blob shadows (the sun's shadow map is static, ADR-015 perf). */
+const blobTexture = (() => {
+  if (typeof document === "undefined") return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 64;
+  const ctx = canvas.getContext("2d")!;
+  const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gradient.addColorStop(0, "rgba(255,255,255,1)");
+  gradient.addColorStop(0.55, "rgba(255,255,255,0.6)");
+  gradient.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 64, 64);
+  return new THREE.CanvasTexture(canvas);
+})();
+
+function GroundShadow({ radius, opacity = 0.32 }: { radius: number; opacity?: number }) {
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.12, 0]}>
-      <circleGeometry args={[radius, 24]} />
-      <meshBasicMaterial color="#2e3440" transparent opacity={0.17} depthWrite={false} />
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]} renderOrder={1}>
+      <planeGeometry args={[radius * 2.4, radius * 2.4]} />
+      <meshBasicMaterial color="#3a2f26" map={blobTexture} transparent opacity={opacity} depthWrite={false} />
     </mesh>
   );
+}
+
+/**
+ * Avatars live on render layer 1 (the main camera sees layers 0 and 1) and
+ * don't cast into the sun's shadow map: the map and the contact shadows are
+ * rendered once per office, and moving avatars would freeze into them.
+ * Parts load asynchronously, so new children are tagged as they appear.
+ */
+function AvatarLayer({ children }: { children: React.ReactNode }) {
+  const group = useRef<THREE.Group>(null);
+  const tagged = useRef(0);
+  useFrame(() => {
+    const root = group.current;
+    if (!root) return;
+    let count = 0;
+    root.traverse(() => {
+      count += 1;
+    });
+    if (count === tagged.current) return;
+    tagged.current = count;
+    root.traverse((object) => {
+      object.layers.set(1);
+      if ((object as THREE.Mesh).isMesh) object.castShadow = false;
+    });
+  });
+  return <group ref={group}>{children}</group>;
 }
 
 /* ------------------------------------------------------------------ */
@@ -1629,6 +1675,7 @@ function CozyAvatar({
   // mounts next to a suspending sibling can lose its DOM root.
   return (
     <Suspense fallback={null}>
+      {pose === "standing" && <GroundShadow radius={0.42} />}
       <group
         position={[0, sitting ? SEAT_TOP - 0.08 - PERSON_HIP * PERSON_SCALE : 0, sitting ? 0.04 * PERSON_SCALE : 0]}
         scale={PERSON_SCALE}
@@ -1705,8 +1752,10 @@ type TeamAvatarProps = Parameters<typeof TeamAvatarInner>[0];
  */
 export function TeamAvatar(props: TeamAvatarProps) {
   return (
-    <Suspense fallback={null}>
-      <TeamAvatarInner {...props} />
-    </Suspense>
+    <AvatarLayer>
+      <Suspense fallback={null}>
+        <TeamAvatarInner {...props} />
+      </Suspense>
+    </AvatarLayer>
   );
 }

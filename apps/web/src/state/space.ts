@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { perfTools } from "../lib/perfMode";
 import {
   buildOffice,
   defaultOfficeParams,
@@ -16,9 +17,9 @@ type SpaceState = {
   setOffice: (office: OfficeParams) => void;
 };
 
-/** Dev-only art bench: `?office=atelier&seats=12&seed=3` renders a template locally. */
+/** Art/perf bench (dev, or `?perf`): `?office=atelier&seats=12&seed=3` renders a template locally. */
 function initialOffice(): OfficeParams {
-  if (!import.meta.env.DEV || typeof window === "undefined") return defaultOfficeParams;
+  if (!perfTools || typeof window === "undefined") return defaultOfficeParams;
   const params = new URLSearchParams(window.location.search);
   const template = params.get("office");
   if (!template) return defaultOfficeParams;

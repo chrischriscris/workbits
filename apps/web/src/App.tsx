@@ -47,11 +47,11 @@ export default function App() {
   const realtimeReady = useRealtimeStore((state) => state.ready);
   const connectVoice = useVoiceStore((state) => state.connect);
   const syncVoiceZone = useVoiceStore((state) => state.syncZone);
-  const localPosition = useRealtimeStore((state) => state.localPosition);
   const doc = useSpace((state) => state.doc);
-  const localRoom = spaceOf(doc).roomAt(localPosition.x, localPosition.z);
-  const localZone = localRoom.id;
-  const localPrivate = localRoom.privacy === "private";
+  // Subscribe to the room id (a string), not the position object: the position
+  // updates every 70-450 ms and re-rendering App re-renders the whole scene.
+  const localZone = useRealtimeStore((state) => spaceOf(doc).roomAt(state.localPosition.x, state.localPosition.z).id);
+  const localPrivate = doc.rooms.some((room) => room.id === localZone && room.privacy === "private");
   const isJoinScreen =
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).get("join") === "1";
