@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { create } from "zustand";
-import { applyDeskLayout, defaultLoft, type SpaceDoc } from "@workbits/shared";
+import { applyDeskLayout, buildOffice, defaultLoft, type SpaceDoc } from "@workbits/shared";
 import { useOfficeLayout } from "./officeLayout";
 
 /** The office document the scene renders and walks on (ADR-015). */
@@ -9,8 +9,17 @@ type SpaceState = {
   setDoc: (doc: SpaceDoc) => void;
 };
 
+/** Dev-only art bench: `?office=atelier&seats=12&seed=3` renders a template locally. */
+function initialDoc(): SpaceDoc {
+  if (!import.meta.env.DEV || typeof window === "undefined") return defaultLoft;
+  const params = new URLSearchParams(window.location.search);
+  const template = params.get("office");
+  if (!template) return defaultLoft;
+  return buildOffice({ template, headcount: Number(params.get("seats") ?? 8), seed: Number(params.get("seed") ?? 1) });
+}
+
 export const useSpace = create<SpaceState>((set) => ({
-  doc: defaultLoft,
+  doc: initialDoc(),
   setDoc: (doc) => set({ doc }),
 }));
 

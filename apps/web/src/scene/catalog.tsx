@@ -122,13 +122,12 @@ function CatalogItem({ item }: { item: Item }) {
     if (import.meta.env.DEV) console.warn(`No renderer for catalog key "${item.key}"`);
     return null;
   }
+  // Transforms go on a wrapper so every component honours them the same way
+  // (not all props.tsx components take rotation or scale), matching the footprints.
   return (
-    <Component
-      {...item.params}
-      position={[item.at.x, item.at.y ?? 0, item.at.z]}
-      rotation={[0, item.rot ?? 0, 0]}
-      {...(item.scale !== undefined ? { scale: item.scale } : {})}
-    />
+    <group position={[item.at.x, item.at.y ?? 0, item.at.z]} rotation={[0, item.rot ?? 0, 0]} scale={item.scale ?? 1}>
+      <Component {...item.params} />
+    </group>
   );
 }
 
