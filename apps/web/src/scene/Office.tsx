@@ -13,6 +13,7 @@ import { palette } from "../theme";
 import { EmoteBubble, TeamAvatar, type AvatarMotion, type AvatarPose } from "./avatars";
 import { SpaceContents } from "./catalog";
 import { DevBots } from "./DevBots";
+import { localPlayer } from "./localPlayer";
 import { StaticBatch } from "./StaticBatch";
 import { RemotePlayers } from "./RemotePlayers";
 import {
@@ -67,8 +68,11 @@ function Floor() {
       <Block size={[FLOOR.width + 0.36, 0.05, FLOOR.depth + 0.36]} position={[0, -0.03, 0]} color={tone.plinthCap} radius={0.02} />
       <mesh
         receiveShadow
-        onPointerDown={(event) => {
+        // A click, not a press: the left-button drag that pans the camera also lands here,
+        // and it used to send the avatar walking to wherever the drag started.
+        onClick={(event) => {
           event.stopPropagation();
+          if (event.button !== 0 || event.delta > 6) return;
           setTarget({ x: event.point.x, z: event.point.z });
         }}
       >
@@ -284,6 +288,20 @@ function useLoft() {
   return useMemo(() => compileSpace(doc), [doc]);
 }
 
+/** Movement keys by physical key code: [screen right, screen up]. */
+const MOVE_KEYS: Record<string, readonly [number, number]> = {
+  KeyW: [0, 1],
+  ArrowUp: [0, 1],
+  KeyS: [0, -1],
+  ArrowDown: [0, -1],
+  KeyA: [-1, 0],
+  ArrowLeft: [-1, 0],
+  KeyD: [1, 0],
+  ArrowRight: [1, 0],
+};
+const screenRight = new THREE.Vector3();
+const screenAhead = new THREE.Vector3();
+
 function LocalPlayer() {
   const customAvatar = useAvatarStore((state) => state.config);
   const localStatus = useRealtimeStore((state) => state.localStatus);
@@ -306,6 +324,8 @@ function LocalPlayer() {
   if (!position.current) {
     const start = loft.nearestWalkable({ x: START[0], z: START[2] });
     position.current = new THREE.Vector3(start.x, 0, start.z);
+    localPlayer.x = start.x;
+    localPlayer.z = start.z;
   }
   /** Waypoints toward the current click target, from A* on the walkable grid. */
   const path = useRef<{ x: number; z: number }[]>([]);
@@ -316,23 +336,35 @@ function LocalPlayer() {
   const [moving, setMoving] = useState(false);
 
   useEffect(() => {
+    const release = () => {
+      keys.current = {};
+    };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
-      const key = event.key.toLowerCase();
-      if (["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key)) {
-        keys.current[key] = true;
+      const element = event.target as HTMLElement | null;
+      if (element && (element.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(element.tagName))) return;
+      // Shortcuts (Cmd+S, Ctrl+D…) aren't steps, and macOS never sends the keyup
+      // for a key pressed with Cmd held, which left the avatar walking on its own.
+      if (event.metaKey || event.ctrlKey || event.altKey) {
+        release();
+        return;
+      }
+      // Physical keys, so WASD sits in the same place on AZERTY and other layouts.
+      if (event.code in MOVE_KEYS) {
+        keys.current[event.code] = true;
         event.preventDefault();
         setTarget(null);
       }
     };
     const onKeyUp = (event: KeyboardEvent) => {
-      keys.current[event.key.toLowerCase()] = false;
+      keys.current[event.code] = false;
     };
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", release);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", release);
     };
   }, [setTarget]);
 
@@ -350,24 +382,35 @@ function LocalPlayer() {
     setTarget(null);
   }, [correction, setTarget]);
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     const node = group.current;
     const here = position.current;
     if (!node || !here) return;
 
     let dx = 0;
     let dz = 0;
-    const keyState = keys.current;
-    if (keyState.w || keyState.arrowup) dz -= 1;
-    if (keyState.s || keyState.arrowdown) dz += 1;
-    if (keyState.a || keyState.arrowleft) dx -= 1;
-    if (keyState.d || keyState.arrowright) dx += 1;
+    let across = 0;
+    let ahead = 0;
+    for (const [code, held] of Object.entries(keys.current)) {
+      if (!held) continue;
+      const [x, y] = MOVE_KEYS[code] ?? [0, 0];
+      across += x;
+      ahead += y;
+    }
 
-    if (dx !== 0 || dz !== 0) {
+    if (across !== 0 || ahead !== 0) {
+      // Relative to the screen, not the room's axes: up walks up the screen. The isometric
+      // camera looks down the room's diagonal, so world axes made W walk up-and-right.
+      state.camera.updateMatrixWorld();
+      screenRight.setFromMatrixColumn(state.camera.matrixWorld, 0).setY(0).normalize();
+      screenAhead.setFromMatrixColumn(state.camera.matrixWorld, 2).negate().setY(0).normalize();
+      dx = screenRight.x * across + screenAhead.x * ahead;
+      dz = screenRight.z * across + screenAhead.z * ahead;
       const length = Math.hypot(dx, dz);
       dx /= length;
       dz /= length;
-      const step = 2.5 * delta;
+      // At most a tenth of a second per frame: after a hitch a full step could hop a thin wall.
+      const step = 2.5 * Math.min(delta, 0.1);
       // Slide along walls and furniture: try the full step, then each axis alone.
       const options = [
         [here.x + dx * step, here.z + dz * step],
@@ -412,6 +455,9 @@ function LocalPlayer() {
     }
 
     const isMoving = dx !== 0 || dz !== 0;
+    localPlayer.x = here.x;
+    localPlayer.z = here.z;
+    localPlayer.moving = isMoving;
     if (isMoving !== movingRef.current) {
       movingRef.current = isMoving;
       setMoving(isMoving);

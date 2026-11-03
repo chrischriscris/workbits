@@ -79,6 +79,7 @@ run "Office templates on the server" bun scripts/space-check.mjs
 
 if [ "$MODE" = quick ]; then
   run_ui "Realtime presence + chat bot" bun run shot:multi
+  run_ui "Local controls" bun scripts/controls-check.mjs
   printf '\nTotal: %ss (quick; `bun run verify:full` for every browser check)\n' "$((SECONDS - TOTAL_START))" | tee -a "$REPORT"
   printf '\nArtifacts: `%s`\n' "$OUT" | tee -a "$REPORT"
   exit 0
@@ -139,6 +140,7 @@ lane_b() {
 }
 
 lane_c() {
+  run_ui "Local controls" bun scripts/controls-check.mjs
   run_ui "Emote broadcast" bun scripts/emote-check.mjs
   run_ui "Local assistant" bun scripts/assistant-check.mjs
   run_ui "Customization sync" bun scripts/sync-check.mjs

@@ -1,13 +1,13 @@
 import { ContactShadows, MapControls, PerformanceMonitor, SoftShadows } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Bloom, BrightnessContrast, EffectComposer, HueSaturation, Vignette } from "@react-three/postprocessing";
-import { memo, Suspense, useEffect, useMemo, useRef } from "react";
+import { memo, Suspense, useCallback, useEffect, useMemo, useRef } from "react";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import * as THREE from "three";
-import { useRealtimeStore } from "../realtime/store";
 import { forcedQuality, useQuality } from "../state/quality";
 import { useSpace } from "../state/space";
 import { Office } from "./Office";
+import { localPlayer } from "./localPlayer";
 import { perfTools } from "../lib/perfMode";
 
 const tmpRight = new THREE.Vector3();
@@ -18,7 +18,8 @@ const tmpDesired = new THREE.Vector3();
 /**
  * Fixed human-scale zoom (ADR-015). An office that fits on screen keeps the
  * hand-tuned framing; a bigger one follows the player, clamped so the view
- * never runs past the office's edges. Users can still pan and zoom.
+ * never runs past the office's edges. Users can still pan and zoom; a pan or
+ * zoom holds the view until the avatar moves again.
  */
 function CameraRig() {
   const camera = useThree((state) => state.camera);
@@ -41,6 +42,8 @@ function CameraRig() {
     [floor],
   );
   const initial = artMode ? new THREE.Vector3(artTarget[0], artTarget[1], artTarget[2]) : fitTarget;
+  /** The user panned or zoomed: don't drag the view back to the avatar until it walks. */
+  const manual = useRef(false);
 
   // Avatars render on layer 1 (kept out of the once-per-office contact shadows).
   useEffect(() => {
@@ -62,8 +65,14 @@ function CameraRig() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [controls, initial.x, initial.y, initial.z]);
 
+  const onStart = useCallback(() => {
+    manual.current = true;
+  }, []);
+
   useFrame((_, delta) => {
     if (!controls || artMode) return;
+    if (localPlayer.moving) manual.current = false;
+    if (manual.current) return;
     const zoom = (camera as THREE.OrthographicCamera).zoom;
     const halfW = size.width / zoom / 2;
     const halfH = size.height / zoom / 2;
@@ -93,8 +102,7 @@ function CameraRig() {
     const fitsX = maxX - minX <= halfW * 2 * 1.15;
     const fitsY = maxY - minY <= halfH * 2 * 1.15;
     if (fitsX && fitsY) return; // The tuned framing holds; leave panning to the user.
-    const player = useRealtimeStore.getState().localPosition;
-    tmpPoint.set(player.x, 0, player.z);
+    tmpPoint.set(localPlayer.x, 0, localPlayer.z);
     const px = tmpPoint.dot(tmpRight);
     const py = tmpPoint.dot(tmpUp);
     const fit = fitTarget;
@@ -120,6 +128,11 @@ function CameraRig() {
       maxZoom={90}
       panSpeed={0.85}
       zoomSpeed={0.85}
+      // Drag moves the floor with the cursor and stops when you let go; the default
+      // damping kept it sliding for about a second.
+      enableDamping={false}
+      zoomToCursor
+      onStart={onStart}
     />
   );
 }
