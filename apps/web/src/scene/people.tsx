@@ -563,6 +563,7 @@ export function CozyPerson({ look, pose = "standing", motion = "idle", phase = 0
   }, [skeleton, parts, look]);
 
   const { actions, mixer } = useAnimations(animations, group);
+  const lastHeadScale = useRef(new THREE.Vector3(-1, -1, -1));
   // Perf bisection switch (?fx=-mixer): freeze the clips.
   if (NO_MIXER) mixer.timeScale = 0;
 
@@ -583,7 +584,13 @@ export function CozyPerson({ look, pose = "standing", motion = "idle", phase = 0
     if (!group.current) return;
     // The kit's head is ~45% of height; the reference sits closer to a third.
     // Clips key head scale, so apply this after the mixer every frame.
-    bones.head?.scale.multiplyScalar(HEAD_SCALE);
+    // Only on frames where the mixer wrote a fresh head scale: clips that don't key
+    // it (the wave) leave the bone alone, and multiplying again shrank the head.
+    const head = bones.head;
+    if (head && !head.scale.equals(lastHeadScale.current)) {
+      head.scale.multiplyScalar(HEAD_SCALE);
+      lastHeadScale.current.copy(head.scale);
+    }
     if (pose === "sitting") poseSitting(bones, group.current);
     if (motion === "type") poseTyping(bones, group.current, state.clock.elapsedTime + phase);
   });

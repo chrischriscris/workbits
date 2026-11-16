@@ -39,6 +39,8 @@ export function Lineup() {
         gl.toneMappingExposure = 1.16;
         camera.position.set(20 + focus[0], 15 + focus[1], 20 + focus[2]);
         camera.lookAt(...focus);
+        // Avatars render on layer 1 (see AvatarLayer in avatars.tsx).
+        camera.layers.enable(1);
       }}
     >
       <Suspense fallback={null}>
