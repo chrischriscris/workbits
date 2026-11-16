@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Typecheck, unit tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun test
+      - run: bun run build
+
+  server:
+    name: Server-side checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: bun install --frozen-lockfile
+      # The realtime server alone: it signs voice tokens itself and never calls LiveKit,
+      # so movement validation, voice-room authorization and office switching run without it.
+      - name: Start the realtime server
+        working-directory: apps/server
+        run: |
+          nohup node --import tsx src/index.ts > "$RUNNER_TEMP/server.log" 2>&1 &
+          for _ in $(seq 1 60); do
+            (exec 3<>/dev/tcp/127.0.0.1/3101) 2>/dev/null && exit 0
+            sleep 0.5
+          done
+          cat "$RUNNER_TEMP/server.log"
+          exit 1
+      - run: bun scripts/gain-check.mjs
+      - run: bun scripts/token-check.mjs
+      - run: bun scripts/wall-check.mjs
+      - run: bun scripts/space-check.mjs
+      - name: Server log
+        if: failure()
+        run: cat "$RUNNER_TEMP/server.log"
