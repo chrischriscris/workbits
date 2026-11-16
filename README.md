@@ -6,33 +6,33 @@ Workbits is built to be a product, not an internal tool: multi-tenant architectu
 
 ![Workbits demo](art/workbits-demo.png)
 
-| Avatar Studio | Workspace Studio |
+| Avatar Studio | Office Studio |
 |---|---|
-| ![Avatar Studio](art/avatar-studio.png) | ![Workspace Studio](art/workspace-studio.png) |
+| ![Avatar Studio](art/avatar-studio.png) | ![Office Studio](art/office-studio.png) |
 
-## Status — first playable demo
+## Status
 
 **Working locally now:**
 
-- Isometric 3D office with lounge, engineering pod, glass meeting room, kitchen, and nap nook.
-- The Workbits team seed pack: 8 characters (human, frog, crab mascot), name tags, statuses, roles, and desks.
-- Click-to-walk and screen-relative WASD movement with a floating move marker.
-- Colyseus realtime presence: two tabs see each other; movement is server-validated.
-- Shared text chat: Global, Office, Room, and DM with unread indicators; room chat is scoped to the room you are standing in, DMs are routed server-side to the two participants only, and history persists. Emoji picker and copyable invite links are wired.
-- Local AI assistant: ask where people are, which room is free, who is in the meeting room, or for a summary. Answers come from live presence; no API key, with walk-to actions.
-- Generated portraits in the roster, chat, profile, invite picker, and account chip, drawn from each avatar config.
-- Proximity voice via LiveKit: server-minted room-scoped tokens, mic publish, distance-based volume, deafen, and a truly separate LiveKit room for the meeting room. Verified with two browser clients and cross-room isolation.
-- Avatar Studio: prompt → three modular bases → tune skin, hair, outfit, glasses, beard, cap, and chain → apply and persist; your avatar syncs to everyone in the office.
-- Workspace Studio: prompt → three desk layouts → apply to the engineering pod for everyone, and persist.
-- Office assistant panel: live presence/room Q&A, scene-aware answers, walk-to actions, and an explicit local-engine label.
-- Rooms popover with click-to-walk navigation, invite links with a pick-your-seat onboarding, status menu, animated room-wide emotes, and automatic reconnect.
-- Verification scripts: screenshots, headless bot, voice check, avatar studio, proximity math.
+- **Buildable offices.** An office is a document (rooms, glass, furniture, spawns) that the server and client compile the same way. Six plans ship, from a 12 × 9 studio to a 24 × 12 gallery, and room kits furnish any room size. The Office studio turns a sentence ("a team of twelve, no nap room") into three plans; picking one switches the office for everyone.
+- **Walls are real.** The server only accepts movement at walking speed along walkable ground; click-to-walk finds a path through doors, and the arrow keys slide along walls.
+- **Presence and chat.** Colyseus realtime presence; Global, Office, Room and DM chat with unread indicators. Room chat follows the room you're in, DMs are routed server-side, and history persists.
+- **Proximity voice** via LiveKit: server-minted tokens, distance-based volume, and a separate voice channel for every private room.
+- **Avatar Studio:** prompt, three bases, tune skin, hair, outfit and accessories; your avatar syncs to everyone.
+- **Office assistant:** ask where people are, which room is free, or for a summary. Answers come from live presence, with walk-to actions. No API key needed.
+- **Demo cast** (8 characters including a frog and a winged crab), statuses, emotes, invite links, reconnect, mobile layout, a welcome page, and a single-process production mode.
 
-**Not done yet:** auth/orgs/invites, a full office editor, a real LLM room generator, billing, and multi-instance scale. Chat persistence, mobile layout, a local workspace generator, a welcome page, and single-process deployment are in.
+**Not done yet:** auth, orgs and invites; persistence of offices; the office editor; a real LLM provider; billing; multi-instance scale.
+
+**Known limitations:**
+
+- **No auth.** Anyone connected can switch the office for everyone. Fine for local development; don't deploy it publicly yet.
+- **Performance.** On a weak integrated GPU (Intel UHD, Ice Lake GT1) at 1080p the loft runs about 43 fps and 50 avatars about 33 fps (target 60). See `bun scripts/perf-check.mjs` and [`docs/verification/perf/`](docs/verification/perf/).
+- Some art scripts expect private reference images that aren't in this repo (see [`art/README.md`](art/README.md)).
 
 ## Quick start
 
-See [`HANDOFF.md`](HANDOFF.md) for the five-minute tour, what is real, and known gaps.
+You need [Bun](https://bun.sh) 1.4+, Node 22+, and Docker (for the local LiveKit voice server).
 
 ```bash
 bun install
@@ -68,15 +68,16 @@ Open **http://localhost:3100**. The marketing page is at **http://localhost:3100
 http://localhost:3100/?character=jules
 ```
 
-Click the mic to publish your microphone. Voice volume follows avatar distance; the meeting-room privacy switch is not wired yet.
+Click the mic to publish your microphone. Voice volume follows avatar distance; private rooms (the meeting room, the nap nook) have their own voice channel.
 
 ## Verification
 
 ```bash
-bun run verify
+bun run verify        # ~1 min: typecheck, unit tests, server-side movement/voice/office checks, one browser smoke test
+bun run verify:full   # ~6 min: every browser check, in three parallel lanes
 ```
 
-This runs typecheck, 22 unit tests, proximity math checks, a desktop screenshot, realtime presence/chat tests, voice and private-room isolation checks, reconnect, DM privacy, the assistant, both studios, and mobile. The production mode has a separate `bun run prod-check`. The report and screenshots land in `artifacts/verify/<timestamp>/`. Artifacts are gitignored.
+Both need `bun run dev` running. Browser checks also need Playwright's Chromium (`bunx playwright install chromium-headless-shell`). Reports and screenshots land in `artifacts/verify/<timestamp>/` (gitignored). Production mode has a separate `bun run prod-check`; frame-rate measurement is `bun scripts/perf-check.mjs` (needs system Chrome and a GPU).
 
 ## Stack
 
@@ -94,7 +95,8 @@ This runs typecheck, 22 unit tests, proximity math checks, a desktop screenshot,
 ## Docs map
 
 - [`PLAN.md`](PLAN.md) — product, architecture, phases, risks.
-- [`AGENTS.md`](AGENTS.md) — how an agent works in this repo.
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — setup, checks and pull requests.
+- [`AGENTS.md`](AGENTS.md) — how AI agents work in this repo.
 - [`docs/brief.md`](docs/brief.md) — the original directives, distilled.
 - [`docs/decisions.md`](docs/decisions.md) — ADR log.
 - [`docs/open-questions.md`](docs/open-questions.md) — what is still undecided.
@@ -111,7 +113,7 @@ This runs typecheck, 22 unit tests, proximity math checks, a desktop screenshot,
 ```
 apps/web          React + Vite + R3F client
 apps/server       Colyseus realtime + LiveKit token endpoint
-packages/shared   shared types/schemas
+packages/shared   shared types, office documents (compiler, templates, room kits)
 infra             Docker Compose, Caddy, LiveKit, deploy scripts
 art               concept references, demo screenshots, exports
 seeds/team        optional, data-driven team demo pack
@@ -127,6 +129,6 @@ docs              product, architecture, research, verification, progress
 5. **Tenant isolation and authz from day one.**
 6. **No copying.** References are direction, not assets, branding, or code.
 
----
+## License
 
-Proprietary. All rights reserved. No license granted yet.
+[MIT](LICENSE).

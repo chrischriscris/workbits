@@ -7,6 +7,6 @@ OUT="artifacts/art/$STAMP"
 mkdir -p "$OUT"
 bun scripts/art-shot.mjs http://127.0.0.1:3100 "$OUT/current.png"
 bash scripts/art-compare.sh "$OUT/current.png" "$OUT/compare.png" >/dev/null
-cp art/style-scene.png "$OUT/target.png"
+cp "${ART_REFERENCE:-art/style-scene.png}" "$OUT/target.png"
 printf 'Art iteration: %s\n' "$OUT"
 printf '  current: %s/current.png\n  compare: %s/compare.png\n' "$OUT" "$OUT"

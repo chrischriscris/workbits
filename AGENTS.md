@@ -1,6 +1,8 @@
 # AGENTS.md — Working on Workbits
 
-This file is the operating manual for any agent (or human) working in this repository. Read it before touching code.
+This file is the operating manual for AI agents working in this repository. Read it before touching code.
+
+**Humans:** start with [`CONTRIBUTING.md`](CONTRIBUTING.md); this file is mostly about how agents plan, verify and report.
 
 ## 1. Read order
 

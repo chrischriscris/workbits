@@ -12,12 +12,15 @@ room getting worse) doesn't hide inside a global average.
 import json
 import sys
 
+import os
 import torch
 from dreamsim import dreamsim
 from PIL import Image
 
 current_path = sys.argv[1]
-reference_path = sys.argv[2] if len(sys.argv) > 2 else "art/style-scene.png"
+reference_path = sys.argv[2] if len(sys.argv) > 2 else os.environ.get("ART_REFERENCE", "art/style-scene.png")
+if not os.path.exists(reference_path):
+    sys.exit(f"No reference at {reference_path}. It isn't in the public repo; pass one or set ART_REFERENCE.")
 
 device = "mps" if torch.backends.mps.is_available() else "cpu"
 model, preprocess = dreamsim(pretrained=True, device=device, cache_dir=".cache/dreamsim")
