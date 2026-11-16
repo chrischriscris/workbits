@@ -14,9 +14,9 @@ Workbits is built to be a product, not an internal tool: multi-tenant architectu
 
 **Working locally now:**
 
-- Isometric 3D office with lounge, engineering pod, glass meeting room, kitchen, nap room, and garden.
+- Isometric 3D office with lounge, engineering pod, glass meeting room, kitchen, and nap nook.
 - The Workbits team seed pack: 8 characters (human, frog, crab mascot), name tags, statuses, roles, and desks.
-- Click-to-walk and WASD movement with a floating move marker.
+- Click-to-walk and screen-relative WASD movement with a floating move marker.
 - Colyseus realtime presence: two tabs see each other; movement is server-validated.
 - Shared text chat: Global, Office, Room, and DM with unread indicators; room chat is scoped to the room you are standing in, DMs are routed server-side to the two participants only, and history persists. Emoji picker and copyable invite links are wired.
 - Local AI assistant: ask where people are, which room is free, who is in the meeting room, or for a summary. Answers come from live presence; no API key, with walk-to actions.

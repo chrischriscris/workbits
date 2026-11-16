@@ -38,12 +38,6 @@
         "name": "Kitchen",
         "type": "kitchen",
         "private": false
-      },
-      {
-        "id": "garden",
-        "name": "Garden",
-        "type": "outdoor",
-        "private": false
       }
     ],
     "desks": [
@@ -107,10 +101,10 @@
           "color": "#2B1B12"
         },
         "outfit": {
-          "top": "sweater",
-          "topColor": "#31527A",
+          "top": "crew-tee",
+          "topColor": "#22304F",
           "bottom": "chinos",
-          "bottomColor": "#E8DCC8",
+          "bottomColor": "#1E1F24",
           "shoes": "sneakers",
           "shoesColor": "#F5F5F5"
         },
@@ -122,6 +116,10 @@
           "primary": "#31527A",
           "secondary": "#D4AF37",
           "accent": "#F5F5F5"
+        },
+        "eyes": {
+          "style": "laughing",
+          "color": "#2A1C17"
         }
       },
       "persona": {
@@ -160,11 +158,11 @@
         },
         "outfit": {
           "top": "suit-jacket",
-          "topColor": "#C9B79C",
+          "topColor": "#1C1D21",
           "bottom": "suit-pants",
-          "bottomColor": "#2E3440",
-          "shoes": "sneakers",
-          "shoesColor": "#F5F5F5"
+          "bottomColor": "#1C1D21",
+          "shoes": "dress-shoes",
+          "shoesColor": "#141414"
         },
         "accessories": [
           "white-shirt",
@@ -200,23 +198,25 @@
           "style": "slick-short",
           "color": "#1A1A1A"
         },
-        "glasses": {
-          "style": "rect",
-          "color": "#3A3A3A"
-        },
         "outfit": {
-          "top": "crew-tee",
-          "topColor": "#6F8F6A",
+          "top": "hoodie",
+          "topColor": "#F2F0EC",
           "bottom": "chinos",
-          "bottomColor": "#E8DCC8",
+          "bottomColor": "#1E1F24",
           "shoes": "sneakers",
           "shoesColor": "#F5F5F5"
         },
-        "accessories": [],
+        "accessories": [
+          "backpack"
+        ],
         "palette": {
           "primary": "#6F8F6A",
           "secondary": "#F5F5F5",
           "accent": "#6B7280"
+        },
+        "eyes": {
+          "style": "laughing",
+          "color": "#2A1C17"
         }
       },
       "persona": {
@@ -252,8 +252,8 @@
           "color": "#1A1A1A"
         },
         "outfit": {
-          "top": "hoodie",
-          "topColor": "#B4654A",
+          "top": "graphic-tee",
+          "topColor": "#2A2B30",
           "bottom": "jeans",
           "bottomColor": "#3A4A5A",
           "shoes": "sneakers",
@@ -265,7 +265,7 @@
         "palette": {
           "primary": "#B4654A",
           "secondary": "#8FA3B8",
-          "accent": "#F5F5F5"
+          "accent": "#8FB8D8"
         }
       },
       "persona": {

@@ -1,0 +1,107 @@
+{
+  "version": 1,
+  "palette": "workbits",
+  "unit": "meter",
+  "up": "Y",
+  "forward": "+Z",
+  "models": [
+    {
+      "id": "lounge-sofa",
+      "file": "apps/web/public/assets/models/lounge/sofa.glb",
+      "category": "seating",
+      "footprint": [
+        2.8,
+        1.08
+      ],
+      "height": 1.02,
+      "materials": [
+        "fabric",
+        "wood",
+        "pillow",
+        "pillow-alt"
+      ],
+      "source": {
+        "pack": "Quaternius Ultimate Furniture Pack",
+        "asset": "Sofa2.fbx",
+        "author": "Quaternius",
+        "url": "https://quaternius.com/packs/ultimatefurniture.html",
+        "license": "CC0-1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+      },
+      "modifications": [
+        "FBX imported in Blender 5.2, merged to one mesh",
+        "subdivision level 1 applied, smooth shading",
+        "three accent pillows authored and joined",
+        "normalized to 2.8 m width, origin at floor center",
+        "materials renamed to fabric/wood/pillow slots; colors applied at runtime"
+      ],
+      "thumbnail": null
+    },
+    {
+      "id": "lounge-armchair",
+      "file": "apps/web/public/assets/models/lounge/armchair.glb",
+      "category": "seating",
+      "footprint": [
+        0.95,
+        0.83
+      ],
+      "height": 0.79,
+      "materials": [
+        "wood",
+        "fabric",
+        "pillow-alt"
+      ],
+      "source": {
+        "pack": "Quaternius Ultimate Furniture Pack",
+        "asset": "Sofa_individual.fbx",
+        "author": "Quaternius",
+        "url": "https://quaternius.com/packs/ultimatefurniture.html",
+        "license": "CC0-1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+      },
+      "modifications": [
+        "FBX imported in Blender 5.2, merged to one mesh",
+        "subdivision level 1 applied, smooth shading",
+        "one accent pillow authored and joined",
+        "normalized to 0.95 m width, origin at floor center",
+        "materials renamed to fabric/wood/pillow slots; colors applied at runtime"
+      ],
+      "thumbnail": null
+    },
+    {
+      "id": "person-cozy-kit",
+      "file": "apps/web/public/assets/models/cozy/",
+      "category": "person",
+      "footprint": [
+        0.7,
+        0.35
+      ],
+      "height": 1.1,
+      "materials": [
+        "skin",
+        "hair",
+        "eyes",
+        "primary",
+        "secondary",
+        "accent",
+        "metal"
+      ],
+      "source": {
+        "pack": "Grab3D Character Mixer — Cozy style",
+        "asset": "skeleton.glb, animations.glb, parts/*.glb",
+        "author": "Grab3D",
+        "url": "https://grab3d.com/tools/character-mixer/",
+        "license": "CC0-1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+      },
+      "modifications": [
+        "unmodified GLBs; 26 office-relevant parts of 68 copied",
+        "assembled at runtime onto one shared 19-bone rig (people.tsx)",
+        "materials recoloured per slot from the seed avatar config, with slight emissive",
+        "sunglasses lenses, tie, gold chain, watch, bracelet, earbud, sleep mask added in code on bones",
+        "head scaled to 0.87 and sit/type poses applied over the idle clip at runtime"
+      ],
+      "thumbnail": null
+    }
+  ]
+}

@@ -49,5 +49,6 @@ const ok =
   errors.length === 0;
 console.log("WELCOME:", ok ? "PASS" : "FAIL", errors.slice(0, 2));
 
-await browser.close();
+// Exit instead of browser.close(): once WebRTC is up, Chromium's graceful
+// shutdown takes ~25s. Playwright kills the browser when the process exits.
 process.exit(ok ? 0 : 1);

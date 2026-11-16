@@ -1,6 +1,6 @@
 import { Check, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
-import { zoneAt, zoneName } from "@workbits/shared";
+import { roomAtNow } from "../state/space";
 import { localCharacterId, roomLabel, teamCharacters } from "../data/team";
 import { useRealtimeStore } from "../realtime/store";
 import { copyInviteLink } from "../lib/invite";
@@ -94,7 +94,7 @@ export function Roster() {
           const isYou = character.id === localCharacterId;
           const isSelected = selectedId === character.id;
           const live = liveByCharacter.get(character.id);
-          const liveZone = live ? zoneName(zoneAt(live.x, live.z)) : null;
+          const liveZone = live ? roomAtNow(live.x, live.z).name : null;
           return (
             <button
               key={character.id}

@@ -1,21 +1,18 @@
-import { chromium } from "playwright";
 import { Client } from "colyseus.js";
+import { WS, app, launchBrowser } from "./lib/lane.mjs";
 
-const botClient = new Client("ws://127.0.0.1:3101");
+const botClient = new Client(WS);
 const bot = await botClient.joinOrCreate("office", { characterId: "fern", name: "Fern" });
 bot.onMessage("*", () => {});
 
-const browser = await chromium.launch({
+const browser = await launchBrowser({
   args: [
-    "--use-gl=angle",
-    "--use-angle=swiftshader",
-    "--enable-unsafe-swiftshader",
     "--ignore-gpu-blocklist",
   ],
 });
 const page = await browser.newPage({ viewport: { width: 1200, height: 760 } });
 page.on("pageerror", (error) => console.log("pageerror:", error.message));
-await page.goto("http://127.0.0.1:3100/?character=chus&e2e=1", { waitUntil: "domcontentloaded" });
+await page.goto(app("?character=chus&e2e=1"), { waitUntil: "domcontentloaded" });
 await page.waitForFunction(() => window.__WORKBITS_READY__ === true, undefined, { timeout: 60000 });
 await page.waitForFunction(
   () => window.__WORKBITS_DEBUG__?.().players.length > 1,
@@ -88,5 +85,6 @@ const ok =
 console.log("ASSISTANT:", ok ? "PASS" : "FAIL");
 
 await bot.leave();
-await browser.close();
+// Exit instead of browser.close(): once WebRTC is up, Chromium's graceful
+// shutdown takes ~25s. Playwright kills the browser when the process exits.
 process.exit(ok ? 0 : 1);

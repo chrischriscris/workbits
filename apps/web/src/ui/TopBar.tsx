@@ -3,11 +3,11 @@ import { useState } from "react";
 import {
   localCharacter,
   localCharacterId,
-  roomAnchors,
   teamById,
   teamCharacters,
-  teamPack,
 } from "../data/team";
+import { roomsOf } from "@workbits/shared";
+import { useSpace } from "../state/space";
 import { useRealtimeStore } from "../realtime/store";
 import { useAppStore } from "../state/app";
 import { useAvatarStore } from "../state/avatar";
@@ -18,6 +18,8 @@ import { palette, statusColor } from "../theme";
 type OpenMenu = "user" | "office" | null;
 
 export function TopBar() {
+  const doc = useSpace((state) => state.doc);
+  const officeName = doc.id === "default-loft" ? "Workbits Loft" : `Workbits ${doc.name}`;
   const setTarget = useAppStore((state) => state.setTarget);
   const setAssistantOpen = useAppStore((state) => state.setAssistantOpen);
   const realtimeStatus = useRealtimeStore((state) => state.status);
@@ -74,7 +76,7 @@ export function TopBar() {
               <LayoutGrid size={15} strokeWidth={2.2} />
             </span>
             <span className="office-switcher__text">
-              <strong>Workbits Loft</strong>
+              <strong>{officeName}</strong>
               <small>Floor 1</small>
             </span>
             <ChevronDown size={14} className="office-switcher__chevron" />
@@ -85,7 +87,7 @@ export function TopBar() {
               <button className="menu-scrim" type="button" onClick={() => setOpenMenu(null)} aria-label="Close rooms" />
               <div className="user-menu office-menu">
                 <div className="user-menu__label">Rooms · Floor 1</div>
-                {teamPack.office.rooms.map((room) => {
+                {roomsOf(doc).map((room) => {
                   const people = teamCharacters.filter(
                     (character) => character.kind === "user" && character.room === room.id,
                   );
@@ -95,7 +97,7 @@ export function TopBar() {
                       className="office-menu__item"
                       type="button"
                       onClick={() => {
-                        setTarget(roomAnchors[room.id] ?? null);
+                        setTarget(room.anchor);
                         setOpenMenu(null);
                       }}
                     >
@@ -105,7 +107,7 @@ export function TopBar() {
                       <span>
                         <strong>
                           {room.name}
-                          {room.private && <Lock size={10} />}
+                          {room.privacy === "private" && <Lock size={10} />}
                         </strong>
                         <small>
                           {people.length === 0

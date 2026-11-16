@@ -3,5 +3,8 @@ import "@fontsource-variable/inter";
 import "@fontsource-variable/manrope";
 import "./styles.css";
 import App from "./App";
+import { Lineup } from "./scene/Lineup";
 
-createRoot(document.getElementById("root")!).render(<App />);
+const lineup = import.meta.env.DEV && new URLSearchParams(window.location.search).has("lineup");
+
+createRoot(document.getElementById("root")!).render(lineup ? <Lineup /> : <App />);

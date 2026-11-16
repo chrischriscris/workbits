@@ -1,10 +1,10 @@
 import { create } from "zustand";
 import { Client, type Room } from "colyseus.js";
-import { zoneAt, type AvatarConfig, type OfficeLayout } from "@workbits/shared";
+import type { AvatarConfig, OfficeParams } from "@workbits/shared";
+import { roomAtNow, useSpace } from "../state/space";
 import { localCharacter, localCharacterId } from "../data/team";
 import { realtimeUrl } from "../config";
 import { useAvatarStore } from "../state/avatar";
-import { useOfficeLayout } from "../state/officeLayout";
 
 export type RemotePlayer = {
   id: string;
@@ -43,6 +43,8 @@ type RealtimeState = {
   messages: RealtimeMessage[];
   localPosition: { x: number; z: number };
   hasMoved: boolean;
+  /** Last position the server snapped us back to (`seq` changes on every correction). */
+  correction: { x: number; z: number; seq: number } | null;
   emotes: Record<string, { kind: string; until: number }>;
   localStatus: string;
   connect: () => Promise<void>;
@@ -53,7 +55,8 @@ type RealtimeState = {
   sendEmote: (kind: string) => void;
   setStatus: (status: string) => void;
   setAvatar: (avatar: AvatarConfig | null) => void;
-  sendLayout: (layout: OfficeLayout) => void;
+  /** Ask the server to switch the office plan (it builds the document itself). */
+  sendSpace: (office: OfficeParams) => void;
 };
 
 let client: Client | null = null;
@@ -82,6 +85,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => {
   messages: [],
   localPosition: { x: -3.5, z: 6.5 },
   hasMoved: false,
+  correction: null,
   emotes: {},
   localStatus: "available",
 
@@ -111,12 +115,12 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => {
           voiceKey?: string;
           players: RemotePlayer[];
           messages?: RealtimeMessage[];
-          layout?: OfficeLayout;
+          office?: OfficeParams;
         }) => {
           reconnectAttempts = 0;
           const players = Object.fromEntries(message.players.map((player) => [player.id, player]));
           const localStatus = message.players.find((player) => player.id === message.selfId)?.status ?? "available";
-          if (message.layout) useOfficeLayout.getState().applyLayout(message.layout);
+          if (message.office) useSpace.getState().setOffice(message.office);
           set((state) => {
             const merged = [...state.messages];
             for (const item of message.messages ?? []) {
@@ -134,6 +138,12 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => {
           });
         },
       );
+      room.onMessage("correct", (position: { x: number; z: number }) => {
+        if (!Number.isFinite(position?.x) || !Number.isFinite(position?.z)) return;
+        set((state) => ({
+          correction: { x: position.x, z: position.z, seq: (state.correction?.seq ?? 0) + 1 },
+        }));
+      });
       room.onMessage("player_added", (player: RemotePlayer) => {
         set((state) => ({ players: { ...state.players, [player.id]: player } }));
       });
@@ -162,8 +172,8 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => {
           });
         }, 2300);
       });
-      room.onMessage("layout", (layout: OfficeLayout) => {
-        useOfficeLayout.getState().applyLayout(layout);
+      room.onMessage("space", (office: OfficeParams) => {
+        useSpace.getState().setOffice(office);
       });
       room.onMessage("chat", (message: RealtimeMessage) => {
         set((state) => {
@@ -235,8 +245,8 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => {
     get().room?.send("avatar", { avatar });
   },
 
-  sendLayout: (layout) => {
-    get().room?.send("layout", { layout });
+  sendSpace: (office) => {
+    get().room?.send("space", { office });
   },
 
   sendEmote: (kind) => {
@@ -270,7 +280,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => {
       channel,
       body: trimmed,
       time: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
-      ...(channel === "room" ? { zone: zoneAt(position.x, position.z) } : {}),
+      ...(channel === "room" ? { zone: roomAtNow(position.x, position.z).id } : {}),
       ...(to ? { to } : {}),
     };
     set((state) => ({ messages: [...state.messages, message] }));
@@ -289,7 +299,7 @@ if (import.meta.env.DEV && typeof window !== "undefined") {
       sessionId: string | null;
       players: RemotePlayer[];
       localZone: string;
-      layout: OfficeLayout;
+      office: OfficeParams;
       avatar: AvatarConfig | null;
     };
     __WORKBITS_DROP__: () => void;
@@ -304,8 +314,8 @@ if (import.meta.env.DEV && typeof window !== "undefined") {
       status: state.status,
       sessionId: state.sessionId,
       players: Object.values(state.players),
-      localZone: zoneAt(state.localPosition.x, state.localPosition.z),
-      layout: useOfficeLayout.getState().layout,
+      localZone: roomAtNow(state.localPosition.x, state.localPosition.z).id,
+      office: useSpace.getState().office,
       avatar: useAvatarStore.getState().config,
     };
   };

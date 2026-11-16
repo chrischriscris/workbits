@@ -1,0 +1,62 @@
+{
+  "seconds": 6,
+  "viewport": "1920x1080",
+  "build": "production",
+  "vsync": true,
+  "results": [
+    {
+      "scenario": "loft, high",
+      "fps": 25,
+      "p95ms": 50.1,
+      "worstMs": 50.1,
+      "drawCalls": 224,
+      "triangles": 414143,
+      "renderer": "ANGLE (Intel, Mesa Intel(R) UHD Graphics (ICL GT1), OpenGL ES 3.2)"
+    },
+    {
+      "scenario": "loft, balanced",
+      "fps": 43,
+      "p95ms": 33.4,
+      "worstMs": 33.5,
+      "drawCalls": 208,
+      "triangles": 414127,
+      "renderer": "ANGLE (Intel, Mesa Intel(R) UHD Graphics (ICL GT1), OpenGL ES 3.2)"
+    },
+    {
+      "scenario": "loft +50, high",
+      "fps": 19,
+      "p95ms": 66.7,
+      "worstMs": 116.7,
+      "drawCalls": 1062,
+      "triangles": 1186755,
+      "renderer": "ANGLE (Intel, Mesa Intel(R) UHD Graphics (ICL GT1), OpenGL ES 3.2)"
+    },
+    {
+      "scenario": "loft +50, balanced",
+      "fps": 33,
+      "p95ms": 33.4,
+      "worstMs": 50,
+      "drawCalls": 1046,
+      "triangles": 1186739,
+      "renderer": "ANGLE (Intel, Mesa Intel(R) UHD Graphics (ICL GT1), OpenGL ES 3.2)"
+    },
+    {
+      "scenario": "atelier, balanced",
+      "fps": 37,
+      "p95ms": 33.4,
+      "worstMs": 50,
+      "drawCalls": 240,
+      "triangles": 421303,
+      "renderer": "ANGLE (Intel, Mesa Intel(R) UHD Graphics (ICL GT1), OpenGL ES 3.2)"
+    },
+    {
+      "scenario": "atelier +50, balanced",
+      "fps": 30,
+      "p95ms": 33.4,
+      "worstMs": 50.1,
+      "drawCalls": 1072,
+      "triangles": 1192491,
+      "renderer": "ANGLE (Intel, Mesa Intel(R) UHD Graphics (ICL GT1), OpenGL ES 3.2)"
+    }
+  ]
+}

@@ -1,17 +1,14 @@
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
-import { chromium } from "playwright";
+import { app, launchBrowser } from "./lib/lane.mjs";
 
-const url = process.argv[2] ?? "http://127.0.0.1:3100/";
+const url = process.argv[2] ?? app();
 const out = process.argv[3] ?? "artifacts/shots/office.png";
 
 await mkdir(path.dirname(out), { recursive: true });
 
-const browser = await chromium.launch({
+const browser = await launchBrowser({
   args: [
-    "--use-gl=angle",
-    "--use-angle=swiftshader",
-    "--enable-unsafe-swiftshader",
     "--ignore-gpu-blocklist",
   ],
 });
@@ -32,7 +29,10 @@ await page
   .waitForFunction(() => window.__WORKBITS_READY__ === true, { timeout: 30000 })
   .catch(() => console.error("ready flag not set; screenshotting anyway"));
 await page.waitForTimeout(1500);
-await page.screenshot({ path: out });
+// SwiftShader can take well over 30s to hand back a frame of the full scene.
+await page.screenshot({ path: out, timeout: 120000, animations: "disabled" });
 console.log(out);
 
-await browser.close();
+// Exit instead of browser.close(): once WebRTC is up, Chromium's graceful
+// shutdown takes ~25s. Playwright kills the browser when the process exits.
+process.exit(0);

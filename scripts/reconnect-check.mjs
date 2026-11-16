@@ -1,8 +1,9 @@
-import { chromium } from "playwright";
 import { Client } from "colyseus.js";
 import { RoomServiceClient } from "livekit-server-sdk";
+import { zoneAt } from "../packages/shared/src/zones.ts";
+import { MEETING_ROOM, WS, app, launchBrowser } from "./lib/lane.mjs";
 
-const observer = new Client("ws://127.0.0.1:3101");
+const observer = new Client(WS);
 const observerRoom = await observer.joinOrCreate("office", {
   characterId: "jules",
   name: "Reconnect observer",
@@ -11,11 +12,8 @@ observerRoom.onMessage("*", () => {});
 const joined = [];
 observerRoom.onMessage("player_added", (player) => joined.push(player));
 
-const browser = await chromium.launch({
+const browser = await launchBrowser({
   args: [
-    "--use-gl=angle",
-    "--use-angle=swiftshader",
-    "--enable-unsafe-swiftshader",
     "--ignore-gpu-blocklist",
     "--use-fake-ui-for-media-stream",
     "--use-fake-device-for-media-stream",
@@ -26,7 +24,7 @@ const page = await browser.newPage({
   permissions: ["microphone"],
 });
 page.on("pageerror", (error) => console.log("pageerror:", error.message));
-await page.goto("http://127.0.0.1:3100/?character=chus&e2e=1", { waitUntil: "domcontentloaded" });
+await page.goto(app("?character=chus&e2e=1"), { waitUntil: "domcontentloaded" });
 await page.waitForFunction(() => window.__WORKBITS_READY__ === true, { timeout: 30000 });
 await page.waitForFunction(() => window.__WORKBITS_VOICE__?.().status === "connected", {
   timeout: 20000,
@@ -68,7 +66,8 @@ const after = await page.evaluate(() => window.__WORKBITS_DEBUG__?.());
 const voiceAfter = await page.evaluate(() => window.__WORKBITS_VOICE__?.());
 console.log("after:", { session: after.sessionId, zone: after.localZone, voice: voiceAfter.channel, muted: voiceAfter.muted, identity: voiceAfter.identity });
 
-const restored = joined.find((player) => player.characterId === "chus" && player.x > 3.3 && player.z < -1.1);
+// The rejoin must restore Chus where they were (inside the meeting room), not at the spawn.
+const restored = joined.find((player) => player.characterId === "chus" && zoneAt(player.x, player.z) === "meeting");
 const sessionChanged = reconnected && before.sessionId !== after.sessionId;
 const sameZone = before.localZone === after.localZone;
 const voiceRebound = voiceAfter.identity === after.sessionId && voiceAfter.channel === "meeting";
@@ -81,7 +80,7 @@ console.log("voice rebound:", voiceRebound);
 console.log("mic preserved:", micPreserved);
 
 const service = new RoomServiceClient("http://127.0.0.1:7880", "devkey", "secret");
-const meeting = await service.listParticipants("office:workbits-loft:meeting");
+const meeting = await service.listParticipants(MEETING_ROOM);
 console.log("meeting participants:", meeting.map((p) => ({ identity: p.identity, tracks: p.tracks.length })));
 const inMeeting = meeting.some((participant) => participant.identity === after.sessionId);
 
@@ -94,7 +93,8 @@ console.log(
 
 await page.screenshot({ path: "artifacts/shots/reconnect.png", timeout: 120000, animations: "disabled" });
 await observerRoom.leave();
-await browser.close();
+// Exit instead of browser.close(): once WebRTC is up, Chromium's graceful
+// shutdown takes ~25s. Playwright kills the browser when the process exits.
 process.exit(
   sessionChanged && sameZone && voiceRebound && micPreserved && inMeeting && restored ? 0 : 1,
 );

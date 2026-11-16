@@ -1,8 +1,17 @@
 import { randomUUID } from "node:crypto";
 import { appendFile, mkdir, readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { Client, Room } from "@colyseus/core";
-import { zoneAt, type AvatarConfig, type OfficeLayout } from "@workbits/shared";
+import {
+  buildOffice,
+  characterSpawns,
+  compileSpace,
+  defaultOfficeParams,
+  sanitizeOfficeParams,
+  type AvatarConfig,
+  type CompiledSpace,
+  type OfficeParams,
+} from "@workbits/shared";
 import { presence } from "../presence";
 
 type PlayerData = {
@@ -29,16 +38,21 @@ const characterIds = new Set([
   "clawd",
 ]);
 
-const spawns: Record<string, { x: number; z: number }> = {
-  chus: { x: -5.4, z: 5.9 },
-  jules: { x: 2.75, z: -4.15 },
-  mira: { x: 0.15, z: 4.75 },
-  felix: { x: 2.65, z: 1.65 },
-  fern: { x: 0.15, z: 1.65 },
-  arlo: { x: -5.5, z: 4.55 },
-  theo: { x: 8.75, z: 4.05 },
-  clawd: { x: 3.35, z: -3.0 },
-};
+/**
+ * Movement is checked against the office's walkable grid (ADR-015). The
+ * server pads walls and furniture less than the client does (0.12 vs 0.25),
+ * so a client following its own path never trips the check, while walking
+ * through a wall, a desk or the meeting-room glass does.
+ */
+const SERVER_RADIUS = 0.12;
+/** Fastest a client walks (click-to-move tops out at 2.9 m/s), with headroom for jitter. */
+const MAX_SPEED = 2.9 * 1.5;
+const MOVE_SLACK = 0.4;
+
+/** The office the server walks and routes on, built from small parameters (ADR-015). */
+function compileOffice(params: OfficeParams): CompiledSpace {
+  return compileSpace(buildOffice(params), { radius: SERVER_RADIUS });
+}
 
 type MoveMessage = {
   x: number;
@@ -65,7 +79,6 @@ type StoredMessage = {
   to?: string;
 };
 
-const MAX_DESKS = 8;
 const MAX_HISTORY = 600;
 
 function text(value: unknown, max = 40): string | undefined {
@@ -145,50 +158,6 @@ function finite(value: unknown, min: number, max: number): number | undefined {
   return Math.max(min, Math.min(max, number));
 }
 
-function sanitizeLayout(value: unknown): OfficeLayout | undefined {
-  if (!value || typeof value !== "object") return undefined;
-  if (JSON.stringify(value).length > 8000) return undefined;
-  const record = value as Record<string, unknown>;
-  const rugInput = text(record.rug, 20);
-  const rug: OfficeLayout["rug"] = ["cream", "sage", "terracotta"].includes(rugInput ?? "")
-    ? (rugInput as OfficeLayout["rug"])
-    : "cream";
-  if (!Array.isArray(record.desks)) return undefined;
-
-  const desks = record.desks
-    .slice(0, MAX_DESKS)
-    .map((item, index) => {
-      if (!item || typeof item !== "object") return undefined;
-      const desk = item as Record<string, unknown>;
-      const x = finite(desk.x, -3.4, 3.4);
-      const z = finite(desk.z, 0.4, 5.9);
-      if (x === undefined || z === undefined) return undefined;
-      const rotationNumber = Number(desk.rotation);
-      const rotation =
-        Number.isFinite(rotationNumber) && Math.abs(rotationNumber) > Math.PI / 2 ? Math.PI : 0;
-      const variantNumber = Number(desk.variant);
-      return {
-        id: text(desk.id, 24) ?? `desk-${index}`,
-        x,
-        z,
-        rotation,
-        variant: Number.isFinite(variantNumber)
-          ? Math.max(0, Math.min(3, Math.floor(variantNumber)))
-          : 0,
-      };
-    })
-    .filter((desk): desk is OfficeLayout["desks"][number] => Boolean(desk));
-
-  if (desks.length === 0) return undefined;
-
-  return {
-    id: text(record.id, 32) ?? "custom",
-    name: text(record.name, 60) ?? "Custom layout",
-    note: text(record.note, 120) ?? `${desks.length} desks`,
-    rug,
-    desks,
-  };
-}
 
 export class OfficeRoom extends Room {
   override maxClients = 32;
@@ -196,15 +165,18 @@ export class OfficeRoom extends Room {
   private lastMove = new Map<string, number>();
   private lastMeta = new Map<string, number>();
   private history: StoredMessage[] = [];
-  private layout?: OfficeLayout;
-  private historyFile = join(process.cwd(), "data", "chat.jsonl");
+  private office: OfficeParams = defaultOfficeParams;
+  private space: CompiledSpace = compileOffice(defaultOfficeParams);
+  /** When each player's current position was accepted, for the speed check. */
+  private acceptedAt = new Map<string, number>();
+  private historyFile = join(process.env.DATA_DIR ?? join(process.cwd(), "data"), "chat.jsonl");
 
   override async onCreate() {
     await this.loadHistory();
 
     this.onMessage("hello", (client) => {
       const player = this.players.get(client.sessionId);
-      const zone = player ? zoneAt(player.x, player.z) : "lounge";
+      const zone = player ? this.space.roomAt(player.x, player.z).id : this.space.doc.floorRoom.id;
       const visibleHistory = this.history.filter((message) => {
         if (message.channel === "dm") {
           return message.authorId === player?.characterId || message.to === player?.characterId;
@@ -217,7 +189,7 @@ export class OfficeRoom extends Room {
         voiceKey: presence.get(client.sessionId)?.voiceKey,
         players: [...this.players.values()],
         messages: visibleHistory.slice(-MAX_HISTORY),
-        ...(this.layout ? { layout: this.layout } : {}),
+        office: this.office,
       });
     });
 
@@ -234,17 +206,20 @@ export class OfficeRoom extends Room {
       const z = Number(message?.z);
       if (!Number.isFinite(x) || !Number.isFinite(z)) return;
 
-      player.x = Math.max(-12.2, Math.min(12.2, x));
-      player.z = Math.max(-8.5, Math.min(8.5, z));
+      const elapsed = (now - (this.acceptedAt.get(client.sessionId) ?? now)) / 1000;
+      const distance = Math.hypot(x - player.x, z - player.z);
+      const plausible = distance <= MAX_SPEED * elapsed + MOVE_SLACK;
+      if (!plausible || !this.space.segmentClear(player, { x, z })) {
+        // Too fast, or through a wall or furniture: keep the last good spot and tell the client.
+        client.send("correct", { x: player.x, z: player.z });
+        return;
+      }
+      this.acceptedAt.set(client.sessionId, now);
+      player.x = x;
+      player.z = z;
       player.rotation = Number.isFinite(Number(message.rotation)) ? Number(message.rotation) : 0;
       player.moving = Boolean(message.moving);
-      player.zone = zoneAt(player.x, player.z);
-      const entry = presence.get(client.sessionId);
-      if (entry) {
-        entry.x = player.x;
-        entry.z = player.z;
-        entry.zone = player.zone;
-      }
+      this.place(client.sessionId, player);
 
       this.broadcast("player_moved", player, { except: client });
     });
@@ -272,17 +247,32 @@ export class OfficeRoom extends Room {
       this.broadcast("player_updated", player);
     });
 
-    this.onMessage("layout", (client, message: { layout?: unknown }) => {
+    // Switch the office plan (ADR-015). Only bounded parameters cross the wire; the
+    // server builds the document itself. No authz yet: that arrives with auth (step 3).
+    this.onMessage("space", (client, message: { office?: unknown }) => {
       const player = this.players.get(client.sessionId);
       if (!player) return;
       const now = Date.now();
-      if (now - (this.lastMeta.get(`layout:${client.sessionId}`) ?? 0) < 300) return;
-      this.lastMeta.set(`layout:${client.sessionId}`, now);
+      if (now - (this.lastMeta.get(`space:${client.sessionId}`) ?? 0) < 1000) return;
+      this.lastMeta.set(`space:${client.sessionId}`, now);
 
-      const layout = sanitizeLayout(message?.layout);
-      if (!layout) return;
-      this.layout = layout;
-      this.broadcast("layout", layout);
+      const office = sanitizeOfficeParams(message?.office);
+      if (!office) return;
+      this.office = office;
+      this.space = compileOffice(office);
+      // Anyone now standing inside furniture or a wall moves to the nearest open spot.
+      for (const [sessionId, occupant] of this.players) {
+        if (!this.space.walkable(occupant.x, occupant.z)) {
+          const spot = this.space.nearestWalkable(occupant);
+          occupant.x = spot.x;
+          occupant.z = spot.z;
+          this.clients.find((candidate) => candidate.sessionId === sessionId)?.send("correct", spot);
+        }
+        this.acceptedAt.set(sessionId, now);
+        this.place(sessionId, occupant);
+      }
+      this.broadcast("space", office);
+      for (const occupant of this.players.values()) this.broadcast("player_moved", occupant);
     });
 
     this.onMessage("emote", (client, message: { kind?: string }) => {
@@ -311,7 +301,7 @@ export class OfficeRoom extends Room {
 
       const to = channel === "dm" ? String(message.to ?? "") : undefined;
       if (channel === "dm" && !to) return;
-      const zone = channel === "room" ? zoneAt(player.x, player.z) : undefined;
+      const zone = channel === "room" ? this.space.roomAt(player.x, player.z).id : undefined;
 
       const stored: StoredMessage = {
         id,
@@ -346,7 +336,7 @@ export class OfficeRoom extends Room {
       if (channel === "room") {
         for (const client of this.clients) {
           const participant = this.players.get(client.sessionId);
-          if (participant && zoneAt(participant.x, participant.z) === zone) {
+          if (participant && this.space.roomAt(participant.x, participant.z).id === zone) {
             client.send("chat", stored);
           }
         }
@@ -359,7 +349,7 @@ export class OfficeRoom extends Room {
 
   private async loadHistory() {
     try {
-      await mkdir(join(process.cwd(), "data"), { recursive: true });
+      await mkdir(dirname(this.historyFile), { recursive: true });
       const raw = await readFile(this.historyFile, "utf8");
       this.history = raw
         .split("\n")
@@ -372,14 +362,32 @@ export class OfficeRoom extends Room {
     }
   }
 
+  /** Record a player's room on them and in presence (voice uses it). */
+  private place(sessionId: string, player: PlayerData) {
+    const room = this.space.roomAt(player.x, player.z);
+    player.zone = room.id;
+    const entry = presence.get(sessionId);
+    if (entry) {
+      entry.x = player.x;
+      entry.z = player.z;
+      entry.zone = room.id;
+      entry.privateRoom = room.privacy === "private";
+    }
+  }
+
   override onJoin(client: Client, options: Record<string, unknown>) {
     const requested = typeof options.characterId === "string" ? options.characterId : "chus";
     const characterId = characterIds.has(requested) ? requested : "chus";
-    const spawn = spawns[characterId] ?? spawns.chus!;
-    const restoreX = finite(options.x, -12.2, 12.2);
-    const restoreZ = finite(options.z, -8.5, 8.5);
-    const spawnX = restoreX ?? spawn.x;
-    const spawnZ = restoreZ ?? spawn.z;
+    // A reconnect may restore its last spot, but only onto walkable ground.
+    const restoreX = finite(options.x, -100, 100);
+    const restoreZ = finite(options.z, -100, 100);
+    const restored =
+      restoreX !== undefined && restoreZ !== undefined && this.space.walkable(restoreX, restoreZ)
+        ? { x: restoreX, z: restoreZ }
+        : undefined;
+    const start = restored ?? this.space.nearestWalkable(characterSpawns[characterId] ?? characterSpawns.chus!);
+    const spawnX = start.x;
+    const spawnZ = start.z;
     const avatar = sanitizeAvatar(options.avatar);
     const requestedStatus = String(options.status ?? "");
     const status = ["available", "focus", "away", "meeting"].includes(requestedStatus)
@@ -398,12 +406,13 @@ export class OfficeRoom extends Room {
       rotation: 0,
       moving: false,
       status,
-      zone: zoneAt(spawnX, spawnZ),
+      zone: this.space.roomAt(spawnX, spawnZ).id,
       ...(avatar ? { avatar } : {}),
     };
 
     this.players.set(client.sessionId, player);
     this.lastMove.set(client.sessionId, 0);
+    this.acceptedAt.set(client.sessionId, Date.now());
     presence.set(client.sessionId, {
       sessionId: client.sessionId,
       characterId,
@@ -411,6 +420,7 @@ export class OfficeRoom extends Room {
       x: player.x,
       z: player.z,
       zone: player.zone,
+      privateRoom: this.space.roomAt(player.x, player.z).privacy === "private",
       voiceKey: randomUUID(),
     });
     this.broadcast("player_added", player, { except: client });
@@ -419,6 +429,7 @@ export class OfficeRoom extends Room {
   override onLeave(client: Client) {
     this.players.delete(client.sessionId);
     this.lastMove.delete(client.sessionId);
+    this.acceptedAt.delete(client.sessionId);
     this.lastMeta.delete(client.sessionId);
     presence.delete(client.sessionId);
     this.broadcast("player_left", { id: client.sessionId });

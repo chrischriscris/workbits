@@ -1,6 +1,6 @@
 import { ArrowRight, MapPin, MessageCircle, X } from "lucide-react";
-import { zoneAt, zoneName } from "@workbits/shared";
-import { localCharacterId, roomAnchors, roomLabel, teamById } from "../data/team";
+import { homeAnchor, localCharacterId, roomLabel, teamById } from "../data/team";
+import { roomAtNow } from "../state/space";
 import { useRealtimeStore } from "../realtime/store";
 import { useAppStore } from "../state/app";
 import { statusColor } from "../theme";
@@ -28,9 +28,9 @@ export function CharacterSheet() {
   const live = Object.values(livePlayers).find(
     (player) => player.characterId === character.id,
   );
-  const anchor = live ? { x: live.x, z: live.z } : roomAnchors[character.room];
+  const anchor = live ? { x: live.x, z: live.z } : homeAnchor(character.room);
   const status = live?.status ?? character.status;
-  const place = live ? zoneName(zoneAt(live.x, live.z)) : roomLabel(character.room);
+  const place = live ? roomAtNow(live.x, live.z).name : roomLabel(character.room);
   const isSelf = character.id === localCharacterId;
 
   return (

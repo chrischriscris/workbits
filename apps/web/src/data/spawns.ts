@@ -1,16 +1,9 @@
+import { characterSpawns } from "@workbits/shared";
+
 export type Spawn = [number, number, number];
 
-export const characterSpawns: Record<string, Spawn> = {
-  chus: [-5.4, 0, 5.9],
-  jules: [2.75, 0, -4.15],
-  mira: [0.15, 0, 4.75],
-  felix: [2.65, 0, 1.65],
-  fern: [0.15, 0, 1.65],
-  arlo: [-5.5, 0, 4.55],
-  theo: [8.75, 0, 4.05],
-  clawd: [3.35, 0, -3.0],
-};
-
+/** Seed spawn for a character (shared with the server); the scene snaps it onto walkable ground. */
 export function spawnFor(characterId: string): Spawn {
-  return characterSpawns[characterId] ?? characterSpawns.chus!;
+  const spawn = characterSpawns[characterId] ?? characterSpawns.chus!;
+  return [spawn.x, 0, spawn.z];
 }

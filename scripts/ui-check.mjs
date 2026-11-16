@@ -1,11 +1,8 @@
-import { chromium } from "playwright";
+import { app, launchBrowser } from "./lib/lane.mjs";
 
 const base = "http://127.0.0.1:3100";
-const browser = await chromium.launch({
+const browser = await launchBrowser({
   args: [
-    "--use-gl=angle",
-    "--use-angle=swiftshader",
-    "--enable-unsafe-swiftshader",
     "--ignore-gpu-blocklist",
   ],
 });
@@ -14,7 +11,7 @@ await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: 
 const page = await context.newPage();
 const errors = [];
 page.on("pageerror", (error) => errors.push(error.message));
-await page.goto(`${base}/?character=chus&e2e=1`, { waitUntil: "domcontentloaded" });
+await page.goto(app("?character=chus&e2e=1"), { waitUntil: "domcontentloaded" });
 await page.waitForFunction(() => window.__WORKBITS_READY__ === true, undefined, { timeout: 60000 });
 
 await page.locator(".office-switcher").click();
@@ -37,8 +34,12 @@ await page.locator(".chat__header button[aria-label=\"Close chat\"]").click();
 await page.getByRole("button", { name: "Open team roster" }).click();
 await page.waitForTimeout(250);
 await page.getByRole("button", { name: "Invite teammate" }).click();
-await page.waitForTimeout(300);
-const inviteLabel = await page.locator(".roster__footer .ghost-button").innerText();
+// The label flips to "Link copied" for 2.2s; wait for it rather than sleeping
+// a fixed time and racing the reset on a slow machine.
+const inviteLabel = await page
+  .locator(".roster__footer .ghost-button", { hasText: "Link copied" })
+  .innerText({ timeout: 5000 })
+  .catch(async () => page.locator(".roster__footer .ghost-button").innerText());
 const clipboard = await page.evaluate(() => navigator.clipboard.readText());
 console.log("invite button:", inviteLabel.replace(/\n/g, " "));
 console.log("clipboard has join link:", clipboard.includes("join=1") && clipboard.includes("host=chus"));
@@ -61,5 +62,6 @@ const ok =
   errors.length === 0;
 console.log("UI CHECKS:", ok ? "PASS" : "FAIL", errors.slice(0, 2));
 
-await browser.close();
+// Exit instead of browser.close(): once WebRTC is up, Chromium's graceful
+// shutdown takes ~25s. Playwright kills the browser when the process exits.
 process.exit(ok ? 0 : 1);

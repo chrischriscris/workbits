@@ -151,7 +151,7 @@ const httpServer = createServer(async (request, response) => {
     }
 
     // The room is derived from the server-authoritative zone, never the client.
-    const room = voiceRoomFor(participant.zone);
+    const room = voiceRoomFor(participant.zone, participant.privateRoom);
     console.log(`voice token ${identity} zone=${participant.zone} room=${room}`);
 
     try {

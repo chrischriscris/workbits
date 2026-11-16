@@ -13,7 +13,8 @@ import { useRealtimeStore } from "../realtime/store";
 import { proximityGain } from "./gain";
 
 type VoiceStatus = "idle" | "connecting" | "connected" | "error";
-type VoiceChannel = "floor" | "meeting";
+/** "floor", or the id of the private room whose voice we are in. */
+type VoiceChannel = string;
 
 type VoiceState = {
   status: VoiceStatus;
@@ -29,7 +30,7 @@ type VoiceState = {
   toggleMute: () => Promise<void>;
   toggleDeafen: () => void;
   enableAudio: () => Promise<void>;
-  syncZone: (zone: string) => Promise<void>;
+  syncZone: (zone: string, privateRoom: boolean) => Promise<void>;
 };
 
 let voiceRoom: Room | null = null;
@@ -149,7 +150,8 @@ async function joinVoice(
   set({
     status: "connected",
     identity: sessionId,
-    channel: roomName.endsWith(":meeting") ? "meeting" : "floor",
+    // "office:<id>" is the floor; "office:<id>:<room>" is a private room.
+    channel: roomName.split(":").length > 2 ? roomName.split(":").pop()! : "floor",
     muted: !publish,
     error: null,
   });
@@ -230,9 +232,9 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
     }
   },
 
-  syncZone: async (zone) => {
+  syncZone: async (zone, privateRoom) => {
     if (get().status !== "connected" || switching) return;
-    const desired: VoiceChannel = zone === "meeting" ? "meeting" : "floor";
+    const desired: VoiceChannel = privateRoom ? zone : "floor";
     if (get().channel === desired) return;
 
     switching = true;

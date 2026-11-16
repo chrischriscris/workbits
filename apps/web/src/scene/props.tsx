@@ -3,7 +3,9 @@ import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { palette } from "../theme";
-import { textures, withRepeat } from "./textures";
+import { useQuality } from "../state/quality";
+import { textures } from "./textures";
+import { perfTools } from "../lib/perfMode";
 
 export type V3 = [number, number, number];
 
@@ -54,6 +56,17 @@ const ink = {
   leafLight: "#9cbb8c",
 };
 
+/** Dev-only perf switch (?fx=-points): lamps and pendants without real point lights. */
+const NO_POINT_LIGHTS =
+  perfTools &&
+  typeof window !== "undefined" &&
+  (new URLSearchParams(window.location.search).get("fx") ?? "").includes("-points");
+
+/** Real lamp/pendant lights only at the high quality tier (each one is a per-pixel cost everywhere). */
+function useLampLights() {
+  return useQuality((state) => state.quality) === "high" && !NO_POINT_LIGHTS;
+}
+
 const materialCache = new Map<string, THREE.MeshStandardMaterial>();
 
 /** Shared flat material. Same inputs always return the same instance. */
@@ -74,7 +87,7 @@ const plasterMaterial = new THREE.MeshStandardMaterial({
   vertexColors: true,
   roughness: 0.92,
   emissive: "#f2e6d2",
-  emissiveIntensity: 0.1,
+  emissiveIntensity: 0.18,
 });
 
 const glassMaterial = new THREE.MeshStandardMaterial({
@@ -132,6 +145,9 @@ const G = {
   torus: new THREE.TorusGeometry(1, 0.22, 6, 14),
   halfTorus: new THREE.TorusGeometry(1, 0.12, 6, 12, Math.PI),
   plane: new THREE.PlaneGeometry(1, 1),
+  /** Smooth versions for big round furniture, where 18 sides read as facets. */
+  round: new THREE.CylinderGeometry(1, 1, 1, 48),
+  round3: new THREE.SphereGeometry(1, 40, 20),
 };
 
 const roundedCache = new Map<string, THREE.BufferGeometry>();
@@ -439,6 +455,49 @@ function bladeParts([x, y, z]: V3, angle: number, tilt: number, length: number, 
   ];
 }
 
+const pothosGreens = ["#78a35a", "#8fb86f", "#6a9550", "#a5c882", "#82ad63"];
+
+/** Flat heart-ish leaf whose tip points along `yaw`, dipped `droop` below horizontal. */
+function heartLeaf([x, y, z]: V3, yaw: number, droop: number, size: number, color: string): Part {
+  const reach = size * 0.85;
+  const dir: V3 = [Math.cos(droop) * Math.cos(yaw), -Math.sin(droop), -Math.cos(droop) * Math.sin(yaw)];
+  return ball(
+    [size, size * 0.13, size * 0.82],
+    [x + dir[0] * reach, y + dir[1] * reach, z + dir[2] * reach],
+    color,
+    [0, yaw, -droop],
+    G.leaf,
+  );
+}
+
+/**
+ * Pothos: a loose crown of broad heart leaves and long vines spilling over
+ * the rim, the reference's shelf plant. Pot radius `r`, rim height `h`.
+ */
+function pothosParts(r: number, h: number): Part[] {
+  const parts: Part[] = [ball([r * 0.8, 0.06, r * 0.8], [0, h + 0.03, 0], "#5d8746")];
+  for (let index = 0; index < 24; index += 1) {
+    const angle = index * 2.4;
+    const ring = index % 3;
+    const base: V3 = [Math.cos(angle) * r * 0.3 * ring, h + 0.05 + (2 - ring) * 0.035, -Math.sin(angle) * r * 0.3 * ring];
+    parts.push(heartLeaf(base, angle, ring === 0 ? -0.2 : ring === 1 ? 0.15 : 0.5, 0.115, pick(pothosGreens, index)));
+  }
+  for (let vine = 0; vine < 7; vine += 1) {
+    const angle = (vine / 7) * Math.PI * 2 + 0.4;
+    const length = 6 + ((vine * 3) % 6);
+    const out: V3 = [Math.cos(angle), 0, -Math.sin(angle)];
+    const side: V3 = [Math.sin(angle), 0, Math.cos(angle)];
+    for (let step = 0; step < length; step += 1) {
+      const reach = r + 0.02 + step * 0.012;
+      const sway = (step % 2 ? 1 : -1) * 0.03;
+      const base: V3 = [out[0] * reach + side[0] * sway, h - 0.01 - step * 0.075, out[2] * reach + side[2] * sway];
+      const size = 0.09 - step * 0.003;
+      parts.push(heartLeaf(base, angle + (step % 2 ? 0.75 : -0.75), 1.05, size, pick(pothosGreens, vine + step)));
+    }
+  }
+  return parts;
+}
+
 function plantParts(kind: PlantKind, pot: string, leaf: string): Part[] {
   const tallPot = kind === "tall";
   const r = tallPot ? 0.24 : 0.2;
@@ -470,7 +529,7 @@ function plantParts(kind: PlantKind, pot: string, leaf: string): Part[] {
       const dir = leafDirection(angle, tilt);
       parts.push(
         cyl(0.014, length, [dir[0] * length * 0.5, h + dir[1] * length * 0.5, dir[2] * length * 0.5], palette.olive, [0, angle, tilt], G.cylLow),
-        ...bladeParts([dir[0] * length, h + dir[1] * length, dir[2] * length], angle, tilt + 0.18, 0.7, 0.33, pick(shades, index), 0.38),
+        ...bladeParts([dir[0] * length, h + dir[1] * length, dir[2] * length], angle, tilt + 0.22, 0.88, 0.25, pick(shades, index), 0.32),
       );
     }
     // A low skirt of shorter leaves hides the bare stems above the pot.
@@ -478,36 +537,17 @@ function plantParts(kind: PlantKind, pot: string, leaf: string): Part[] {
       parts.push(...bladeParts([0, h, 0], index * 1.26 + 0.6, 0.45, 0.42, 0.24, pick(shades, index + 1), 0.45));
     }
   } else if (kind === "bush") {
-    const clumps: Array<[number, number, number, number]> = [
-      [0, 0.22, 0, 0.23],
-      [0.15, 0.15, 0.06, 0.17],
-      [-0.14, 0.17, -0.05, 0.18],
-      [0.03, 0.38, -0.08, 0.17],
-      [-0.06, 0.14, 0.15, 0.16],
-      [0.09, 0.32, 0.12, 0.15],
-      [-0.12, 0.32, 0.06, 0.14],
-      [0.12, 0.18, -0.14, 0.14],
-      [-0.02, 0.48, 0.04, 0.12],
-    ];
-    clumps.forEach(([x, y, z, size], index) => parts.push(ball([size, size * 0.9, size], [x, h + y, z], pick(shades, index))));
+    // Pothos-style mound: three tiers of broad leaves, no balls.
+    parts.push(ball([0.16, 0.12, 0.16], [0, h + 0.1, 0], tint(palette.olive, -0.04)));
+    for (let index = 0; index < 30; index += 1) {
+      const tier = index % 3;
+      const angle = (index / 30) * Math.PI * 2 * 3 + tier * 0.5;
+      const tilt = tier === 0 ? 0.25 : tier === 1 ? 0.7 : 1.15;
+      const length = tier === 0 ? 0.34 : tier === 1 ? 0.36 : 0.3;
+      parts.push(...bladeParts([0, h + 0.05 + (2 - tier) * 0.04, 0], angle, tilt, length, 0.22, pick(shades, index), 0.4));
+    }
   } else if (kind === "trailing") {
-    parts.push(ball([0.14, 0.1, 0.14], [0, h + 0.1, 0], palette.olive));
-    for (let index = 0; index < 9; index += 1) {
-      const angle = index * 0.75;
-      parts.push(ball([0.12, 0.09, 0.12], [Math.cos(angle) * 0.11, h + 0.06 + (index % 3) * 0.035, Math.sin(angle) * 0.11], pick(shades, index)));
-    }
-    // Vines spill over the rim and keep reaching outward as they fall.
-    for (let vine = 0; vine < 13; vine += 1) {
-      const angle = (vine / 13) * Math.PI * 2 + 0.2;
-      const drop = 4 + (vine % 4);
-      for (let step = 0; step < drop; step += 1) {
-        const reach = r + 0.04 + step * 0.022;
-        const sway = (step % 2 === 0 ? 1 : -1) * 0.02;
-        parts.push(
-          ball([0.085, 0.055, 0.075], [Math.cos(angle) * reach - Math.sin(angle) * sway, h - step * 0.09, Math.sin(angle) * reach + Math.cos(angle) * sway], pick(shades, vine + step), [0, -angle, 0.5], G.leaf),
-        );
-      }
-    }
+    parts.push(...pothosParts(r, h));
   } else {
     for (let index = 0; index < 8; index += 1) {
       const angle = (index / 8) * Math.PI * 2;
@@ -547,19 +587,18 @@ export function Tree({ position = [0, 0, 0], scale = 1, pot = ink.cream }: Place
       cyl(0.026, 0.8, [-0.12, 1.2, 0.04], "#8a6a4f", [0.1, 0, 0.4], G.cylLow),
       cyl(0.026, 0.7, [0.16, 1.25, -0.04], "#8a6a4f", [-0.1, 0, -0.45], G.cylLow),
     ];
+    // Fiddle-leaf crown: a dark core so gaps never show through, then broad
+    // leaves pointing outward from an ellipsoid shell.
+    parts.push(ball([0.3, 0.27, 0.3], [0, 1.74, 0], tint(palette.sageDeep, -0.1)));
     const random = rng(311);
-    for (let index = 0; index < 18; index += 1) {
-      const angle = index * 2.4;
-      const layer = index % 3;
-      const reach = 0.18 + layer * 0.17 + random() * 0.08;
-      const size = 0.34 - layer * 0.04 + random() * 0.06;
-      parts.push(
-        ball(
-          [size, size * 0.82, size],
-          [Math.cos(angle) * reach, 1.45 + (2 - layer) * 0.24 + random() * 0.18, Math.sin(angle) * reach],
-          pick(shades, index),
-        ),
-      );
+    for (let index = 0; index < 64; index += 1) {
+      const angle = index * 2.399;
+      const elevation = -0.6 + random() * 1.8;
+      const ring = Math.cos(elevation);
+      // Same azimuth convention as leafDirection, so every leaf points outward.
+      const base: V3 = [-Math.cos(angle) * 0.3 * ring, 1.74 + Math.sin(elevation) * 0.27, Math.sin(angle) * 0.3 * ring];
+      const tilt = Math.max(0.2, Math.PI / 2 - elevation * 0.8);
+      parts.push(...bladeParts(base, angle, tilt, 0.42 + random() * 0.1, 0.3, pick(shades, index), 0.25));
     }
     return parts;
   });
@@ -649,16 +688,18 @@ export function Monitor({
   width = 0.72,
   height = 0.42,
 }: Placement & { width?: number; height?: number }) {
+  // Chunky toy proportions: thick bezel, solid neck and foot.
+  const lift = 0.26;
   const body = baked(`monitor|${width}|${height}`, () => [
-    rbox([0.26, 0.02, 0.18], [0, 0.01, 0], "#c9ced4", 0.02),
-    box([0.05, 0.3, 0.035], [0, 0.17, -0.04], "#c9ced4"),
-    rbox([width + 0.04, height + 0.04, 0.03], [0, 0.22 + height / 2, -0.01], "#2b313a", 0.015),
+    rbox([0.36, 0.035, 0.26], [0, 0.0175, 0], "#d9dde2", 0.016),
+    rbox([0.08, lift + 0.04, 0.06], [0, (lift + 0.04) / 2, -0.06], "#d9dde2", 0.025),
+    rbox([width + 0.08, height + 0.08, 0.065], [0, lift + height / 2, -0.02], "#2a2f37", 0.03),
   ]);
   return (
     <group position={position} rotation={rotation}>
       <BakedMesh geometry={body} />
       <mesh
-        position={[0, 0.22 + height / 2, 0.0065]}
+        position={[0, lift + height / 2, 0.0135]}
         scale={[width, height, 1]}
         geometry={G.plane}
         material={screenMaterial}
@@ -693,27 +734,35 @@ export function OfficeChair({
   color = ink.fabric,
   accent = ink.white,
 }: Placement & { color?: string; accent?: string }) {
+  // Chunky task chair: white shell, padded seat, ribbed back, arms, wide star base.
   const geometry = baked(`officechair|${color}|${accent}`, () => {
+    const rib = tint(color, 0.08);
     const parts: Part[] = [
-      cyl(0.05, 0.08, [0, 0.07, 0], ink.charcoal),
-      cyl(0.03, 0.4, [0, 0.33, 0], ink.chrome, undefined, G.cylLow),
-      rbox([0.5, 0.05, 0.46], [0, 0.535, 0], accent, 0.02),
-      rbox([0.56, 0.11, 0.52], [0, 0.615, 0.01], color, 0.05),
-      box([0.06, 0.34, 0.04], [0, 0.72, -0.27], accent),
-      rbox([0.56, 0.6, 0.05], [0, 1.0, -0.3], accent, 0.024, [-0.12, 0, 0]),
-      rbox([0.5, 0.52, 0.06], [0, 1.0, -0.27], color, 0.03, [-0.12, 0, 0]),
+      cyl(0.075, 0.09, [0, 0.1, 0], ink.charcoal),
+      cyl(0.035, 0.34, [0, 0.31, 0], ink.chrome, undefined, G.cylLow),
+      rbox([0.56, 0.07, 0.52], [0, 0.52, 0], accent, 0.03),
+      rbox([0.6, 0.13, 0.56], [0, 0.615, 0.01], color, 0.06),
+      rbox([0.09, 0.3, 0.06], [0, 0.72, -0.29], accent, 0.03),
+      // Thin white frame around a thicker dark mesh back that shows from both sides.
+      rbox([0.64, 0.68, 0.05], [0, 1.03, -0.31], accent, 0.03, [-0.12, 0, 0]),
+      rbox([0.55, 0.59, 0.1], [0, 1.03, -0.31], color, 0.04, [-0.12, 0, 0]),
     ];
+    for (let index = 0; index < 5; index += 1) {
+      for (const side of [-1, 1]) {
+        parts.push(box([0.48, 0.016, 0.012], [0, 0.82 + index * 0.1, -0.31 + side * 0.052 - index * 0.012], rib, [-0.12, 0, 0]));
+      }
+    }
     for (let index = 0; index < 5; index += 1) {
       const angle = (index / 5) * Math.PI * 2;
       parts.push(
-        box([0.24, 0.035, 0.045], [Math.cos(angle) * 0.13, 0.06, Math.sin(angle) * 0.13], ink.charcoal, [0, -angle, 0]),
-        ball(0.035, [Math.cos(angle) * 0.25, 0.035, Math.sin(angle) * 0.25], "#2a2e34", undefined, G.leaf),
+        rbox([0.32, 0.05, 0.07], [Math.cos(angle) * 0.17, 0.075, Math.sin(angle) * 0.17], ink.charcoal, 0.02, [0, -angle, 0]),
+        ball(0.045, [Math.cos(angle) * 0.33, 0.045, Math.sin(angle) * 0.33], "#2a2e34", undefined, G.leaf),
       );
     }
-    for (const x of [-0.3, 0.3]) {
+    for (const x of [-0.31, 0.31]) {
       parts.push(
-        box([0.035, 0.2, 0.035], [x, 0.72, -0.02], accent),
-        rbox([0.07, 0.03, 0.28], [x, 0.83, 0.02], ink.charcoal, 0.012),
+        rbox([0.05, 0.24, 0.05], [x, 0.74, -0.02], accent, 0.02),
+        rbox([0.09, 0.045, 0.32], [x, 0.865, 0.0], accent, 0.02),
       );
     }
     return parts;
@@ -722,6 +771,34 @@ export function OfficeChair({
 }
 
 /** Plush upholstered meeting chair: thick seat, rounded back, padded arms. */
+/** Curved chair back: a bevelled annular sector extruded upward, opening toward +z. */
+const chairBackGeometry = (() => {
+  const shape = new THREE.Shape();
+  const inner = 0.2;
+  const outer = 0.245;
+  const from = 0.25;
+  const to = Math.PI - 0.25;
+  shape.absarc(0, 0, outer, from, to, false);
+  shape.absarc(0, 0, inner, to, from, true);
+  shape.closePath();
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth: 0.34,
+    bevelEnabled: true,
+    bevelThickness: 0.025,
+    bevelSize: 0.018,
+    bevelSegments: 3,
+    curveSegments: 28,
+  });
+  geometry.rotateX(-Math.PI / 2);
+  geometry.translate(0, 0.025, 0);
+  return geometry;
+})();
+
+/**
+ * Upholstered shell chair on slim splayed black legs, like the reference's
+ * meeting room: thin seat cushion, a back that curves round into low arms.
+ * Seat faces +z.
+ */
 export function DiningChair({
   position = [0, 0, 0],
   rotation = [0, 0, 0],
@@ -729,21 +806,21 @@ export function DiningChair({
   color = palette.terracotta,
 }: Placement & { color?: string }) {
   const geometry = baked(`diningchair|${color}`, () => {
-    const side = tint(color, -0.07);
+    const shell = tint(color, -0.05);
+    const seatY = 0.46;
     const parts: Part[] = [
-      rbox([0.58, 0.17, 0.54], [0, 0.5, 0.02], color, 0.075),
-      rbox([0.5, 0.05, 0.46], [0, 0.6, 0.05], tint(color, 0.07), 0.025),
-      rbox([0.6, 0.52, 0.15], [0, 0.84, -0.22], color, 0.075, [-0.14, 0, 0]),
-      rbox([0.09, 0.26, 0.46], [-0.29, 0.66, -0.02], side, 0.045),
-      rbox([0.09, 0.26, 0.46], [0.29, 0.66, -0.02], side, 0.045),
+      rbox([0.5, 0.05, 0.46], [0, seatY - 0.02, 0.02], shell, 0.02),
+      rbox([0.48, 0.07, 0.46], [0, seatY + 0.035, 0.03], color, 0.035),
     ];
-    for (const [x, z] of [
-      [-0.22, -0.18],
-      [0.22, -0.18],
-      [-0.22, 0.2],
-      [0.22, 0.2],
+    // Back shell: one smooth tub wrapping round into low arms.
+    parts.push({ g: chairBackGeometry, p: [0, seatY + 0.02, 0.04], c: color });
+    for (const [sx, sz] of [
+      [-1, -1],
+      [1, -1],
+      [-1, 1],
+      [1, 1],
     ] as Array<[number, number]>) {
-      parts.push(box([0.035, 0.44, 0.035], [x, 0.21, z], ink.charcoal, [z * 0.25, 0, -x * 0.25]));
+      parts.push(cyl(0.014, 0.46, [sx * 0.2, 0.22, sz * 0.19 + 0.02], "#2b2f35", [-sz * 0.13, 0, sx * 0.13], G.cylLow));
     }
     return parts;
   });
@@ -776,24 +853,30 @@ export function Desk({
   // Items keep their size; their spots stretch with the top. Front edge is +z.
   const kx = width / 1.8;
   const front = (z: number) => z + hd - 0.425;
-  const pedestalDepth = Math.min(0.72, depth - 0.16);
-  const pedestalX = hw - 0.3;
+  // Chunky toy proportions: thick rounded top, square legs, and a white
+  // drawer pedestal flush with the front so its drawers read from the aisle.
+  const top = 0.075;
+  const pedestal = { width: 0.5, depth: Math.min(0.62, depth - 0.2) };
+  const pedestalX = hw - 0.36;
+  const pedestalZ = hd - 0.05 - pedestal.depth / 2;
   const body = baked(`desk-body|${width}|${depth}`, () => {
-    const pedestalFront = -0.04 + pedestalDepth / 2;
+    const pedestalHeight = deskTop - top - 0.02;
+    const pedestalFront = pedestalZ + pedestal.depth / 2;
     const parts: Part[] = [
-      rbox([width, 0.05, depth], [0, deskTop - 0.025, 0], ink.oak, 0.02),
-      box([width - 0.02, 0.012, depth - 0.02], [0, deskTop - 0.056, 0], ink.oakDeep),
-      rbox([0.42, 0.64, pedestalDepth], [pedestalX, 0.34, -0.04], ink.white, 0.02),
-      box([0.38, 0.006, 0.006], [pedestalX, 0.47, pedestalFront + 0.002], "#d8d3ca"),
-      box([0.38, 0.006, 0.006], [pedestalX, 0.26, pedestalFront + 0.002], "#d8d3ca"),
-      box([0.12, 0.014, 0.014], [pedestalX, 0.56, pedestalFront + 0.006], ink.metal),
-      box([0.12, 0.014, 0.014], [pedestalX, 0.37, pedestalFront + 0.006], ink.metal),
-      box([0.12, 0.014, 0.014], [pedestalX, 0.16, pedestalFront + 0.006], ink.metal),
+      rbox([width, top, depth], [0, deskTop - top / 2, 0], ink.oak, 0.028),
+      rbox([pedestal.width, pedestalHeight, pedestal.depth], [pedestalX, pedestalHeight / 2, pedestalZ], "#f3efe7", 0.035),
     ];
-    for (const z of [-hd + 0.065, hd - 0.065]) {
-      parts.push(rbox([0.05, deskTop - 0.05, 0.05], [-hw + 0.06, (deskTop - 0.05) / 2, z], ink.oakDeep, 0.015));
-      parts.push(rbox([0.05, deskTop - 0.05, 0.05], [hw - 0.06, (deskTop - 0.05) / 2, z], ink.oakDeep, 0.015));
+    for (const y of [0.18, 0.4]) {
+      parts.push(box([pedestal.width - 0.06, 0.012, 0.008], [pedestalX, y, pedestalFront + 0.002], "#ddd6ca"));
     }
+    for (const y of [0.1, 0.3, 0.52]) {
+      parts.push(rbox([0.16, 0.025, 0.025], [pedestalX, y, pedestalFront + 0.012], "#b9b2a7", 0.01));
+    }
+    const legHeight = deskTop - top;
+    for (const z of [-hd + 0.07, hd - 0.07]) {
+      parts.push(rbox([0.085, legHeight, 0.085], [-hw + 0.07, legHeight / 2, z], ink.oakDeep, 0.025));
+    }
+    parts.push(rbox([0.085, legHeight, 0.085], [hw - 0.07, legHeight / 2, -hd + 0.07], ink.oakDeep, 0.025));
     return parts;
   });
   const items = baked(`desk-items|${v}|${width}|${depth}`, () => {
@@ -822,7 +905,7 @@ export function Desk({
     <group position={position} rotation={rotation}>
       <BakedMesh geometry={body} />
       <BakedMesh geometry={items} castShadow={false} />
-      <Monitor position={[0.08 * kx, deskTop, -hd + 0.28]} width={width > 2 ? 0.86 : 0.66} height={width > 2 ? 0.5 : 0.38} />
+      <Monitor position={[0.08 * kx, deskTop, -hd + 0.34]} width={width >= 1.8 ? 0.92 : 0.7} height={width >= 1.8 ? 0.55 : 0.42} />
       {v % 2 === 0 && <Laptop position={[-0.6 * kx, deskTop, front(0.02)]} rotation={[0, 0.3, 0]} />}
       {v !== 1 && <Mug position={[0.68 * kx, deskTop, front(0.02)]} color={pick(mugColors, v + 1)} scale={1.25} />}
       {v % 2 === 1 && <Plant position={[-0.78 * kx, deskTop, -hd + 0.2]} scale={0.42} pot={ink.cream} kind="leafy" />}
@@ -846,37 +929,40 @@ export function DeskPartition({
   length = 3.6,
   depth = 0.85,
 }: Placement & { length?: number; depth?: number }) {
+  // Tall, thick cream screens with a planted trough and binders, like a
+  // furniture-catalogue bench rather than thin panels.
   const geometry = baked(`deskpartition|${length}|${depth}`, () => {
-    const panel = "#efe7da";
+    const panel = "#ece3d4";
     const rail = ink.oak;
-    const tall = 0.48;
-    const arm = depth - 0.2;
+    const tall = 0.58;
+    const arm = depth - 0.26;
     const parts: Part[] = [
-      rbox([length - 0.06, tall, 0.035], [0, deskTop + tall / 2, -0.16], panel, 0.014),
-      rbox([length - 0.06, tall, 0.035], [0, deskTop + tall / 2, 0.16], panel, 0.014),
-      box([length - 0.04, 0.024, 0.05], [0, deskTop + tall + 0.012, -0.16], rail),
-      box([length - 0.04, 0.024, 0.05], [0, deskTop + tall + 0.012, 0.16], rail),
-      box([length - 0.12, 0.17, 0.28], [0, deskTop + 0.085, 0], rail),
-      box([length - 0.16, 0.01, 0.24], [0, deskTop + 0.172, 0], ink.soil),
+      rbox([length - 0.06, tall, 0.06], [0, deskTop + tall / 2, -0.19], panel, 0.025),
+      rbox([length - 0.06, tall, 0.06], [0, deskTop + tall / 2, 0.19], panel, 0.025),
+      rbox([length - 0.12, 0.24, 0.32], [0, deskTop + 0.12, 0], rail, 0.03),
+      box([length - 0.2, 0.012, 0.27], [0, deskTop + 0.245, 0], ink.soil),
     ];
-    // Cross arms between left and right desks.
     for (const side of [-1, 1]) {
-      parts.push(
-        rbox([0.035, tall, arm], [0, deskTop + tall / 2, side * (0.18 + arm / 2)], panel, 0.014),
-        box([0.05, 0.024, arm], [0, deskTop + tall + 0.012, side * (0.18 + arm / 2)], rail),
-      );
+      parts.push(rbox([0.06, tall, arm], [0, deskTop + tall / 2, side * (0.22 + arm / 2)], panel, 0.025));
     }
-    // Binders standing in the trough at one end.
-    for (let index = 0; index < 6; index += 1) {
-      parts.push(
-        box([0.065, 0.32, 0.22], [length / 2 - 0.3 - index * 0.07, deskTop + 0.33, 0], pick(["#efe9df", "#d9cfc0", "#a8bfa3", "#efe9df", "#5c6b7a", "#d98e73"], index)),
-      );
+    // Binders in a cubby at each end.
+    for (const end of [-1, 1]) {
+      for (let index = 0; index < 5; index += 1) {
+        parts.push(
+          rbox(
+            [0.075, 0.36, 0.26],
+            [end * (length / 2 - 0.22 - index * 0.085), deskTop + 0.3, 0],
+            pick(["#f3eee6", "#ddd2c2", "#f3eee6", "#a8bfa3", "#e9e2d6"], index + (end > 0 ? 2 : 0)),
+            0.012,
+          ),
+        );
+      }
     }
-    const count = Math.max(2, Math.round(length / 0.62));
+    const count = Math.max(2, Math.round((length - 1.2) / 0.9));
     for (let index = 0; index < count; index += 1) {
-      const x = -length / 2 + 0.35 + (index * (length - 1.1)) / (count - 1);
-      const kind = pick<PlantKind>(["bush", "leafy", "trailing", "leafy", "bush"], index);
-      parts.push(...placed(plantParts(kind, ink.cream, palette.sageDeep), [x, deskTop + 0.02, 0], index * 1.1, 0.62));
+      const x = -length / 2 + 0.85 + (index * (length - 1.7)) / Math.max(1, count - 1);
+      const kind = pick<PlantKind>(["leafy", "bush", "leafy", "tall"], index);
+      parts.push(...placed(plantParts(kind, ink.cream, palette.sageDeep), [x, deskTop + 0.1, 0], index * 1.1, kind === "tall" ? 0.75 : 1.0));
     }
     return parts;
   });
@@ -947,52 +1033,143 @@ export function Armchair({
   return <BakedMesh geometry={geometry} position={position} rotation={rotation} />;
 }
 
+/**
+ * Corner sectional like the reference: boxy square arms, tight seat and back
+ * cushions, short tapered legs. Main run along local x facing +z; the return
+ * sits at the +x end and comes forward `returnDepth`, seats facing -x.
+ */
+export function Sectional({
+  position = [0, 0, 0],
+  rotation = [0, 0, 0],
+  scale = 1,
+  color = "#a9bc9c",
+  length = 2.7,
+  returnDepth = 1.05,
+  pillows = [palette.terracotta, "#f1e7d6", "#e9d9bd"],
+}: Placement & { color?: string; length?: number; returnDepth?: number; pillows?: string[] }) {
+  const geometry = baked(`sectional|${color}|${length}|${returnDepth}|${pillows.join(",")}`, () => {
+    const light = tint(color, 0.06);
+    const deep = tint(color, -0.08);
+    const D = 0.95;
+    const W = 0.95;
+    const half = length / 2;
+    const arm = 0.2;
+    const back = 0.22;
+    const seatTop = 0.47;
+    const front = D / 2 + returnDepth;
+    const rx = half - W / 2;
+    const parts: Part[] = [
+      // Plinths.
+      rbox([length, 0.26, D], [0, 0.23, 0], deep, 0.06),
+      rbox([W, 0.26, returnDepth + 0.02], [rx, 0.23, D / 2 + returnDepth / 2 - 0.01], deep, 0.06),
+      // Back along the main run and down the return's outer side.
+      rbox([length - back, 0.46, back], [-back / 2, 0.62, -D / 2 + back / 2], color, 0.08),
+      rbox([back, 0.46, D + returnDepth], [half - back / 2, 0.62, (front - D / 2) / 2], color, 0.08),
+      // Square arms: left end of the main run, front end of the return.
+      rbox([arm, 0.6, D], [-half + arm / 2, 0.4, 0], color, 0.07),
+      rbox([W, 0.6, arm], [rx, 0.4, front - arm / 2], color, 0.07),
+    ];
+    // Seat cushions: two on the main run, corner + chaise on the return.
+    const seatStart = -half + arm;
+    const seatEnd = half - back;
+    const corner = rx - W / 2;
+    const seatWidth = (corner - seatStart) / 2;
+    const rear = -D / 2 + back;
+    const cushion = (x0: number, x1: number, z0: number, z1: number) =>
+      rbox([x1 - x0 - 0.03, 0.15, z1 - z0 - 0.03], [(x0 + x1) / 2, seatTop - 0.075, (z0 + z1) / 2], light, 0.06);
+    parts.push(cushion(seatStart, seatStart + seatWidth, rear, D / 2));
+    parts.push(cushion(seatStart + seatWidth, corner, rear, D / 2));
+    parts.push(cushion(corner, seatEnd, rear, D / 2));
+    parts.push(cushion(corner, seatEnd, D / 2, front - arm));
+    // Back cushions, leaning back.
+    for (let index = 0; index < 3; index += 1) {
+      const x0 = index < 2 ? seatStart + index * seatWidth : corner;
+      const x1 = index < 2 ? x0 + seatWidth : seatEnd - 0.14;
+      parts.push(rbox([x1 - x0 - 0.05, 0.4, 0.17], [(x0 + x1) / 2, 0.68, rear + 0.07], light, 0.08, [-0.14, 0, 0]));
+    }
+    parts.push(rbox([0.17, 0.4, D / 2 - rear - 0.05], [seatEnd - 0.07, 0.68, (rear + 0.14 + D / 2) / 2], light, 0.08, [0, 0, -0.14]));
+    parts.push(rbox([0.17, 0.4, front - arm - D / 2 - 0.05], [seatEnd - 0.07, 0.68, (D / 2 + front - arm) / 2], light, 0.08, [0, 0, -0.14]));
+    // Legs.
+    for (const [x, z] of [
+      [-half + 0.08, -D / 2 + 0.08],
+      [-half + 0.08, D / 2 - 0.08],
+      [half - 0.08, -D / 2 + 0.08],
+      [half - 0.08, front - 0.08],
+      [rx - W / 2 + 0.08, front - 0.08],
+    ] as Array<[number, number]>) {
+      parts.push(cyl(0.032, 0.11, [x, 0.055, z], ink.oakDeep, undefined, G.pot));
+    }
+    // Pillows: one by the left arm, a pair in the corner.
+    const pillow = (p: V3, r: V3, c: string) => rbox([0.52, 0.48, 0.16], p, c, 0.1, r);
+    parts.push(pillow([-half + arm + 0.28, 0.7, -D / 2 + back + 0.2], [0.2, 0.25, 0.08], pick(pillows, 2)));
+    parts.push(pillow([seatEnd - 0.52, 0.72, -D / 2 + back + 0.18], [0.2, -0.2, -0.06], pick(pillows, 0)));
+    parts.push(pillow([seatEnd - 1.02, 0.7, -D / 2 + back + 0.17], [0.18, 0.1, 0.06], pick(pillows, 1)));
+    return parts;
+  });
+  return <BakedMesh geometry={geometry} position={position} rotation={rotation} scale={scale} />;
+}
+
 export function Pouf({ position = [0, 0, 0], scale = 1, color = palette.terracottaDeep }: Placement & { color?: string }) {
-  const geometry = baked(`pouf|${color}`, () => [
-    cyl(0.4, 0.3, [0, 0.19, 0], color),
-    ball([0.4, 0.09, 0.4], [0, 0.34, 0], color),
-    ball([0.4, 0.06, 0.4], [0, 0.05, 0], tint(color, -0.06)),
-    ball([0.035, 0.02, 0.035], [0, 0.43, 0], tint(color, -0.2), undefined, G.leaf),
-  ]);
+  // Plump tufted drum: a squashed ball over a round core, button in a dimple.
+  const geometry = baked(`pouf|${color}`, () => {
+    const parts: Part[] = [
+      cyl(0.38, 0.3, [0, 0.2, 0], tint(color, -0.04), undefined, G.round),
+      ball([0.42, 0.22, 0.42], [0, 0.24, 0], color, undefined, G.round3),
+      ball([0.39, 0.1, 0.39], [0, 0.36, 0], tint(color, 0.04), undefined, G.round3),
+      ball([0.04, 0.015, 0.04], [0, 0.455, 0], tint(color, -0.25)),
+    ];
+    for (let index = 0; index < 8; index += 1) {
+      const angle = (index / 8) * Math.PI * 2;
+      parts.push(box([0.3, 0.006, 0.012], [Math.cos(angle) * 0.17, 0.452, -Math.sin(angle) * 0.17], tint(color, -0.12), [0, angle, 0.12]));
+    }
+    return parts;
+  });
   return <BakedMesh geometry={geometry} position={position} scale={scale} />;
 }
 
+/** Slumped beanbag: a wide soft base, a taller back lump, a seat dent between. Back toward -z. */
 export function Beanbag({
   position = [0, 0, 0],
+  rotation = [0, 0, 0],
+  scale = 1,
   color = "#e0b84f",
 }: Placement & { color?: string }) {
   const geometry = baked(`beanbag|${color}`, () => [
-    ball([0.62, 0.36, 0.62], [0, 0.28, 0], color),
-    ball([0.5, 0.3, 0.4], [0, 0.38, -0.16], tint(color, -0.05)),
+    ball([0.6, 0.26, 0.58], [0, 0.24, 0.04], color, undefined, G.round3),
+    ball([0.5, 0.36, 0.3], [0, 0.42, -0.26], tint(color, -0.04), [-0.25, 0, 0], G.round3),
+    ball([0.3, 0.22, 0.32], [-0.36, 0.34, -0.06], tint(color, -0.02), [0, 0, 0.3], G.round3),
+    ball([0.3, 0.22, 0.32], [0.36, 0.34, -0.06], tint(color, -0.02), [0, 0, -0.3], G.round3),
+    ball([0.04, 0.02, 0.04], [0, 0.66, -0.38], tint(color, -0.2)),
   ]);
-  return <BakedMesh geometry={geometry} position={position} />;
+  return <BakedMesh geometry={geometry} position={position} rotation={rotation} scale={scale} />;
 }
 
-export function CoffeeTable({ position = [0, 0, 0], scale = 1, radius = 0.72 }: Placement & { radius?: number }) {
+/** Round oak coffee table on three slim splayed legs, styled with a plant, books and a mug. */
+export function CoffeeTable({ position = [0, 0, 0], scale = 1, radius = 0.5 }: Placement & { radius?: number }) {
   const geometry = baked(`coffeetable|${radius}`, () => {
+    const top = 0.44;
     const parts: Part[] = [
-      cyl(radius, 0.06, [0, 0.42, 0], ink.oak),
-      cyl(radius * 0.97, 0.012, [0, 0.455, 0], tint(ink.oak, 0.08)),
-      cyl(radius * 0.7, 0.03, [0, 0.14, 0], ink.oakDeep),
+      cyl(radius, 0.05, [0, top - 0.025, 0], palette.oakLight, undefined, G.round),
+      cyl(radius - 0.012, 0.012, [0, top - 0.054, 0], ink.oakDeep, undefined, G.round),
     ];
-    for (let index = 0; index < 4; index += 1) {
-      const angle = (index / 4) * Math.PI * 2 + Math.PI / 4;
+    for (let index = 0; index < 3; index += 1) {
+      const angle = (index / 3) * Math.PI * 2 + 0.5;
+      const reach = radius * 0.62;
+      const splay = 0.16;
       parts.push(
-        cyl(0.03, 0.42, [Math.cos(angle) * radius * 0.62, 0.2, Math.sin(angle) * radius * 0.62], ink.oakDeep, [Math.sin(angle) * 0.1, 0, -Math.cos(angle) * 0.1], G.cylLow),
+        cyl(0.026, top - 0.03, [Math.cos(angle) * (reach + 0.035), (top - 0.03) / 2, -Math.sin(angle) * (reach + 0.035)], ink.oakDeep, [
+          -Math.sin(angle) * splay,
+          0,
+          -Math.cos(angle) * splay,
+        ], G.pot),
       );
     }
-    parts.push(...bookStackParts(2, [-radius * 0.35, 0.46, 0.05], 2));
-    parts.push(...mugParts([radius * 0.25, 0.46, radius * 0.32], "#a8bfa3"));
-    parts.push(rbox([0.34, 0.02, 0.22], [radius * 0.15, 0.47, -radius * 0.35], ink.oakDeep, 0.01));
-    parts.push(...bookStackParts(1, [0, 0.14, 0], 4));
+    parts.push(...grow(bookStackParts(2, [radius * 0.25, top, radius * 0.25], 2), 1.3, [radius * 0.25, top, radius * 0.25]));
+    parts.push(...grow(mugParts([-radius * 0.15, top, radius * 0.45], palette.paper), 1.25, [-radius * 0.15, top, radius * 0.45]));
+    parts.push(...placed(plantParts("leafy", palette.paper, palette.sageDeep), [-radius * 0.25, top, -radius * 0.2], 0.3, 0.38));
     return parts;
   });
-  return (
-    <group position={position} scale={scale}>
-      <BakedMesh geometry={geometry} />
-      <Plant position={[radius * 0.1, 0.48, -radius * 0.35]} scale={0.36} pot={palette.paper} kind="succulent" />
-    </group>
-  );
+  return <BakedMesh geometry={geometry} position={position} scale={scale} />;
 }
 
 export function SideTable({ position = [0, 0, 0], height = 0.55 }: Placement & { height?: number }) {
@@ -1008,6 +1185,7 @@ export function TableLamp({
   position = [0, 0, 0],
   light = false,
 }: Placement & { light?: boolean }) {
+  const lampLights = useLampLights();
   const geometry = baked("tablelamp", () => [
     ball([0.1, 0.12, 0.1], [0, 0.12, 0], "#d7c3a5"),
     cyl(0.012, 0.16, [0, 0.3, 0], ink.metal, undefined, G.cylLow),
@@ -1016,7 +1194,7 @@ export function TableLamp({
     <group position={position}>
       <BakedMesh geometry={geometry} />
       <mesh position={[0, 0.44, 0]} scale={[0.17, 0.2, 0.17]} geometry={G.cone} material={shadeMaterial} castShadow dispose={null} />
-      {light && <pointLight position={[0, 0.36, 0]} intensity={0.55} distance={3} color="#ffd9a0" />}
+      {light && lampLights && <pointLight position={[0, 0.36, 0]} intensity={0.55} distance={3} color="#ffd9a0" />}
     </group>
   );
 }
@@ -1206,19 +1384,19 @@ export function Planter({
       parts.push(box([0.01, height - 0.1, 0.004], [x, height / 2, -width / 2 - 0.002], ink.oakDeep));
     }
     const leaf = palette.sageDeep;
-    const spine = Math.max(2, Math.round(length / 0.42));
+    // A few big, lush specimens read as one planting at diorama distance;
+    // many small ones read as noise.
+    const spine = Math.max(2, Math.round(length / 0.85));
     for (let index = 0; index < spine; index += 1) {
-      const x = -length / 2 + 0.28 + (index * (length - 0.56)) / (spine - 1);
-      const kind = pick<PlantKind>(["bush", "leafy", "bush", "leafy", "tall"], index);
-      const scale = kind === "tall" ? 0.68 : 0.95;
+      const x = -length / 2 + 0.4 + (index * (length - 0.8)) / (spine - 1);
+      const kind = pick<PlantKind>(["leafy", "tall", "leafy", "bush"], index);
+      const scale = kind === "tall" ? 0.95 : 1.3;
       parts.push(...placed(plantParts(kind, ink.charcoal, leaf), [x, height - 0.3 * scale, 0], index * 1.3, scale));
     }
-    const edge = Math.max(2, Math.round(length / 0.7));
+    const edge = Math.max(1, Math.round(length / 1.4));
     for (let index = 0; index < edge; index += 1) {
-      for (const side of [-1, 1]) {
-        const x = -length / 2 + 0.35 + ((index + (side > 0 ? 0 : 0.5)) * (length - 0.7)) / edge;
-        parts.push(...placed(plantParts("trailing", ink.charcoal, leaf), [x, height - 0.26, side * width * 0.3], index * 0.8, 0.85));
-      }
+      const x = -length / 2 + 0.6 + (index * (length - 1.2)) / Math.max(1, edge - 1);
+      parts.push(...placed(plantParts("trailing", ink.charcoal, leaf), [x, height - 0.26, width * 0.3], index * 0.8, 1.0));
     }
     return parts;
   });
@@ -1520,178 +1698,197 @@ export function WallScreen({
 /* Kitchen                                                             */
 /* ------------------------------------------------------------------ */
 
+/** Pale honey oak for kitchen joinery (the reference's is lighter and less orange than the desks). */
+const joinery = { oak: "#e8d6bc", shade: "#c8b093", kick: "#7d6a58", handle: "#3d4249", counter: "#f6f3ee" };
+
+/** A slab door/drawer front proud of the carcass, with a dark pull. Front face at `z`. */
+function frontParts(
+  w: number,
+  h: number,
+  [x, y, z]: V3,
+  pull: "top" | "bottom" | "left" | "right" | "none" = "top",
+): Part[] {
+  const parts: Part[] = [rbox([w - 0.022, h - 0.022, 0.034], [x, y, z - 0.017], joinery.oak, 0.014)];
+  const inset = 0.07;
+  if (pull === "top") parts.push(rbox([Math.min(0.22, w * 0.45), 0.022, 0.03], [x, y + h / 2 - inset, z + 0.012], joinery.handle, 0.009));
+  if (pull === "bottom") parts.push(rbox([Math.min(0.22, w * 0.45), 0.022, 0.03], [x, y - h / 2 + inset, z + 0.012], joinery.handle, 0.009));
+  if (pull === "left" || pull === "right") {
+    const side = pull === "left" ? -1 : 1;
+    parts.push(rbox([0.022, Math.min(0.24, h * 0.4), 0.03], [x + side * (w / 2 - 0.06), y, z + 0.012], joinery.handle, 0.009));
+  }
+  return parts;
+}
+
+/** Espresso machine + grinder, built around the machine's footprint centre at counter height 0. */
+function espressoParts(): Part[] {
+  const body = "#2f343a";
+  const steel = "#cfd4d8";
+  return [
+    rbox([0.42, 0.46, 0.38], [0, 0.23, 0], body, 0.05),
+    rbox([0.44, 0.035, 0.4], [0, 0.475, 0], steel, 0.012),
+    rbox([0.3, 0.09, 0.02], [0, 0.37, 0.19], steel, 0.008),
+    ball(0.018, [-0.08, 0.37, 0.205], "#e2b25a"),
+    ball(0.018, [0.08, 0.37, 0.205], "#8fc19a"),
+    cyl(0.055, 0.06, [0, 0.27, 0.23], steel),
+    rbox([0.04, 0.03, 0.17], [0.04, 0.235, 0.32], "#1f2328", 0.012, [0, -0.5, 0]),
+    rbox([0.32, 0.03, 0.15], [0, 0.03, 0.25], steel, 0.01),
+    ...grow(mugParts([0, 0.045, 0.25], palette.paper), 1.2, [0, 0.045, 0.25]),
+    // Grinder.
+    rbox([0.14, 0.26, 0.17], [0.33, 0.13, -0.02], body, 0.03),
+    cyl(0.07, 0.16, [0.33, 0.34, -0.02], "#8a6a4d", undefined, G.pot),
+    cyl(0.074, 0.02, [0.33, 0.43, -0.02], body),
+  ];
+}
+
 /**
- * Full rear kitchen run: base cabinets, quartz counter, sink, coffee
- * station, backsplash, open shelves with mugs/jars, upper cabinets.
+ * Full rear kitchen run: slab-front oak base cabinets with dark pulls, a thick
+ * white counter, espresso station, undermount sink, two floating shelves with
+ * an LED wash, big mugs and pothos spilling over, an upper cabinet at the end.
  * Back edge sits at local z = -0.33 (put that against the wall).
  */
 export function KitchenRun({ position = [0, 0, 0], length = 6.8 }: Placement & { length?: number }) {
   const half = length / 2;
   const sinkX = -half + length * 0.42;
-  const coffeeX = -half + 0.5;
-  const shelfStart = -half + 0.15;
-  const shelfEnd = half - 1.6;
+  const coffeeX = -half + 0.45;
+  const shelfStart = -half + 0.12;
+  const shelfEnd = half - 1.62;
   const shelfLength = shelfEnd - shelfStart;
   const shelfMid = (shelfStart + shelfEnd) / 2;
-  const counter = 0.93;
+  const counter = 0.945;
+  const shelves = [1.5, 1.93];
+  const shelfDepth = 0.28;
+  const shelfZ = -0.33 + shelfDepth / 2;
+  const frontZ = 0.275;
 
   const cabinets = baked(`kitchen-base|${length}`, () => {
     const parts: Part[] = [
-      box([length, 0.8, 0.6], [0, 0.48, 0], "#d8b88f"),
-      box([length - 0.04, 0.08, 0.54], [0, 0.04, -0.03], "#8f7660"),
-      rbox([length + 0.04, 0.05, 0.66], [0, 0.905, 0.01], "#f3f0ea", 0.012),
-      box([length, 0.008, 0.006], [0, 0.72, 0.302], "#b8966c"),
+      box([length, 0.8, 0.56], [0, 0.48, -0.04], joinery.shade),
+      box([length - 0.04, 0.08, 0.5], [0, 0.04, -0.07], joinery.kick),
+      rbox([length + 0.04, 0.065, 0.64], [0, counter - 0.0325, -0.01], joinery.counter, 0.022),
     ];
-    const doors = Math.round(length / 0.6);
-    const doorWidth = length / doors;
-    for (let index = 1; index < doors; index += 1) {
-      parts.push(box([0.012, 0.8, 0.006], [-half + index * doorWidth, 0.48, 0.302], "#b8966c"));
-    }
-    for (let index = 0; index < doors; index += 1) {
-      const x = -half + (index + 0.5) * doorWidth;
-      parts.push(box([0.16, 0.016, 0.02], [x, 0.8, 0.315], ink.metal));
-      parts.push(box([0.016, 0.14, 0.02], [x + (index % 2 === 0 ? 0.2 : -0.2), 0.58, 0.315], ink.metal));
-    }
-    // Upper cabinets on the right end.
-    const upperX = half - 0.75;
-    parts.push(box([1.45, 0.72, 0.36], [upperX, 1.95, -0.14], "#d8b88f"));
-    parts.push(box([0.012, 0.7, 0.006], [upperX, 1.95, 0.042], "#b8966c"));
-    parts.push(box([0.016, 0.14, 0.02], [upperX - 0.08, 1.72, 0.052], ink.metal));
-    parts.push(box([0.016, 0.14, 0.02], [upperX + 0.08, 1.72, 0.052], ink.metal));
-    // Open shelves + brackets.
-    for (const y of [1.55, 1.98]) {
-      parts.push(box([shelfLength, 0.04, 0.26], [shelfMid, y, -0.2], ink.oak));
-      for (const x of [shelfStart + 0.2, shelfEnd - 0.2, shelfMid]) {
-        parts.push(box([0.025, 0.12, 0.2], [x, y - 0.08, -0.22], ink.charcoal));
+    const units = Math.max(2, Math.round(length / 0.6));
+    const unit = length / units;
+    for (let index = 0; index < units; index += 1) {
+      const x = -half + (index + 0.5) * unit;
+      if (index === 0 || index === units - 3) {
+        for (let drawer = 0; drawer < 3; drawer += 1) {
+          parts.push(...frontParts(unit, 0.262, [x, 0.08 + 0.131 + drawer * 0.262, frontZ], "top"));
+        }
+      } else {
+        parts.push(...frontParts(unit, 0.786, [x, 0.08 + 0.393, frontZ], "top"));
       }
     }
+    // Upper cabinet at the right end: two doors, pulls along the bottom.
+    const upperX = half - 0.76;
+    const upperZ = -0.33 + 0.18;
+    parts.push(box([1.48, 0.76, 0.34], [upperX, 1.96, upperZ - 0.01], joinery.shade));
+    for (const side of [-1, 1]) {
+      parts.push(...frontParts(0.74, 0.78, [upperX + side * 0.37, 1.96, upperZ + 0.185], "bottom"));
+    }
+    // Floating shelves: thick oak slabs, no brackets.
+    for (const y of shelves) {
+      parts.push(rbox([shelfLength, 0.055, shelfDepth], [shelfMid, y, shelfZ], palette.oakLight, 0.014));
+    }
     return parts;
   });
 
-  // Accessories are scaled up ~25% and gathered into clusters, so they read
-  // at diorama distance instead of as an even sprinkle.
   const counterItems = baked(`kitchen-items|${length}`, () => {
     const parts: Part[] = [
-      // Sink + faucet.
-      box([0.62, 0.012, 0.42], [sinkX, counter + 0.002, 0.02], "#b4bcc4"),
-      box([0.54, 0.014, 0.34], [sinkX, counter + 0.004, 0.02], "#8d959e"),
+      // Undermount sink + tall gooseneck tap.
+      rbox([0.62, 0.008, 0.42], [sinkX, counter + 0.002, 0.0], "#c3c9ce", 0.004),
+      rbox([0.52, 0.01, 0.32], [sinkX, counter + 0.005, 0.0], "#79818a", 0.004),
       ...grow(
         [
-          cyl(0.025, 0.05, [sinkX, counter + 0.025, -0.22], ink.chrome),
-          cyl(0.014, 0.3, [sinkX, counter + 0.15, -0.22], ink.chrome, undefined, G.cylLow),
-          { g: G.halfTorus, s: 0.09, p: [sinkX, counter + 0.3, -0.13], r: [0, Math.PI / 2, 0], c: ink.chrome },
-          cyl(0.016, 0.05, [sinkX, counter + 0.28, -0.04], ink.chrome, undefined, G.cylLow),
+          cyl(0.028, 0.05, [sinkX, counter + 0.025, -0.24], ink.chrome),
+          cyl(0.016, 0.32, [sinkX, counter + 0.16, -0.24], ink.chrome, undefined, G.cylLow),
+          { g: G.halfTorus, s: 0.09, p: [sinkX, counter + 0.32, -0.15], r: [0, Math.PI / 2, 0], c: ink.chrome },
+          cyl(0.018, 0.06, [sinkX, counter + 0.3, -0.06], ink.chrome, undefined, G.cylLow),
+        ],
+        1.35,
+        [sinkX, counter, -0.24],
+      ),
+      ...placed(espressoParts(), [coffeeX, counter, -0.06], 0, 1.15),
+      // Cutting board leaning on the wall + a kettle, left of the sink.
+      rbox([0.34, 0.46, 0.03], [sinkX - 0.62, counter + 0.23, -0.29], palette.oak, 0.03, [-0.14, 0, 0]),
+      ...grow(
+        [
+          cyl(0.1, 0.2, [sinkX - 0.55, counter + 0.1, -0.04], "#efe9df", undefined, G.pot),
+          cyl(0.05, 0.03, [sinkX - 0.55, counter + 0.215, -0.04], "#3a3f46"),
+          { g: G.halfTorus, s: 0.07, p: [sinkX - 0.55, counter + 0.205, -0.04], c: "#3a3f46" },
+          cyl(0.014, 0.12, [sinkX - 0.45, counter + 0.13, -0.04], "#efe9df", [0, 0, -0.9], G.cylLow),
         ],
         1.2,
-        [sinkX, counter, -0.22],
+        [sinkX - 0.55, counter, -0.04],
       ),
-      // Coffee station: machine, cup, milk jug and grinder as one cluster.
+      // A French press and two mugs right of the sink, a fruit bowl further on.
       ...grow(
         [
-          rbox([0.34, 0.44, 0.34], [coffeeX, counter + 0.22, -0.08], "#3a3f46", 0.03),
-          box([0.36, 0.03, 0.36], [coffeeX, counter + 0.455, -0.08], "#c8cdd2"),
-          box([0.22, 0.16, 0.06], [coffeeX, counter + 0.11, 0.07], "#24282e"),
-          box([0.2, 0.02, 0.1], [coffeeX, counter + 0.02, 0.11], "#9aa3ad"),
-          cyl(0.03, 0.04, [coffeeX, counter + 0.22, 0.09], "#c8cdd2"),
-          ...mugParts([coffeeX, counter + 0.03, 0.11], palette.paper),
-          rbox([0.12, 0.3, 0.2], [coffeeX + 0.25, counter + 0.15, -0.1], "#d8e4ea", 0.02),
-          cyl(0.07, 0.22, [coffeeX + 0.43, counter + 0.11, -0.14], "#2f343a"),
-          { g: G.cone, s: [0.07, 0.12, 0.07], p: [coffeeX + 0.43, counter + 0.28, -0.14], r: [Math.PI, 0, 0], c: "#7a5a43" },
-          ...mugParts([coffeeX + 0.4, counter, 0.08], "#d98e73"),
-          ...mugParts([coffeeX + 0.52, counter, 0.02], "#a8bfa3"),
+          cyl(0.055, 0.2, [sinkX + 0.6, counter + 0.1, -0.12], "#d7e2e6"),
+          cyl(0.06, 0.03, [sinkX + 0.6, counter + 0.215, -0.12], "#3a3f46"),
+          cyl(0.008, 0.06, [sinkX + 0.6, counter + 0.25, -0.12], "#3a3f46"),
+          cyl(0.052, 0.07, [sinkX + 0.6, counter + 0.035, -0.12], "#7a5a43"),
+          ...mugParts([sinkX + 0.78, counter, -0.02], palette.paper),
         ],
-        1.3,
-        [coffeeX, counter, -0.08],
+        1.35,
+        [sinkX + 0.65, counter, -0.1],
       ),
-      // Kettle + canisters beside the sink.
       ...grow(
         [
-          cyl(0.09, 0.2, [sinkX + 0.7, counter + 0.1, -0.08], "#efe9df", undefined, G.pot),
-          cyl(0.05, 0.03, [sinkX + 0.7, counter + 0.215, -0.08], "#c9a77c"),
-          { g: G.halfTorus, s: 0.06, p: [sinkX + 0.7, counter + 0.2, -0.08], r: [0, 0, 0], c: "#3a3f46" },
-          ...jarParts([sinkX + 0.92, counter, -0.18], "#c69a5b", 0.22),
-          ...jarParts([sinkX + 1.06, counter, -0.18], "#efe6d0", 0.17),
-          ...jarParts([sinkX + 1.2, counter, -0.18], "#7a5a43", 0.13),
+          cyl(0.17, 0.08, [half - 0.75, counter + 0.04, -0.02], ink.cream, [Math.PI, 0, 0], G.pot),
+          ball(0.06, [half - 0.8, counter + 0.1, 0.01], "#e9a04a"),
+          ball(0.06, [half - 0.7, counter + 0.1, -0.05], "#e9a04a"),
+          ball(0.055, [half - 0.74, counter + 0.16, 0.0], "#a9c46c"),
         ],
         1.25,
-        [sinkX + 0.9, counter, -0.12],
-      ),
-      // Fruit bowl.
-      ...grow(
-        [
-          cyl(0.17, 0.08, [sinkX + 1.65, counter + 0.04, 0.0], ink.cream, [Math.PI, 0, 0], G.pot),
-          ball(0.055, [sinkX + 1.6, counter + 0.1, 0.03], "#e9a04a"),
-          ball(0.055, [sinkX + 1.7, counter + 0.1, -0.03], "#e9a04a"),
-          ball(0.05, [sinkX + 1.66, counter + 0.16, 0.02], "#a9c46c"),
-          ball(0.05, [sinkX + 1.72, counter + 0.1, 0.06], "#d9634a"),
-        ],
-        1.25,
-        [sinkX + 1.65, counter, 0],
-      ),
-      // Cutting boards + utensil crock.
-      ...grow(
-        [
-          rbox([0.42, 0.025, 0.26], [sinkX - 0.75, counter + 0.012, 0.02], ink.oakDeep, 0.01),
-          rbox([0.3, 0.38, 0.025], [sinkX - 0.85, counter + 0.19, -0.27], ink.oak, 0.012, [-0.12, 0, 0]),
-          rbox([0.22, 0.3, 0.025], [sinkX - 0.62, counter + 0.15, -0.25], ink.oakDeep, 0.012, [-0.12, 0, 0]),
-          cyl(0.065, 0.16, [sinkX - 0.4, counter + 0.08, -0.16], "#e8dccb"),
-          cyl(0.006, 0.22, [sinkX - 0.41, counter + 0.22, -0.16], ink.oakDeep, [0.15, 0, 0.1], G.cylLow),
-          cyl(0.006, 0.22, [sinkX - 0.38, counter + 0.22, -0.15], ink.charcoal, [-0.1, 0, -0.12], G.cylLow),
-        ],
-        1.2,
-        [sinkX - 0.7, counter, -0.1],
-      ),
-      // Bottles + toaster at the right end.
-      ...grow(
-        [
-          cyl(0.03, 0.24, [half - 0.45, counter + 0.12, -0.2], "#b98a3e", undefined, G.cylLow),
-          cyl(0.03, 0.2, [half - 0.37, counter + 0.1, -0.22], "#6f8f6a", undefined, G.cylLow),
-          cyl(0.04, 0.12, [half - 0.27, counter + 0.06, -0.18], ink.white),
-          rbox([0.28, 0.18, 0.16], [half - 0.85, counter + 0.09, -0.12], "#e9e4dc", 0.03),
-        ],
-        1.25,
-        [half - 0.55, counter, -0.18],
+        [half - 0.75, counter, 0],
       ),
     ];
-    const lower = 1.57;
-    const upper = 2.0;
-    const mug = (x: number, y: number, color: string) => grow(mugParts([x, y, -0.2], color), 1.3, [x, y, -0.2]);
-    const jar = (x: number, y: number, fill: string, height: number) => grow(jarParts([x, y, -0.2], fill, height), 1.3, [x, y, -0.2]);
-    // Lower shelf: a tight mug row, then a gap, a jar cluster, a bowl stack.
-    for (let index = 0; index < 6; index += 1) parts.push(...mug(shelfStart + 0.22 + index * 0.17, lower, pick(mugColors, index)));
-    ["#c69a5b", "#efe6d0", "#7a5a43", "#d9b25f"].forEach((fill, index) => {
-      parts.push(...jar(shelfMid + 0.15 + index * 0.18, lower, fill, 0.16 + (index % 2) * 0.07));
-    });
-    for (let index = 0; index < 4; index += 1) {
-      parts.push(cyl(0.15 - index * 0.01, 0.042, [shelfEnd - 0.3, lower + 0.022 + index * 0.045, -0.2], pick([ink.cream, palette.sage, ink.cream, palette.terracotta], index), undefined, G.pot));
-    }
-    // Upper shelf: cookbooks, a jar trio, a mug cluster, vase.
-    parts.push(...grow(bookRowParts(0.5, [shelfStart + 0.33, upper, -0.2], 5, 0.26), 1.2, [shelfStart + 0.33, upper, -0.2]));
-    ["#efe6d0", "#c69a5b", "#e4ebe8"].forEach((fill, index) => {
-      parts.push(...jar(shelfStart + 0.82 + index * 0.18, upper, fill, 0.2));
-    });
-    for (let index = 0; index < 5; index += 1) parts.push(...mug(shelfEnd - 1.25 + index * 0.17, upper, pick(mugColors, index + 2)));
-    parts.push(...grow(vaseParts([shelfEnd - 0.3, upper, -0.2], palette.terracotta, 0.22, false), 1.3, [shelfEnd - 0.3, upper, -0.2]));
-    // Shelf and counter greenery, baked in.
-    parts.push(...placed(plantParts("trailing", ink.cream, palette.sageDeep), [shelfStart + 1.55, upper, -0.2], 0.4, 0.62));
-    parts.push(...placed(plantParts("trailing", palette.terracotta, palette.sageDeep), [shelfMid - 0.3, lower, -0.2], 1.1, 0.55));
-    parts.push(...placed(plantParts("leafy", ink.cream, palette.sageDeep), [shelfMid + 0.45, upper, -0.2], 0.2, 0.55));
-    parts.push(...placed(plantParts("trailing", ink.cream, palette.sageDeep), [half - 1.15, 2.31, -0.16], 0.9, 0.68));
-    parts.push(...placed(plantParts("bush", palette.terracotta, palette.sageDeep), [half - 0.35, 2.31, -0.16], 0, 0.5));
-    parts.push(...placed(plantParts("leafy", ink.cream, palette.sageDeep), [sinkX + 0.38, counter, -0.2], 0.7, 0.42));
+
+    // Shelves: big mugs in loose groups with air between, pothos spilling over.
+    const [lower, upper] = shelves.map((y) => y + 0.0275) as [number, number];
+    const z = shelfZ + 0.01;
+    const mug = (x: number, y: number, color: string) => grow(mugParts([x, y, z], color), 1.55, [x, y, z]);
+    const shelfMugs = [palette.paper, "#efe6d6", palette.paper, "#9fb3c0", palette.paper, "#c9d6c4"];
+    const step = shelfLength / 14;
+    [0.6, 1.4, 2.2].forEach((slot, index) => parts.push(...mug(shelfStart + slot * step, lower, pick(shelfMugs, index))));
+    [6.6, 7.4].forEach((slot, index) => parts.push(...grow(jarParts([shelfStart + slot * step, lower, z], index ? "#efe6d0" : "#c69a5b", 0.2), 1.35, [shelfStart + slot * step, lower, z])));
+    [10.4, 11.2, 12.0].forEach((slot, index) => parts.push(...mug(shelfStart + slot * step, lower, pick(shelfMugs, index + 3))));
+    [2.6, 3.4, 4.2].forEach((slot, index) => parts.push(...mug(shelfStart + slot * step, upper, pick(shelfMugs, index + 1))));
+    [8.2, 9.0].forEach((slot, index) => parts.push(...mug(shelfStart + slot * step, upper, pick(shelfMugs, index + 4))));
+    parts.push(...grow(vaseParts([shelfStart + 13.1 * step, upper, z], palette.terracotta, 0.22, false), 1.35, [shelfStart + 13.1 * step, upper, z]));
+    parts.push(...placed(plantParts("trailing", ink.cream, palette.sageDeep), [shelfStart + 0.9 * step, upper, z], 0.4, 0.72));
+    parts.push(...placed(plantParts("trailing", ink.cream, palette.sageDeep), [shelfStart + 5.6 * step, upper, z], 1.6, 0.8));
+    parts.push(...placed(plantParts("trailing", palette.terracotta, palette.sageDeep), [shelfStart + 4.4 * step, lower, z], 1.1, 0.62));
+    parts.push(...placed(plantParts("trailing", ink.cream, palette.sageDeep), [shelfStart + 11.6 * step, upper, z], 0.7, 0.66));
+    // Pothos on top of the upper cabinet, vines down its face.
+    parts.push(...placed(plantParts("trailing", ink.cream, palette.sageDeep), [half - 1.15, 2.34, -0.17], 0.9, 0.72));
     return parts;
   });
 
-  const backsplash = useMemo(() => withRepeat(textures.backsplash, length / 1.1, 0.75), [length]);
+  const glow = useMemo(
+    () =>
+      new THREE.MeshBasicMaterial({
+        map: textures.wallGlow,
+        color: "#ffcf8f",
+        transparent: true,
+        opacity: 0.9,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        toneMapped: false,
+      }),
+    [],
+  );
 
   return (
     <group position={position}>
       <BakedMesh geometry={cabinets} />
       <BakedMesh geometry={counterItems} />
-      <mesh position={[0, counter + 0.3, -0.322]} scale={[length, 0.6, 1]} geometry={G.plane} receiveShadow dispose={null}>
-        <meshStandardMaterial map={backsplash} roughness={0.5} />
-      </mesh>
-      <mesh position={[shelfMid, 1.522, -0.14]} scale={[shelfLength - 0.1, 0.012, 0.03]} geometry={G.box} material={ledMaterial} dispose={null} />
+      {shelves.map((y) => (
+        <group key={y}>
+          <mesh position={[shelfMid, y - 0.03, shelfZ + shelfDepth / 2 - 0.03]} scale={[shelfLength - 0.12, 0.008, 0.02]} geometry={G.box} material={ledMaterial} dispose={null} />
+          <mesh position={[shelfMid, y - 0.27, -0.322]} scale={[shelfLength, 0.5, 1]} geometry={G.plane} material={glow} raycast={() => null} dispose={null} />
+        </group>
+      ))}
     </group>
   );
 }
@@ -1701,41 +1898,49 @@ export function Kitchen({ position = [0, 0, 0] }: Placement) {
   return <KitchenRun position={position} />;
 }
 
-const stainlessMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.38, metalness: 0.22 });
+const stainlessMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.34, metalness: 0.3 });
 
-/** French-door fridge in medium brushed stainless. */
+/** Tall two-door fridge in brushed stainless: fridge over freezer, bar pulls on the left. */
 export function Fridge({ position = [0, 0, 0], rotation = [0, 0, 0] }: Placement) {
-  const geometry = baked("fridge", () => [
-    rbox([0.92, 1.95, 0.68], [0, 0.975, 0], "#a9b0b6", 0.04),
-    box([0.88, 1.12, 0.006], [0, 1.36, 0.342], "#b6bdc3"),
-    box([0.88, 0.6, 0.006], [0, 0.42, 0.342], "#b0b7bd"),
-    box([0.01, 1.14, 0.008], [0, 1.36, 0.346], "#6f777e"),
-    box([0.9, 0.012, 0.008], [0, 0.76, 0.346], "#6f777e"),
-    box([0.03, 0.62, 0.035], [-0.06, 1.3, 0.37], "#dfe3e6"),
-    box([0.03, 0.62, 0.035], [0.06, 1.3, 0.37], "#dfe3e6"),
-    box([0.52, 0.03, 0.035], [0, 0.66, 0.37], "#dfe3e6"),
-    box([0.16, 0.26, 0.01], [-0.25, 1.32, 0.348], "#59616a"),
-    box([0.94, 0.06, 0.64], [0, 0.03, 0], "#5f676e"),
-  ]);
+  const geometry = baked("fridge", () => {
+    const steel = "#a3abb2";
+    const door = "#b2b9bf";
+    const pull = "#e3e6e8";
+    return [
+      rbox([0.86, 1.96, 0.66], [0, 1.02, -0.02], steel, 0.05),
+      rbox([0.84, 1.2, 0.05], [0, 1.385, 0.31], door, 0.035),
+      rbox([0.84, 0.7, 0.05], [0, 0.415, 0.31], door, 0.035),
+      rbox([0.04, 0.62, 0.05], [-0.35, 1.27, 0.36], pull, 0.018),
+      rbox([0.04, 0.34, 0.05], [-0.35, 0.58, 0.36], pull, 0.018),
+      box([0.82, 0.06, 0.6], [0, 0.03, -0.04], "#4f565c"),
+    ];
+  });
   return <BakedMesh geometry={geometry} position={position} rotation={rotation} material={stainlessMaterial} />;
 }
 
+/** Floor-to-ceiling pantry: two slab doors over two, oak like the kitchen run. */
 export function TallCabinet({
   position = [0, 0, 0],
   rotation = [0, 0, 0],
   width = 0.9,
   height = 2.2,
 }: Placement & { width?: number; height?: number }) {
-  const geometry = baked(`tallcabinet|${width}|${height}`, () => [
-    box([width, height, 0.62], [0, height / 2, 0], "#d8b88f"),
-    box([0.012, height - 0.12, 0.006], [0, height / 2, 0.312], "#b8966c"),
-    box([width, 0.008, 0.006], [0, height * 0.62, 0.312], "#b8966c"),
-    box([0.016, 0.22, 0.02], [-0.07, height * 0.45, 0.322], ink.metal),
-    box([0.016, 0.22, 0.02], [0.07, height * 0.45, 0.322], ink.metal),
-    box([0.016, 0.14, 0.02], [-0.07, height * 0.7, 0.322], ink.metal),
-    box([0.016, 0.14, 0.02], [0.07, height * 0.7, 0.322], ink.metal),
-    box([width - 0.04, 0.08, 0.56], [0, 0.04, -0.02], "#8f7660"),
-  ]);
+  const geometry = baked(`tallcabinet|${width}|${height}`, () => {
+    const split = 0.08 + (height - 0.08) * 0.62;
+    const lowerH = split - 0.08;
+    const upperH = height - split;
+    const frontZ = 0.31;
+    const parts: Part[] = [
+      box([width, height - 0.08, 0.58], [0, 0.08 + (height - 0.08) / 2, -0.01], joinery.shade),
+      box([width - 0.04, 0.08, 0.52], [0, 0.04, -0.04], joinery.kick),
+    ];
+    for (const side of [-1, 1]) {
+      const pull = side < 0 ? "right" : "left";
+      parts.push(...frontParts(width / 2, lowerH, [(side * width) / 4, 0.08 + lowerH / 2, frontZ], pull));
+      parts.push(...frontParts(width / 2, upperH, [(side * width) / 4, split + upperH / 2, frontZ], pull));
+    }
+    return parts;
+  });
   return <BakedMesh geometry={geometry} position={position} rotation={rotation} />;
 }
 
@@ -1752,49 +1957,30 @@ export function MeetingTable({
   chairScale = 1,
 }: Placement & { length?: number; width?: number; chairColor?: string; chairScale?: number }) {
   const table = baked(`meetingtable|${length}|${width}`, () => {
+    const top = 0.76;
     const parts: Part[] = [
-      rbox([length, 0.06, width], [0, 0.75, 0], ink.oak, 0.025),
-      box([length - 0.3, 0.06, width - 0.3], [0, 0.69, 0], ink.oakDeep),
+      rbox([length, 0.05, width], [0, top - 0.025, 0], palette.oakLight, 0.022),
+      box([length - 0.5, 0.05, width - 0.4], [0, top - 0.075, 0], ink.oakDeep),
     ];
-    for (const x of [-length / 2 + 0.18, length / 2 - 0.18]) {
-      for (const z of [-width / 2 + 0.14, width / 2 - 0.14]) {
-        parts.push(cyl(0.035, 0.72, [x, 0.36, z], ink.oakDeep, undefined, G.cylLow));
+    for (const x of [-length / 2 + 0.28, length / 2 - 0.28]) {
+      for (const z of [-width / 2 + 0.18, width / 2 - 0.18]) {
+        parts.push(cyl(0.038, top - 0.05, [x, (top - 0.05) / 2, z], ink.oakDeep, [Math.PI, 0, 0], G.pot));
       }
     }
-    parts.push(...bookStackParts(2, [length * 0.32, 0.78, -0.25], 3));
-    parts.push(...mugParts([-length * 0.18, 0.78, 0.32], palette.paper));
-    parts.push(...mugParts([length * 0.2, 0.78, 0.3], "#a8bfa3"));
-    parts.push(...mugParts([-length * 0.36, 0.78, -0.28], "#d98e73"));
-    parts.push(rbox([0.12, 0.02, 0.2], [length * 0.05, 0.79, -0.3], "#2b313a", 0.01));
-    parts.push(cyl(0.1, 0.05, [length * 0.12, 0.8, 0.05], ink.charcoal));
-    // A paper and pen at every seat, plus a water carafe and glasses.
-    [-length / 3, 0, length / 3].forEach((x, index) => {
-      for (const side of [-1, 1]) {
-        const z = side * (width / 2 - 0.27);
-        const turn = (index + side) * 0.12;
-        parts.push(box([0.22, 0.005, 0.3], [x + 0.18, 0.783, z], ink.white, [0, turn, 0]));
-        parts.push(box([0.2, 0.004, 0.28], [x + 0.21, 0.788, z + side * 0.02], "#f1ede4", [0, turn + 0.1, 0]));
-        parts.push(cyl(0.007, 0.15, [x + 0.36, 0.792, z], pick([ink.charcoal, palette.terracotta, palette.slate], index), [Math.PI / 2, 0, 0.5], G.cylLow));
-      }
-    });
-    parts.push(cyl(0.065, 0.24, [-length * 0.06, 0.9, 0.22], "#dce9ea", undefined, G.pot));
-    parts.push(cyl(0.03, 0.04, [-length * 0.06, 1.04, 0.22], "#c9d4d6"));
-    for (const [x, z] of [[-length * 0.02, 0.32], [-length * 0.11, 0.3]] as Array<[number, number]>) {
-      parts.push(cyl(0.035, 0.1, [x, 0.83, z], "#e6eeee", undefined, G.pot));
-    }
-    parts.push(...mugParts([length * 0.4, 0.78, 0.36], "#e8dccb"));
-    parts.push(...mugParts([-length * 0.05, 0.78, -0.42], "#7f9fb8"));
+    // Sparse, like the reference: a conference puck, two mugs, a closed notebook.
+    parts.push(cyl(0.09, 0.035, [length * 0.1, top + 0.018, 0.1], ink.charcoal, undefined, G.round));
+    parts.push(...grow(mugParts([-length * 0.22, top, 0.3], palette.paper), 1.25, [-length * 0.22, top, 0.3]));
+    parts.push(...grow(mugParts([length * 0.28, top, -0.32], "#e8dccb"), 1.25, [length * 0.28, top, -0.32]));
     return parts;
   });
   const xs = [-length / 3, 0, length / 3];
-  const offset = width / 2 + 0.3 * chairScale;
+  const offset = width / 2 + 0.16 * chairScale;
   return (
     <group position={position}>
       <BakedMesh geometry={table} />
-      <Laptop position={[-length * 0.3, 0.78, 0.12]} rotation={[0, 0.35, 0]} />
-      <Notebook position={[length * 0.32, 0.78, 0.22]} rotation={[0, -0.25, 0]} color={palette.sage} />
-      <Plant position={[-0.1, 0.78, -0.05]} scale={0.55} pot={ink.cream} kind="leafy" />
-      <Plant position={[length * 0.42, 0.78, -0.02]} scale={0.5} pot={palette.terracotta} kind="succulent" />
+      <Laptop position={[-length * 0.3, 0.76, 0.12]} rotation={[0, 0.35, 0]} />
+      <Notebook position={[length * 0.32, 0.76, 0.22]} rotation={[0, -0.25, 0]} color={palette.sage} />
+      <Plant position={[-0.15, 0.76, -0.05]} scale={0.6} pot={palette.paper} kind="leafy" />
       {xs.map((x) => (
         <group key={x}>
           <DiningChair position={[x, 0, -offset]} color={chairColor} scale={chairScale} />
@@ -1928,6 +2114,7 @@ export function FloorLamp({
   color = palette.paper,
   light = true,
 }: Placement & { color?: string; light?: boolean }) {
+  const lampLights = useLampLights();
   const geometry = baked(`floorlamp`, () => [
     cyl(0.18, 0.03, [0, 0.015, 0], ink.charcoal),
     cyl(0.016, 1.55, [0, 0.79, 0], ink.charcoal, undefined, G.cylLow),
@@ -1939,7 +2126,7 @@ export function FloorLamp({
         <sphereGeometry args={[1, 20, 14]} />
         <meshStandardMaterial color={color} emissive="#ffe9c4" emissiveIntensity={0.55} roughness={0.9} />
       </mesh>
-      {light && <pointLight position={[0, 1.6, 0]} intensity={0.6} distance={3.5} color="#ffd9a0" />}
+      {light && lampLights && <pointLight position={[0, 1.6, 0]} intensity={0.6} distance={3.5} color="#ffd9a0" />}
     </group>
   );
 }
@@ -1952,7 +2139,8 @@ export function Pendant({
   length = 2.4,
   light = false,
   size = 1,
-}: Placement & { kind?: "dome" | "cone" | "bar"; drop?: number; length?: number; light?: boolean; size?: number }) {
+}: Placement & { kind?: "dome" | "cone" | "bell" | "bar"; drop?: number; length?: number; light?: boolean; size?: number }) {
+  const lampLights = useLampLights();
   return (
     <group position={position}>
       {kind === "bar" ? (
@@ -1968,20 +2156,35 @@ export function Pendant({
           <Block size={[0.01, drop, 0.01]} position={[0, 0.28 + drop / 2, 0]} color={ink.charcoal} castShadow={false} />
           <mesh
             position={[0, 0.15, 0]}
-            scale={kind === "dome" ? [0.42 * size, 0.3 * size, 0.42 * size] : [0.3 * size, 0.32 * size, 0.3 * size]}
-            geometry={kind === "dome" ? domeGeometry : G.cone}
-            material={kind === "dome" ? mat("#f4eee4", 0.7) : mat(ink.oak, 0.8)}
+            scale={
+              kind === "dome" ? [0.42 * size, 0.3 * size, 0.42 * size] : kind === "bell" ? [0.24 * size, 0.24 * size, 0.24 * size] : [0.3 * size, 0.32 * size, 0.3 * size]
+            }
+            geometry={kind === "dome" ? domeGeometry : kind === "bell" ? bellGeometry : G.cone}
+            material={kind === "dome" ? mat("#f4eee4", 0.7) : kind === "bell" ? shadeMaterial : mat(ink.oak, 0.8)}
             dispose={null}
           />
           <mesh position={[0, 0.05, 0]} scale={0.08 * size} geometry={G.sphere} material={glowMaterial} dispose={null} />
         </>
       )}
-      {light && <pointLight position={[0, -0.1, 0]} intensity={0.8} distance={4.5} color="#ffd9a0" />}
+      {light && lampLights && <pointLight position={[0, -0.1, 0]} intensity={0.8} distance={4.5} color="#ffd9a0" />}
     </group>
   );
 }
 
 const domeGeometry = new THREE.SphereGeometry(1, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2);
+/** Bell shade: narrow neck flaring to a wide lip, unit size, open at the bottom. */
+const bellGeometry = new THREE.LatheGeometry(
+  [
+    [0.0, 1.0],
+    [0.16, 1.0],
+    [0.2, 0.9],
+    [0.3, 0.62],
+    [0.52, 0.3],
+    [0.86, 0.08],
+    [1.0, 0.0],
+  ].map(([x, y]) => new THREE.Vector2(x, y)),
+  40,
+);
 domeGeometry.translate(0, -0.5, 0);
 
 export function Whiteboard({
