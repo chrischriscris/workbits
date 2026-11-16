@@ -45,3 +45,12 @@ seeds/team/portraits/
 
 # local chat persistence
 apps/server/data/
+
+# Private references, kept local only (not published): the north-star scene
+# reference, third-party chibi reference, and the real team's illustrations and
+# cast notes. Backups live outside the repo.
+art/style-scene.png
+art/references/
+art/team-reference.png
+art/team-roster.png
+docs/art/team-cast.md

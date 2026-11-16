@@ -4,9 +4,11 @@ Concept references and style frames. These are design artifacts, not shipping ga
 
 | File | Purpose |
 |---|---|
-| `style-scene.png` | Room composition, camera, palette, lighting |
+| `style-scene.png` | Room composition, camera, palette, lighting (kept local, not in the public repo) |
 | `style-characters.png` | Character quality/consistency bar |
 | `style-product.png` | Product shell: sidebar, roster, composer, controls |
+
+The scene reference, the chibi reference and the team illustrations are kept out of the public repo (see `.gitignore`); local copies make the art scripts work.
 
 ## Rules
 
